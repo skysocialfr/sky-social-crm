@@ -178,8 +178,7 @@ export default function ProspectForm({ open, onOpenChange, prospect, defaultStag
           <form onSubmit={handleSubmit(submit)} className="flex flex-col flex-1 overflow-hidden">
             <div className="flex-1 overflow-y-auto px-6 py-5">
               {/* Tab: Entreprise */}
-              {tab === 'Entreprise' && (
-                <div className="grid grid-cols-2 gap-4">
+              <div className={cn('grid grid-cols-2 gap-4', tab !== 'Entreprise' && 'hidden')}>
                   <div className="col-span-2">
                     <Field label="Nom de l'entreprise *" error={errors.company_name?.message}>
                       <Input {...register('company_name')} placeholder="Ex: Acme SARL" />
@@ -211,12 +210,10 @@ export default function ProspectForm({ open, onOpenChange, prospect, defaultStag
                       <Input {...register('country')} placeholder="France" />
                     </Field>
                   </div>
-                </div>
-              )}
+              </div>
 
               {/* Tab: Contact */}
-              {tab === 'Contact' && (
-                <div className="grid grid-cols-2 gap-4">
+              <div className={cn('grid grid-cols-2 gap-4', tab !== 'Contact' && 'hidden')}>
                   <Field label="Prénom *" error={errors.first_name?.message}>
                     <Input {...register('first_name')} placeholder="Marie" />
                   </Field>
@@ -234,12 +231,10 @@ export default function ProspectForm({ open, onOpenChange, prospect, defaultStag
                       <Input {...register('phone')} placeholder="+33 6 00 00 00 00" />
                     </Field>
                   </div>
-                </div>
-              )}
+              </div>
 
               {/* Tab: CRM */}
-              {tab === 'CRM' && (
-                <div className="grid grid-cols-2 gap-4">
+              <div className={cn('grid grid-cols-2 gap-4', tab !== 'CRM' && 'hidden')}>
                   <Field label="Étape du pipeline">
                     <Select {...register('stage')}>
                       {PIPELINE_STAGES.map((s) => <option key={s}>{s}</option>)}
@@ -305,8 +300,7 @@ export default function ProspectForm({ open, onOpenChange, prospect, defaultStag
                       />
                     </Field>
                   </div>
-                </div>
-              )}
+              </div>
             </div>
 
             {/* Footer */}
