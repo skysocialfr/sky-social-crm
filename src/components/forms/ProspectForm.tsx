@@ -116,25 +116,30 @@ export default function ProspectForm({ open, onOpenChange, prospect, defaultStag
     setValue('services_interested', services.includes(s) ? services.filter(x => x !== s) : [...services, s])
   }
 
+  const [submitError, setSubmitError] = useState('')
+
   const submit = async (values: FormValues) => {
     setSaving(true)
+    setSubmitError('')
     try {
       await onSubmit({
         ...values,
-        sector: values.sector ?? null,
-        company_size: (values.company_size as ProspectFormData['company_size']) ?? null,
-        website: values.website ?? null,
-        linkedin_url: values.linkedin_url ?? null,
-        instagram_url: values.instagram_url ?? null,
-        title: values.title ?? null,
+        sector: values.sector || null,
+        company_size: (values.company_size || null) as ProspectFormData['company_size'],
+        website: values.website || null,
+        linkedin_url: values.linkedin_url || null,
+        instagram_url: values.instagram_url || null,
+        title: values.title || null,
         email: values.email || null,
-        phone: values.phone ?? null,
-        city: values.city ?? null,
-        deal_value: values.deal_value ?? null,
-        next_followup_date: values.next_followup_date ?? null,
-        notes: values.notes ?? null,
+        phone: values.phone || null,
+        city: values.city || null,
+        deal_value: (values.deal_value && !isNaN(values.deal_value)) ? values.deal_value : null,
+        next_followup_date: values.next_followup_date || null,
+        notes: values.notes || null,
       } as ProspectFormData)
       onOpenChange(false)
+    } catch (err: any) {
+      setSubmitError(err?.message ?? 'Une erreur est survenue. Vérifiez votre connexion Supabase.')
     } finally {
       setSaving(false)
     }
@@ -302,6 +307,13 @@ export default function ProspectForm({ open, onOpenChange, prospect, defaultStag
                   </div>
               </div>
             </div>
+
+            {/* Error */}
+            {submitError && (
+              <div className="mx-6 mb-2 rounded-lg border border-red-700 bg-red-900/30 px-3 py-2 text-xs text-red-300">
+                ❌ {submitError}
+              </div>
+            )}
 
             {/* Footer */}
             <div className="flex justify-between items-center border-t border-border px-6 py-4">
