@@ -37,6 +37,7 @@ export default function ProspectInfoCard({ prospect: p }: Props) {
         <Row icon={Globe} label="Site web" value={p.website} href={p.website ?? undefined} />
         <Row icon={Linkedin} label="LinkedIn" value={p.linkedin_url ? 'Voir profil' : null} href={p.linkedin_url ?? undefined} />
         <Row icon={Instagram} label="Instagram" value={p.instagram_url ? 'Voir profil' : null} href={p.instagram_url ?? undefined} />
+        <Row icon={MapPin} label="Fiche Google Maps" value={p.google_maps_url ? 'Voir sur Google Maps' : null} href={p.google_maps_url ?? undefined} />
         <Row icon={MapPin} label="Localisation" value={[p.city, p.country].filter(Boolean).join(', ')} />
         {p.services_interested.length > 0 && (
           <div className="flex items-start gap-3">

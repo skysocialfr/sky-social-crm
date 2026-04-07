@@ -36,6 +36,7 @@ type FormState = {
   website: string
   linkedin_url: string
   instagram_url: string
+  google_maps_url: string
   city: string
   country: string
   first_name: string
@@ -60,6 +61,7 @@ const emptyForm = (defaultStage = 'Identifié'): FormState => ({
   website: '',
   linkedin_url: '',
   instagram_url: '',
+  google_maps_url: '',
   city: '',
   country: 'France',
   first_name: '',
@@ -94,6 +96,7 @@ export default function ProspectForm({ open, onOpenChange, prospect, defaultStag
         website: prospect.website ?? '',
         linkedin_url: prospect.linkedin_url ?? '',
         instagram_url: prospect.instagram_url ?? '',
+        google_maps_url: prospect.google_maps_url ?? '',
         city: prospect.city ?? '',
         country: prospect.country ?? 'France',
         first_name: prospect.first_name ?? '',
@@ -153,6 +156,7 @@ export default function ProspectForm({ open, onOpenChange, prospect, defaultStag
         website: form.website.trim() || null,
         linkedin_url: form.linkedin_url.trim() || null,
         instagram_url: form.instagram_url.trim() || null,
+        google_maps_url: form.google_maps_url.trim() || null,
         city: form.city.trim() || null,
         country: form.country || 'France',
         first_name: form.first_name.trim(),
@@ -181,7 +185,7 @@ export default function ProspectForm({ open, onOpenChange, prospect, defaultStag
     <Dialog.Root open={open} onOpenChange={onOpenChange}>
       <Dialog.Portal>
         <Dialog.Overlay className="fixed inset-0 z-50 bg-black/60 backdrop-blur-sm" />
-        <Dialog.Content className="fixed left-1/2 top-1/2 z-50 w-full max-w-2xl -translate-x-1/2 -translate-y-1/2 rounded-xl border border-border bg-card shadow-2xl max-h-[90vh] flex flex-col">
+        <Dialog.Content className="fixed inset-0 z-50 flex flex-col bg-card md:inset-auto md:left-1/2 md:top-1/2 md:w-full md:max-w-2xl md:-translate-x-1/2 md:-translate-y-1/2 md:rounded-xl md:border md:border-border md:shadow-2xl md:max-h-[90vh]">
 
           {/* Header */}
           <div className="flex items-center justify-between border-b border-border px-6 py-4">
@@ -208,8 +212,8 @@ export default function ProspectForm({ open, onOpenChange, prospect, defaultStag
             <div className="flex-1 overflow-y-auto px-6 py-5">
 
               {/* ENTREPRISE */}
-              <div className={cn('grid grid-cols-2 gap-4', tab !== 'Entreprise' && 'hidden')}>
-                <div className="col-span-2">
+              <div className={cn('grid grid-cols-1 sm:grid-cols-2 gap-4', tab !== 'Entreprise' && 'hidden')}>
+                <div className="col-span-full">
                   <Field label="Nom de l'entreprise" required error={errors.company_name}>
                     <input className={inputClass} value={form.company_name} onChange={e => set('company_name', e.target.value)} placeholder="Ex: Acme SARL" />
                   </Field>
@@ -232,6 +236,11 @@ export default function ProspectForm({ open, onOpenChange, prospect, defaultStag
                 <Field label="URL Instagram">
                   <input className={inputClass} value={form.instagram_url} onChange={e => set('instagram_url', e.target.value)} placeholder="https://instagram.com/…" />
                 </Field>
+                <div className="col-span-full">
+                  <Field label="Fiche Google Maps">
+                    <input className={inputClass} value={form.google_maps_url} onChange={e => set('google_maps_url', e.target.value)} placeholder="https://maps.google.com/…" />
+                  </Field>
+                </div>
                 <Field label="Ville">
                   <input className={inputClass} value={form.city} onChange={e => set('city', e.target.value)} placeholder="Paris" />
                 </Field>
@@ -241,7 +250,7 @@ export default function ProspectForm({ open, onOpenChange, prospect, defaultStag
               </div>
 
               {/* CONTACT */}
-              <div className={cn('grid grid-cols-2 gap-4', tab !== 'Contact' && 'hidden')}>
+              <div className={cn('grid grid-cols-1 sm:grid-cols-2 gap-4', tab !== 'Contact' && 'hidden')}>
                 <Field label="Prénom" required error={errors.first_name}>
                   <input className={inputClass} value={form.first_name} onChange={e => set('first_name', e.target.value)} placeholder="Marie" />
                 </Field>
@@ -254,7 +263,7 @@ export default function ProspectForm({ open, onOpenChange, prospect, defaultStag
                 <Field label="Email" error={errors.email}>
                   <input className={inputClass} type="email" value={form.email} onChange={e => set('email', e.target.value)} placeholder="contact@exemple.fr" />
                 </Field>
-                <div className="col-span-2">
+                <div className="col-span-full">
                   <Field label="Téléphone">
                     <input className={inputClass} value={form.phone} onChange={e => set('phone', e.target.value)} placeholder="+33 6 00 00 00 00" />
                   </Field>
@@ -262,7 +271,7 @@ export default function ProspectForm({ open, onOpenChange, prospect, defaultStag
               </div>
 
               {/* CRM */}
-              <div className={cn('grid grid-cols-2 gap-4', tab !== 'CRM' && 'hidden')}>
+              <div className={cn('grid grid-cols-1 sm:grid-cols-2 gap-4', tab !== 'CRM' && 'hidden')}>
                 <Field label="Étape du pipeline">
                   <select className={inputClass} value={form.stage} onChange={e => set('stage', e.target.value)}>
                     {PIPELINE_STAGES.map(s => <option key={s} value={s}>{s}</option>)}
@@ -273,14 +282,14 @@ export default function ProspectForm({ open, onOpenChange, prospect, defaultStag
                     {PRIORITIES.map(p => <option key={p} value={p}>{p}</option>)}
                   </select>
                 </Field>
-                <div className="col-span-2">
+                <div className="col-span-full">
                   <Field label="Canal de prospection">
                     <select className={inputClass} value={form.channel} onChange={e => set('channel', e.target.value)}>
                       {CHANNELS.map(c => <option key={c} value={c}>{c}</option>)}
                     </select>
                   </Field>
                 </div>
-                <div className="col-span-2">
+                <div className="col-span-full">
                   <label className="mb-2 block text-xs font-medium text-muted-foreground">Services intéressés</label>
                   <div className="flex flex-wrap gap-2">
                     {SERVICES.map(s => (
@@ -302,12 +311,12 @@ export default function ProspectForm({ open, onOpenChange, prospect, defaultStag
                     {CURRENCIES.map(c => <option key={c} value={c}>{c}</option>)}
                   </select>
                 </Field>
-                <div className="col-span-2">
+                <div className="col-span-full">
                   <Field label="Prochain contact">
                     <input className={inputClass} type="date" value={form.next_followup_date} onChange={e => set('next_followup_date', e.target.value)} />
                   </Field>
                 </div>
-                <div className="col-span-2">
+                <div className="col-span-full">
                   <Field label="Notes">
                     <textarea className={cn(inputClass, 'resize-none')} rows={3} value={form.notes} onChange={e => set('notes', e.target.value)} placeholder="Informations supplémentaires…" />
                   </Field>

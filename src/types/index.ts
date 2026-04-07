@@ -40,6 +40,7 @@ export interface Prospect {
   website: string | null
   linkedin_url: string | null
   instagram_url: string | null
+  google_maps_url: string | null
   first_name: string
   last_name: string
   title: string | null
