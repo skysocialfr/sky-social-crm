@@ -1,0 +1,28 @@
+name: Créer compte Photopya
+
+on:
+  workflow_dispatch:
+
+jobs:
+  create-user:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Créer le compte Photopya dans Supabase
+        env:
+          SUPABASE_URL: ${{ secrets.VITE_SUPABASE_URL }}
+          SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
+          USER_EMAIL: ${{ secrets.PHOTOPYA_EMAIL }}
+          USER_PASSWORD: ${{ secrets.PHOTOPYA_PASSWORD }}
+        run: node scripts/create-user.mjs

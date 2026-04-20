@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import { useNavigate } from 'react-router-dom'
+import { Link, useNavigate } from 'react-router-dom'
 import { Zap, Eye, EyeOff } from 'lucide-react'
 import { useAuth } from '@/hooks/useAuth'
 import { cn } from '@/lib/cn'
@@ -40,7 +40,7 @@ export default function LoginPage() {
             <Zap size={22} className="text-primary-foreground" fill="currentColor" />
           </div>
           <div className="text-center">
-            <h1 className="text-xl font-bold text-foreground">Sky Social CRM</h1>
+            <h1 className="text-xl font-bold text-foreground">SKY CRM</h1>
             <p className="text-sm text-muted-foreground mt-1">Connectez-vous à votre espace</p>
           </div>
         </div>
@@ -95,6 +95,13 @@ export default function LoginPage() {
               {loading ? 'Connexion…' : 'Se connecter'}
             </button>
           </form>
+
+          <p className="mt-4 text-center text-xs text-muted-foreground">
+            Pas encore de compte ?{' '}
+            <Link to="/register" className="text-primary hover:underline">
+              Créer votre espace
+            </Link>
+          </p>
         </div>
       </div>
     </div>
