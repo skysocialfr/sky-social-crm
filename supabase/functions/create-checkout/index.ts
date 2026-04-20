@@ -38,7 +38,6 @@ serve(async (req) => {
       Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!
     )
 
-    // Get existing subscription row (if any)
     const { data: sub } = await supabaseAdmin
       .from('subscriptions')
       .select('stripe_customer_id')
