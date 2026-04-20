@@ -3,8 +3,8 @@ import { supabase } from '@/lib/supabase'
 import { useAuth } from '@/hooks/useAuth'
 
 export function useIsAdmin() {
-  const { user } = useAuth()
-  const { data, isLoading } = useQuery({
+  const { user, loading: authLoading } = useAuth()
+  const { data, isLoading: queryLoading } = useQuery({
     queryKey: ['is_admin', user?.id],
     queryFn: async () => {
       const { data, error } = await supabase.rpc('is_admin')
@@ -14,5 +14,5 @@ export function useIsAdmin() {
     enabled: !!user,
     staleTime: 5 * 60_000,
   })
-  return { isAdmin: data ?? false, isLoading }
+  return { isAdmin: data ?? false, isLoading: authLoading || queryLoading }
 }
