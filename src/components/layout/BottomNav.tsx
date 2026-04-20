@@ -1,11 +1,12 @@
 import { NavLink } from 'react-router-dom'
-import { LayoutDashboard, Users, Bell } from 'lucide-react'
+import { LayoutDashboard, Users, Bell, Settings } from 'lucide-react'
 import { cn } from '@/lib/cn'
 
 const NAV = [
   { to: '/', label: 'Dashboard', icon: LayoutDashboard, end: true },
   { to: '/prospects', label: 'Prospects', icon: Users },
   { to: '/relances', label: 'Relances', icon: Bell },
+  { to: '/settings', label: 'Paramètres', icon: Settings },
 ]
 
 export default function BottomNav() {

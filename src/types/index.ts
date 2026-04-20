@@ -84,3 +84,23 @@ export interface DashboardStats {
 }
 
 export type ProspectFormData = Omit<Prospect, 'id' | 'user_id' | 'created_at' | 'updated_at'>
+
+export interface UserProfile {
+  id: string
+  company_name: string
+  primary_color: string
+  logo_url: string | null
+  is_admin: boolean
+  created_at: string
+  updated_at: string
+}
+
+export interface AdminUserView {
+  id: string
+  email: string
+  company_name: string
+  primary_color: string
+  logo_url: string | null
+  is_admin: boolean
+  created_at: string
+}

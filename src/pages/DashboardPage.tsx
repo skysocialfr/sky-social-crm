@@ -5,13 +5,13 @@ import FunnelChart from '@/components/dashboard/FunnelChart'
 import ChannelChart from '@/components/dashboard/ChannelChart'
 import FollowUpAlert from '@/components/dashboard/FollowUpAlert'
 import { useDashboardStats } from '@/hooks/useDashboardStats'
-import { useAuth } from '@/hooks/useAuth'
+import { useTheme } from '@/context/ThemeContext'
 
 export default function DashboardPage() {
   const { stats, isLoading } = useDashboardStats()
   const navigate = useNavigate()
-  const { user } = useAuth()
-  const companyName = (user?.user_metadata?.company_name as string) ?? 'Sky Social'
+  const { profile } = useTheme()
+  const companyName = profile?.company_name || 'Sky Social'
 
   if (isLoading) {
     return (

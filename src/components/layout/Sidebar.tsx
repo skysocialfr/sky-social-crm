@@ -1,25 +1,38 @@
 import { NavLink } from 'react-router-dom'
-import { LayoutDashboard, Users, Bell, Zap } from 'lucide-react'
+import { LayoutDashboard, Users, Bell, Settings, ShieldCheck, Zap } from 'lucide-react'
 import { cn } from '@/lib/cn'
-import { useAuth } from '@/hooks/useAuth'
-
-const NAV = [
-  { to: '/', label: 'Tableau de bord', icon: LayoutDashboard, end: true },
-  { to: '/prospects', label: 'Prospects', icon: Users },
-  { to: '/relances', label: 'Relances', icon: Bell },
-]
+import { useTheme } from '@/context/ThemeContext'
+import { useIsAdmin } from '@/hooks/useIsAdmin'
 
 export default function Sidebar() {
-  const { user } = useAuth()
-  const companyName = (user?.user_metadata?.company_name as string) ?? 'Sky Social'
+  const { profile } = useTheme()
+  const { isAdmin } = useIsAdmin()
+
+  const companyName = profile?.company_name || 'Sky Social'
+
+  const NAV = [
+    { to: '/', label: 'Tableau de bord', icon: LayoutDashboard, end: true },
+    { to: '/prospects', label: 'Prospects', icon: Users },
+    { to: '/relances', label: 'Relances', icon: Bell },
+    { to: '/settings', label: 'Paramètres', icon: Settings },
+    ...(isAdmin ? [{ to: '/admin', label: 'Administration', icon: ShieldCheck, end: false }] : []),
+  ]
 
   return (
     <aside className="hidden md:flex h-screen w-60 flex-col border-r border-border bg-card">
       {/* Logo */}
       <div className="flex items-center gap-2 px-5 py-5 border-b border-border">
-        <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-primary">
-          <Zap size={16} className="text-primary-foreground" fill="currentColor" />
-        </div>
+        {profile?.logo_url ? (
+          <img
+            src={profile.logo_url}
+            alt={companyName}
+            className="h-8 w-8 rounded-lg object-contain border border-border bg-muted"
+          />
+        ) : (
+          <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-primary">
+            <Zap size={16} className="text-primary-foreground" fill="currentColor" />
+          </div>
+        )}
         <div>
           <p className="text-sm font-bold leading-none text-foreground">{companyName}</p>
           <p className="text-[10px] text-muted-foreground mt-0.5">CRM Prospection</p>
@@ -50,7 +63,7 @@ export default function Sidebar() {
 
       {/* Footer */}
       <div className="p-4 border-t border-border">
-        <p className="text-xs text-muted-foreground text-center">{companyName} © 2025</p>
+        <p className="text-xs text-muted-foreground text-center">Sky Social Agency © 2025</p>
       </div>
     </aside>
   )
