@@ -128,7 +128,6 @@ export default function SendEmailModal({ open, onOpenChange, prospectId, prospec
         <Dialog.Overlay className="fixed inset-0 z-50 bg-black/60 backdrop-blur-sm" />
         <Dialog.Content className="fixed left-1/2 top-1/2 z-50 w-full max-w-lg -translate-x-1/2 -translate-y-1/2 rounded-xl border border-border bg-card shadow-xl flex flex-col max-h-[90vh]">
 
-          {/* Header */}
           <div className="flex items-center justify-between p-5 border-b border-border flex-shrink-0">
             <div className="flex items-center gap-2">
               <Mail size={16} className="text-primary" />
@@ -144,13 +143,11 @@ export default function SendEmailModal({ open, onOpenChange, prospectId, prospec
           <div className="overflow-y-auto flex-1">
             {!done ? (
               <div className="p-5 space-y-4">
-                {/* Recipient */}
                 <div>
                   <p className="text-xs text-muted-foreground mb-1">À</p>
                   <p className="text-sm font-medium text-foreground">{prospectEmail}</p>
                 </div>
 
-                {/* Template selector */}
                 <div>
                   <p className="text-xs font-medium text-muted-foreground mb-2">Modèle</p>
                   <div className="flex flex-wrap gap-2">
@@ -172,7 +169,6 @@ export default function SendEmailModal({ open, onOpenChange, prospectId, prospec
                   </div>
                 </div>
 
-                {/* Subject */}
                 <div>
                   <label className="mb-1.5 block text-xs font-medium text-muted-foreground">Objet</label>
                   <input
@@ -184,7 +180,6 @@ export default function SendEmailModal({ open, onOpenChange, prospectId, prospec
                   />
                 </div>
 
-                {/* Body */}
                 <div>
                   <label className="mb-1.5 block text-xs font-medium text-muted-foreground">Message</label>
                   <textarea
@@ -213,7 +208,6 @@ export default function SendEmailModal({ open, onOpenChange, prospectId, prospec
             )}
           </div>
 
-          {/* Footer */}
           <div className="flex justify-end gap-3 p-4 border-t border-border flex-shrink-0">
             {!done ? (
               <>
