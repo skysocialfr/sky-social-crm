@@ -48,3 +48,19 @@ export function useAdminProfiles() {
     staleTime: 30_000,
   })
 }
+
+export function useSuspendUser() {
+  const queryClient = useQueryClient()
+  return useMutation({
+    mutationFn: async ({ userId, suspended }: { userId: string; suspended: boolean }) => {
+      const { error } = await supabase.rpc('set_user_suspended', {
+        target_id: userId,
+        suspended_val: suspended,
+      })
+      if (error) throw error
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['admin', 'profiles'] })
+    },
+  })
+}

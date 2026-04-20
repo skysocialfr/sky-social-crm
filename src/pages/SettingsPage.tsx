@@ -1,16 +1,34 @@
 import { useEffect, useState } from 'react'
+import { format } from 'date-fns'
+import { fr } from 'date-fns/locale'
+import { Zap } from 'lucide-react'
 import { supabase } from '@/lib/supabase'
 import { useTheme } from '@/context/ThemeContext'
 import { useUpdateProfile } from '@/hooks/useUserProfile'
+import { useSubscription, createCheckoutSession, FREE_PLAN } from '@/hooks/useSubscription'
 import { useAuth } from '@/hooks/useAuth'
 import { cn } from '@/lib/cn'
 import ColorPicker from '@/components/common/ColorPicker'
 import LogoUpload from '@/components/common/LogoUpload'
+import type { SectionPrefs } from '@/types'
+
+const SECTION_LABELS: { key: keyof SectionPrefs; label: string; description: string }[] = [
+  { key: 'show_followup', label: 'Planificateur de relance', description: 'Date du prochain contact' },
+  { key: 'show_interactions', label: 'Historique des interactions', description: 'Journal des appels, emails, RDV…' },
+  { key: 'show_services', label: 'Services intéressés', description: 'Tags des services sur la fiche' },
+  { key: 'show_deal', label: 'Valeur du deal', description: 'Montant estimé du contrat' },
+  { key: 'show_social', label: 'Liens sociaux', description: 'LinkedIn, Instagram, Google Maps' },
+]
 
 export default function SettingsPage() {
-  const { profile, applyTheme, refreshProfile } = useTheme()
+  const { profile, applyTheme, refreshProfile, sectionPrefs, updateSectionPrefs } = useTheme()
   const { user } = useAuth()
   const updateProfile = useUpdateProfile()
+  const { data: subscription = FREE_PLAN } = useSubscription()
+  const [sectionSaving, setSectionSaving] = useState(false)
+  const [sectionSuccess, setSectionSuccess] = useState(false)
+  const [upgrading, setUpgrading] = useState(false)
+  const [upgradeError, setUpgradeError] = useState('')
 
   const [companyName, setCompanyName] = useState('')
   const [color, setColor] = useState('217 91% 60%')
@@ -74,6 +92,30 @@ export default function SettingsPage() {
     } catch (err: unknown) {
       const msg = err instanceof Error ? err.message : 'Une erreur est survenue.'
       setError(msg)
+    }
+  }
+
+  const handleUpgrade = async () => {
+    setUpgradeError('')
+    setUpgrading(true)
+    try {
+      const url = await createCheckoutSession(window.location.href)
+      window.location.href = url
+    } catch (err) {
+      setUpgradeError(err instanceof Error ? err.message : 'Une erreur est survenue.')
+      setUpgrading(false)
+    }
+  }
+
+  const handleSectionToggle = async (key: keyof SectionPrefs) => {
+    const next: SectionPrefs = { ...sectionPrefs, [key]: !sectionPrefs[key] }
+    setSectionSaving(true)
+    try {
+      await updateSectionPrefs(next)
+      setSectionSuccess(true)
+      setTimeout(() => setSectionSuccess(false), 2000)
+    } finally {
+      setSectionSaving(false)
     }
   }
 
@@ -146,6 +188,99 @@ export default function SettingsPage() {
           </button>
         </div>
       </form>
+
+      {/* Subscription */}
+      <div className="space-y-4">
+        <div>
+          <h2 className="text-base font-semibold text-foreground">Abonnement</h2>
+          <p className="text-sm text-muted-foreground mt-1">Gérez votre plan Sky Social CRM.</p>
+        </div>
+        <div className="rounded-xl border border-border bg-card p-5 space-y-4">
+          <div className="flex items-center justify-between">
+            <div>
+              <p className="text-sm font-medium text-foreground">
+                {subscription.status === 'active' ? (
+                  <span className="inline-flex items-center gap-1.5 text-emerald-400">
+                    <Zap size={13} /> Plan Pro
+                  </span>
+                ) : subscription.status === 'past_due' ? (
+                  <span className="text-amber-400">Paiement en attente</span>
+                ) : subscription.status === 'cancelled' ? (
+                  <span className="text-muted-foreground">Plan annulé</span>
+                ) : (
+                  <span className="text-muted-foreground">Plan gratuit</span>
+                )}
+              </p>
+              {subscription.status === 'active' && subscription.current_period_end && (
+                <p className="text-xs text-muted-foreground mt-0.5">
+                  Actif jusqu'au {format(new Date(subscription.current_period_end), 'd MMM yyyy', { locale: fr })}
+                </p>
+              )}
+              {subscription.status !== 'active' && (
+                <p className="text-xs text-muted-foreground mt-0.5">
+                  Limite : {subscription.prospect_limit} prospects
+                </p>
+              )}
+            </div>
+            {subscription.status !== 'active' && (
+              <button
+                onClick={handleUpgrade}
+                disabled={upgrading}
+                className={cn(
+                  'flex items-center gap-1.5 rounded-lg bg-primary px-4 py-2 text-sm font-semibold text-primary-foreground hover:bg-primary/90 transition-colors',
+                  upgrading && 'opacity-50 cursor-not-allowed'
+                )}
+              >
+                <Zap size={13} />
+                {upgrading ? 'Redirection…' : 'Passer au Pro — 9€/mois'}
+              </button>
+            )}
+          </div>
+          {upgradeError && (
+            <p className="text-xs text-red-400">{upgradeError}</p>
+          )}
+        </div>
+      </div>
+
+      {/* Section preferences */}
+      <div className="space-y-4">
+        <div>
+          <h2 className="text-base font-semibold text-foreground">Rubriques de la fiche prospect</h2>
+          <p className="text-sm text-muted-foreground mt-1">Affichez ou masquez des sections sur chaque fiche.</p>
+        </div>
+        <div className="rounded-xl border border-border bg-card divide-y divide-border">
+          {SECTION_LABELS.map(({ key, label, description }) => (
+            <div key={key} className="flex items-center justify-between px-5 py-3.5">
+              <div>
+                <p className="text-sm font-medium text-foreground">{label}</p>
+                <p className="text-xs text-muted-foreground">{description}</p>
+              </div>
+              <button
+                type="button"
+                onClick={() => handleSectionToggle(key)}
+                disabled={sectionSaving}
+                className={cn(
+                  'relative inline-flex h-5 w-9 flex-shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200',
+                  sectionPrefs[key] ? 'bg-primary' : 'bg-muted',
+                  sectionSaving && 'opacity-50 cursor-not-allowed'
+                )}
+                role="switch"
+                aria-checked={sectionPrefs[key]}
+              >
+                <span
+                  className={cn(
+                    'pointer-events-none inline-block h-4 w-4 rounded-full bg-white shadow transition-transform duration-200',
+                    sectionPrefs[key] ? 'translate-x-4' : 'translate-x-0'
+                  )}
+                />
+              </button>
+            </div>
+          ))}
+        </div>
+        {sectionSuccess && (
+          <p className="text-xs text-emerald-400">Préférences sauvegardées.</p>
+        )}
+      </div>
     </div>
   )
 }

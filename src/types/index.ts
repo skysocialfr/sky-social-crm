@@ -85,12 +85,30 @@ export interface DashboardStats {
 
 export type ProspectFormData = Omit<Prospect, 'id' | 'user_id' | 'created_at' | 'updated_at'>
 
+export interface SectionPrefs {
+  show_followup: boolean
+  show_interactions: boolean
+  show_services: boolean
+  show_deal: boolean
+  show_social: boolean
+}
+
+export const DEFAULT_SECTION_PREFS: SectionPrefs = {
+  show_followup: true,
+  show_interactions: true,
+  show_services: true,
+  show_deal: true,
+  show_social: true,
+}
+
 export interface UserProfile {
   id: string
   company_name: string
   primary_color: string
   logo_url: string | null
   is_admin: boolean
+  suspended: boolean
+  section_prefs: SectionPrefs | null
   created_at: string
   updated_at: string
 }
@@ -102,5 +120,9 @@ export interface AdminUserView {
   primary_color: string
   logo_url: string | null
   is_admin: boolean
+  suspended: boolean
+  prospect_count: number
+  last_sign_in_at: string | null
+  subscription_status: string
   created_at: string
 }
