@@ -1,9 +1,11 @@
 import { Globe, Linkedin, Instagram, Mail, Phone, Building2, MapPin, Tag, Euro } from 'lucide-react'
 import ChannelIcon from '@/components/common/ChannelIcon'
-import type { Prospect } from '@/types'
+import type { Prospect, SectionPrefs } from '@/types'
+import { DEFAULT_SECTION_PREFS } from '@/types'
 
 interface Props {
   prospect: Prospect
+  sectionPrefs?: SectionPrefs
 }
 
 function Row({ icon: Icon, label, value, href }: { icon: React.ElementType; label: string; value?: string | number | null; href?: string }) {
@@ -25,7 +27,7 @@ function Row({ icon: Icon, label, value, href }: { icon: React.ElementType; labe
   )
 }
 
-export default function ProspectInfoCard({ prospect: p }: Props) {
+export default function ProspectInfoCard({ prospect: p, sectionPrefs = DEFAULT_SECTION_PREFS }: Props) {
   return (
     <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
       {/* Entreprise */}
@@ -35,11 +37,15 @@ export default function ProspectInfoCard({ prospect: p }: Props) {
         <Row icon={Tag} label="Secteur" value={p.sector} />
         <Row icon={Building2} label="Taille" value={p.company_size} />
         <Row icon={Globe} label="Site web" value={p.website} href={p.website ?? undefined} />
-        <Row icon={Linkedin} label="LinkedIn" value={p.linkedin_url ? 'Voir profil' : null} href={p.linkedin_url ?? undefined} />
-        <Row icon={Instagram} label="Instagram" value={p.instagram_url ? 'Voir profil' : null} href={p.instagram_url ?? undefined} />
-        <Row icon={MapPin} label="Fiche Google Maps" value={p.google_maps_url ? 'Voir sur Google Maps' : null} href={p.google_maps_url ?? undefined} />
+        {sectionPrefs.show_social && (
+          <>
+            <Row icon={Linkedin} label="LinkedIn" value={p.linkedin_url ? 'Voir profil' : null} href={p.linkedin_url ?? undefined} />
+            <Row icon={Instagram} label="Instagram" value={p.instagram_url ? 'Voir profil' : null} href={p.instagram_url ?? undefined} />
+            <Row icon={MapPin} label="Fiche Google Maps" value={p.google_maps_url ? 'Voir sur Google Maps' : null} href={p.google_maps_url ?? undefined} />
+          </>
+        )}
         <Row icon={MapPin} label="Localisation" value={[p.city, p.country].filter(Boolean).join(', ')} />
-        {p.services_interested.length > 0 && (
+        {sectionPrefs.show_services && p.services_interested.length > 0 && (
           <div className="flex items-start gap-3">
             <Tag size={14} className="text-muted-foreground mt-0.5 flex-shrink-0" />
             <div>
@@ -52,7 +58,7 @@ export default function ProspectInfoCard({ prospect: p }: Props) {
             </div>
           </div>
         )}
-        {p.deal_value && (
+        {sectionPrefs.show_deal && p.deal_value && (
           <Row icon={Euro} label={`Valeur estimée (${p.currency})`} value={p.deal_value.toLocaleString('fr-FR')} />
         )}
       </div>

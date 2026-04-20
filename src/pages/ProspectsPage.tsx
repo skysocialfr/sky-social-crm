@@ -1,14 +1,18 @@
 import { useState, useMemo } from 'react'
-import { Plus } from 'lucide-react'
-import { useProspects, useCreateProspect, useUpdateProspect, useDeleteProspect } from '@/hooks/useProspects'
+import { Plus, Upload, Zap } from 'lucide-react'
+import { useProspects, useCreateProspect, useUpdateProspect, useDeleteProspect, useBulkCreateProspects } from '@/hooks/useProspects'
+import { useSubscription, FREE_PLAN } from '@/hooks/useSubscription'
 import ProspectForm from '@/components/forms/ProspectForm'
 import ProspectsTable from '@/components/prospects/ProspectsTable'
 import KanbanBoard from '@/components/prospects/KanbanBoard'
 import ViewToggle from '@/components/prospects/ViewToggle'
 import ProspectFilters, { type Filters } from '@/components/prospects/ProspectFilters'
 import ExportButton from '@/components/prospects/ExportButton'
+import ImportCSVModal from '@/components/prospects/ImportCSVModal'
+import UpgradeModal from '@/components/common/UpgradeModal'
 import ConfirmDialog from '@/components/common/ConfirmDialog'
 import { useToast } from '@/components/common/Toast'
+import { cn } from '@/lib/cn'
 import type { Prospect, ProspectFormData, PipelineStage } from '@/types'
 
 function useViewMode(): ['kanban' | 'table', (v: 'kanban' | 'table') => void] {
@@ -23,6 +27,8 @@ export default function ProspectsPage() {
   const createProspect = useCreateProspect()
   const updateProspect = useUpdateProspect()
   const deleteProspect = useDeleteProspect()
+  const bulkCreate = useBulkCreateProspects()
+  const { data: subscription = FREE_PLAN } = useSubscription()
   const { toast } = useToast()
 
   const [view, setView] = useViewMode()
@@ -31,6 +37,10 @@ export default function ProspectsPage() {
   const [editProspect, setEditProspect] = useState<Prospect | null>(null)
   const [defaultStage, setDefaultStage] = useState<string>('Identifié')
   const [deleteTarget, setDeleteTarget] = useState<Prospect | null>(null)
+  const [importOpen, setImportOpen] = useState(false)
+  const [upgradeOpen, setUpgradeOpen] = useState(false)
+
+  const isAtLimit = subscription.status !== 'active' && prospects.length >= subscription.prospect_limit
 
   const filtered = useMemo(() => {
     return prospects.filter((p) => {
@@ -52,6 +62,7 @@ export default function ProspectsPage() {
   }, [prospects, filters])
 
   const handleOpenCreate = (stage?: PipelineStage) => {
+    if (isAtLimit) { setUpgradeOpen(true); return }
     setEditProspect(null)
     setDefaultStage(stage ?? 'Identifié')
     setFormOpen(true)
@@ -87,7 +98,29 @@ export default function ProspectsPage() {
           <p className="text-sm text-muted-foreground">{prospects.length} prospects au total</p>
         </div>
         <div className="flex items-center gap-2">
+          {/* Free plan counter */}
+          {subscription.status !== 'active' && (
+            <button
+              onClick={() => setUpgradeOpen(true)}
+              className={cn(
+                'flex items-center gap-1.5 rounded-lg border px-3 py-2 text-xs font-medium transition-colors',
+                isAtLimit
+                  ? 'border-amber-700 bg-amber-900/20 text-amber-300 hover:bg-amber-900/40'
+                  : 'border-border text-muted-foreground hover:bg-muted hover:text-foreground'
+              )}
+            >
+              <Zap size={12} />
+              {prospects.length}/{subscription.prospect_limit} · Passer au Pro
+            </button>
+          )}
           <ExportButton prospects={filtered} />
+          <button
+            onClick={() => setImportOpen(true)}
+            className="flex items-center gap-2 rounded-lg border border-border px-3 py-2 text-sm font-medium text-muted-foreground hover:text-foreground hover:bg-muted transition-colors"
+          >
+            <Upload size={14} />
+            Importer
+          </button>
           <ViewToggle view={view} onChange={setView} />
           <button
             onClick={() => handleOpenCreate()}
@@ -123,6 +156,19 @@ export default function ProspectsPage() {
         prospect={editProspect}
         defaultStage={defaultStage}
         onSubmit={handleSubmit}
+      />
+
+      {/* Upgrade Modal */}
+      <UpgradeModal open={upgradeOpen} onOpenChange={setUpgradeOpen} />
+
+      {/* Import CSV */}
+      <ImportCSVModal
+        open={importOpen}
+        onOpenChange={setImportOpen}
+        onImport={async (rows) => {
+          await bulkCreate.mutateAsync(rows)
+          toast(`${rows.length} prospect${rows.length > 1 ? 's' : ''} importé${rows.length > 1 ? 's' : ''} !`)
+        }}
       />
 
       {/* Delete Confirm */}

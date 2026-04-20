@@ -1,6 +1,6 @@
 import { useState } from 'react'
 import { useParams, useNavigate } from 'react-router-dom'
-import { ArrowLeft, Pencil, Trash2 } from 'lucide-react'
+import { ArrowLeft, Pencil, Trash2, Mail } from 'lucide-react'
 import { useProspect } from '@/hooks/useProspect'
 import { useUpdateProspect, useDeleteProspect } from '@/hooks/useProspects'
 import PriorityBadge from '@/components/common/PriorityBadge'
@@ -11,8 +11,10 @@ import ProspectInfoCard from '@/components/prospect-detail/ProspectInfoCard'
 import FollowUpScheduler from '@/components/prospect-detail/FollowUpScheduler'
 import InteractionLog from '@/components/prospect-detail/InteractionLog'
 import InteractionForm from '@/components/prospect-detail/InteractionForm'
+import SendEmailModal from '@/components/prospect-detail/SendEmailModal'
 import ProspectForm from '@/components/forms/ProspectForm'
 import { useToast } from '@/components/common/Toast'
+import { useTheme } from '@/context/ThemeContext'
 import type { ProspectFormData } from '@/types'
 
 export default function ProspectDetailPage() {
@@ -22,8 +24,10 @@ export default function ProspectDetailPage() {
   const update = useUpdateProspect()
   const deleteProspect = useDeleteProspect()
   const { toast } = useToast()
+  const { sectionPrefs } = useTheme()
   const [editOpen, setEditOpen] = useState(false)
   const [deleteOpen, setDeleteOpen] = useState(false)
+  const [emailOpen, setEmailOpen] = useState(false)
 
   if (isLoading) return <div className="text-muted-foreground text-sm">Chargement…</div>
   if (!prospect) return <div className="text-muted-foreground text-sm">Prospect introuvable.</div>
@@ -63,6 +67,14 @@ export default function ProspectDetailPage() {
           </div>
         </div>
         <div className="flex items-center gap-2 flex-shrink-0">
+          {prospect.email && (
+            <button
+              onClick={() => setEmailOpen(true)}
+              className="flex items-center gap-1.5 rounded-lg border border-border px-3 py-2 text-xs font-medium text-muted-foreground hover:text-foreground hover:bg-muted transition-colors"
+            >
+              <Mail size={12} /> Email
+            </button>
+          )}
           <button
             onClick={() => setEditOpen(true)}
             className="flex items-center gap-1.5 rounded-lg border border-border px-3 py-2 text-xs font-medium text-muted-foreground hover:text-foreground hover:bg-muted transition-colors"
@@ -82,23 +94,38 @@ export default function ProspectDetailPage() {
       <StageSelector prospectId={prospect.id} currentStage={prospect.stage} />
 
       {/* Info card */}
-      <ProspectInfoCard prospect={prospect} />
+      <ProspectInfoCard prospect={prospect} sectionPrefs={sectionPrefs} />
 
       {/* Bottom row */}
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
-        {/* Relance */}
-        <div className="lg:col-span-1">
-          <FollowUpScheduler prospectId={prospect.id} date={prospect.next_followup_date} />
+      {(sectionPrefs.show_followup || sectionPrefs.show_interactions) && (
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
+          {sectionPrefs.show_followup && (
+            <div className="lg:col-span-1">
+              <FollowUpScheduler prospectId={prospect.id} date={prospect.next_followup_date} />
+            </div>
+          )}
+          {sectionPrefs.show_interactions && (
+            <div className={sectionPrefs.show_followup ? 'lg:col-span-2 space-y-4' : 'lg:col-span-3 space-y-4'}>
+              <InteractionForm prospectId={prospect.id} />
+              <div className="rounded-xl border border-border bg-card p-4">
+                <p className="mb-4 text-xs font-semibold uppercase tracking-wide text-muted-foreground">Historique</p>
+                <InteractionLog prospectId={prospect.id} />
+              </div>
+            </div>
+          )}
         </div>
-        {/* Interactions */}
-        <div className="lg:col-span-2 space-y-4">
-          <InteractionForm prospectId={prospect.id} />
-          <div className="rounded-xl border border-border bg-card p-4">
-            <p className="mb-4 text-xs font-semibold uppercase tracking-wide text-muted-foreground">Historique</p>
-            <InteractionLog prospectId={prospect.id} />
-          </div>
-        </div>
-      </div>
+      )}
+
+      {/* Email Modal */}
+      {prospect.email && (
+        <SendEmailModal
+          open={emailOpen}
+          onOpenChange={setEmailOpen}
+          prospectId={prospect.id}
+          prospectEmail={prospect.email}
+          prospectFirstName={prospect.first_name}
+        />
+      )}
 
       {/* Modals */}
       <ProspectForm

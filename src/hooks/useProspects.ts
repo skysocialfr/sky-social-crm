@@ -65,6 +65,19 @@ export function useDeleteProspect() {
   })
 }
 
+export function useBulkCreateProspects() {
+  const qc = useQueryClient()
+  return useMutation({
+    mutationFn: async (rows: ProspectFormData[]) => {
+      const { data: { user } } = await supabase.auth.getUser()
+      const payload = rows.map(r => ({ ...r, user_id: user!.id }))
+      const { error } = await supabase.from('prospects').insert(payload)
+      if (error) throw error
+    },
+    onSuccess: () => qc.invalidateQueries({ queryKey: KEY }),
+  })
+}
+
 export function useMoveProspect() {
   const qc = useQueryClient()
   return useMutation({

@@ -1,20 +1,25 @@
 import { createContext, useCallback, useContext, useEffect, useLayoutEffect, useState } from 'react'
 import { supabase } from '@/lib/supabase'
 import { useAuth } from '@/hooks/useAuth'
-import type { UserProfile } from '@/types'
+import type { UserProfile, SectionPrefs } from '@/types'
+import { DEFAULT_SECTION_PREFS } from '@/types'
 
 interface ThemeContextValue {
   profile: UserProfile | null
   isLoading: boolean
+  sectionPrefs: SectionPrefs
   applyTheme: (color: string) => void
   refreshProfile: () => Promise<void>
+  updateSectionPrefs: (prefs: SectionPrefs) => Promise<void>
 }
 
 const ThemeContext = createContext<ThemeContextValue>({
   profile: null,
   isLoading: true,
+  sectionPrefs: DEFAULT_SECTION_PREFS,
   applyTheme: () => {},
   refreshProfile: async () => {},
+  updateSectionPrefs: async () => {},
 })
 
 const STORAGE_KEY = 'sky-crm-primary'
@@ -75,8 +80,20 @@ export function ThemeProvider({ children }: { children: React.ReactNode }) {
     }
   }, [user?.id, applyTheme])
 
+  const updateSectionPrefs = useCallback(async (prefs: SectionPrefs) => {
+    if (!user) return
+    const { error } = await supabase
+      .from('user_profiles')
+      .update({ section_prefs: prefs })
+      .eq('id', user.id)
+    if (error) throw error
+    setProfile(prev => prev ? { ...prev, section_prefs: prefs } : prev)
+  }, [user?.id])
+
+  const sectionPrefs: SectionPrefs = profile?.section_prefs ?? DEFAULT_SECTION_PREFS
+
   return (
-    <ThemeContext.Provider value={{ profile, isLoading, applyTheme, refreshProfile }}>
+    <ThemeContext.Provider value={{ profile, isLoading, sectionPrefs, applyTheme, refreshProfile, updateSectionPrefs }}>
       {children}
     </ThemeContext.Provider>
   )
