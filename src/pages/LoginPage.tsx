@@ -40,7 +40,7 @@ export default function LoginPage() {
             <Zap size={22} className="text-primary-foreground" fill="currentColor" />
           </div>
           <div className="text-center">
-            <h1 className="text-xl font-bold text-foreground">Sky Social CRM</h1>
+            <h1 className="text-xl font-bold text-foreground">SKY CRM</h1>
             <p className="text-sm text-muted-foreground mt-1">Connectez-vous à votre espace</p>
           </div>
         </div>

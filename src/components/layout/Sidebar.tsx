@@ -1,6 +1,7 @@
 import { NavLink } from 'react-router-dom'
 import { LayoutDashboard, Users, Bell, Zap } from 'lucide-react'
 import { cn } from '@/lib/cn'
+import { useAuth } from '@/hooks/useAuth'
 
 const NAV = [
   { to: '/', label: 'Tableau de bord', icon: LayoutDashboard, end: true },
@@ -9,6 +10,9 @@ const NAV = [
 ]
 
 export default function Sidebar() {
+  const { user } = useAuth()
+  const companyName = (user?.user_metadata?.company_name as string) ?? 'Sky Social'
+
   return (
     <aside className="hidden md:flex h-screen w-60 flex-col border-r border-border bg-card">
       {/* Logo */}
@@ -17,7 +21,7 @@ export default function Sidebar() {
           <Zap size={16} className="text-primary-foreground" fill="currentColor" />
         </div>
         <div>
-          <p className="text-sm font-bold leading-none text-foreground">Sky Social</p>
+          <p className="text-sm font-bold leading-none text-foreground">{companyName}</p>
           <p className="text-[10px] text-muted-foreground mt-0.5">CRM Prospection</p>
         </div>
       </div>
@@ -46,7 +50,7 @@ export default function Sidebar() {
 
       {/* Footer */}
       <div className="p-4 border-t border-border">
-        <p className="text-xs text-muted-foreground text-center">Sky Social Agency © 2025</p>
+        <p className="text-xs text-muted-foreground text-center">{companyName} © 2025</p>
       </div>
     </aside>
   )

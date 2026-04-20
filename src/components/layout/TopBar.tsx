@@ -13,7 +13,7 @@ export default function TopBar() {
   const navigate = useNavigate()
   const location = useLocation()
 
-  const title = PAGE_TITLES[location.pathname] ?? 'Sky Social CRM'
+  const title = PAGE_TITLES[location.pathname] ?? 'SKY CRM'
 
   const handleLogout = async () => {
     await logout()

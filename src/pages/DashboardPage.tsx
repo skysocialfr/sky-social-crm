@@ -5,10 +5,13 @@ import FunnelChart from '@/components/dashboard/FunnelChart'
 import ChannelChart from '@/components/dashboard/ChannelChart'
 import FollowUpAlert from '@/components/dashboard/FollowUpAlert'
 import { useDashboardStats } from '@/hooks/useDashboardStats'
+import { useAuth } from '@/hooks/useAuth'
 
 export default function DashboardPage() {
   const { stats, isLoading } = useDashboardStats()
   const navigate = useNavigate()
+  const { user } = useAuth()
+  const companyName = (user?.user_metadata?.company_name as string) ?? 'Sky Social'
 
   if (isLoading) {
     return (
@@ -90,7 +93,7 @@ export default function DashboardPage() {
       {/* Quick actions */}
       {stats.totalProspects === 0 && (
         <div className="rounded-xl border-2 border-dashed border-border p-10 text-center">
-          <p className="text-lg font-semibold text-foreground mb-2">Bienvenue sur Sky Social CRM !</p>
+          <p className="text-lg font-semibold text-foreground mb-2">Bienvenue sur {companyName} CRM !</p>
           <p className="text-sm text-muted-foreground mb-5">Commencez par ajouter votre premier prospect.</p>
           <button
             onClick={() => navigate('/prospects')}
