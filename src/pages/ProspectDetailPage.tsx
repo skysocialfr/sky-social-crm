@@ -40,7 +40,7 @@ export default function ProspectDetailPage() {
   const handleDelete = async () => {
     await deleteProspect.mutateAsync(prospect.id)
     toast('Prospect supprimé.')
-    navigate('/prospects')
+    navigate('/app/prospects')
   }
 
   return (
@@ -49,7 +49,7 @@ export default function ProspectDetailPage() {
       <div className="flex items-start justify-between gap-4">
         <div className="flex items-start gap-3">
           <button
-            onClick={() => navigate('/prospects')}
+            onClick={() => navigate('/app/prospects')}
             className="mt-1 rounded-lg p-1.5 text-muted-foreground hover:text-foreground hover:bg-muted transition-colors"
           >
             <ArrowLeft size={16} />
@@ -83,7 +83,7 @@ export default function ProspectDetailPage() {
           </button>
           <button
             onClick={() => setDeleteOpen(true)}
-            className="flex items-center gap-1.5 rounded-lg border border-red-700 px-3 py-2 text-xs font-medium text-red-400 hover:bg-red-900/20 transition-colors"
+            className="flex items-center gap-1.5 rounded-lg border border-red-200 px-3 py-2 text-xs font-medium text-red-600 hover:bg-red-50 dark:border-red-700 dark:text-red-400 dark:hover:bg-red-900/20 transition-colors"
           >
             <Trash2 size={12} /> Supprimer
           </button>
@@ -138,7 +138,7 @@ export default function ProspectDetailPage() {
         open={deleteOpen}
         onOpenChange={setDeleteOpen}
         title="Supprimer le prospect"
-        description={`Supprimer "${prospect.company_name}" et tout son historique ? Cette action est irréversible.`}
+        description={`Supprimer "${prospect.company_name}" et tout son historique ? Cette action est irréversible.`}
         onConfirm={handleDelete}
         loading={deleteProspect.isPending}
       />
