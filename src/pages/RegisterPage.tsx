@@ -1,6 +1,6 @@
 import { useState } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
-import { Zap } from 'lucide-react'
+import { Zap, ArrowLeft, ArrowRight, CheckCircle2 } from 'lucide-react'
 import { supabase } from '@/lib/supabase'
 import { useTheme } from '@/context/ThemeContext'
 import { cn } from '@/lib/cn'
@@ -8,11 +8,13 @@ import ColorPicker from '@/components/common/ColorPicker'
 import LogoUpload from '@/components/common/LogoUpload'
 
 const DEFAULT_COLOR = '217 91% 60%'
+const STEPS = ['Compte', 'Société', 'Personnalisation']
 
 export default function RegisterPage() {
   const navigate = useNavigate()
   const { applyTheme, refreshProfile } = useTheme()
 
+  const [step, setStep] = useState(0)
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
   const [confirm, setConfirm] = useState('')
@@ -28,23 +30,22 @@ export default function RegisterPage() {
     applyTheme(hsl)
   }
 
+  function nextStep() {
+    setError('')
+    if (step === 0) {
+      if (!email || !password || !confirm) { setError('Veuillez remplir tous les champs.'); return }
+      if (password.length < 8) { setError('Le mot de passe doit contenir au moins 8 caractères.'); return }
+      if (password !== confirm) { setError('Les mots de passe ne correspondent pas.'); return }
+    }
+    if (step === 1) {
+      if (!companyName) { setError('Veuillez renseigner le nom de votre société.'); return }
+    }
+    setStep(s => s + 1)
+  }
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
     setError('')
-
-    if (!email || !password || !companyName) {
-      setError('Veuillez remplir tous les champs obligatoires.')
-      return
-    }
-    if (password.length < 8) {
-      setError('Le mot de passe doit contenir au moins 8 caractères.')
-      return
-    }
-    if (password !== confirm) {
-      setError('Les mots de passe ne correspondent pas.')
-      return
-    }
-
     setLoading(true)
     try {
       const { data, error: signUpError } = await supabase.auth.signUp({
@@ -81,7 +82,7 @@ export default function RegisterPage() {
         .eq('id', userId)
 
       await refreshProfile()
-      navigate('/')
+      navigate('/app')
     } catch (err: unknown) {
       const msg = err instanceof Error ? err.message : 'Une erreur est survenue.'
       setError(msg)
@@ -92,17 +93,20 @@ export default function RegisterPage() {
 
   if (emailSent) {
     return (
-      <div className="flex min-h-screen items-center justify-center bg-background px-4">
-        <div className="w-full max-w-sm text-center space-y-4">
-          <div className="flex h-12 w-12 mx-auto items-center justify-center rounded-xl bg-primary">
-            <Zap size={22} className="text-primary-foreground" fill="currentColor" />
+      <div className="flex min-h-screen items-center justify-center bg-[#f4f6ff] px-4" style={{ fontFamily: "'Plus Jakarta Sans', sans-serif" }}>
+        <div className="w-full max-w-sm text-center space-y-4 rounded-2xl border border-[#e8eaf8] bg-white p-10 shadow-xl">
+          <div
+            className="flex h-14 w-14 mx-auto items-center justify-center rounded-2xl"
+            style={{ background: 'linear-gradient(135deg, #6366f1, #8b5cf6)' }}
+          >
+            <Zap size={24} className="text-white" fill="currentColor" />
           </div>
-          <h1 className="text-xl font-bold text-foreground">Vérifiez votre email</h1>
-          <p className="text-sm text-muted-foreground">
+          <h1 className="text-xl font-bold text-gray-900">Vérifiez votre email</h1>
+          <p className="text-sm text-gray-500">
             Un lien de confirmation a été envoyé à <strong>{email}</strong>.<br />
             Cliquez dessus pour activer votre espace.
           </p>
-          <Link to="/login" className="text-sm text-primary hover:underline">
+          <Link to="/login" className="text-sm text-indigo-600 font-medium hover:underline">
             Retour à la connexion
           </Link>
         </div>
@@ -111,107 +115,195 @@ export default function RegisterPage() {
   }
 
   return (
-    <div className="flex min-h-screen items-center justify-center bg-background px-4 py-10">
+    <div className="flex min-h-screen items-center justify-center bg-[#f4f6ff] px-4 py-10" style={{ fontFamily: "'Plus Jakarta Sans', sans-serif" }}>
       <div className="w-full max-w-md">
+        {/* Header */}
         <div className="mb-8 flex flex-col items-center gap-3">
-          <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-primary">
-            <Zap size={22} className="text-primary-foreground" fill="currentColor" />
+          <div
+            className="flex h-12 w-12 items-center justify-center rounded-xl"
+            style={{ background: 'linear-gradient(135deg, #6366f1, #8b5cf6)' }}
+          >
+            <Zap size={22} className="text-white" fill="currentColor" />
           </div>
           <div className="text-center">
-            <h1 className="text-xl font-bold text-foreground">Créer votre espace CRM</h1>
-            <p className="text-sm text-muted-foreground mt-1">Votre CRM personnalisé en quelques secondes</p>
+            <h1 className="text-xl font-bold text-gray-900">Créer votre espace CRM</h1>
+            <p className="text-sm text-gray-500 mt-1">Votre CRM personnalisé en quelques secondes</p>
           </div>
         </div>
 
-        <div className="rounded-xl border border-border bg-card p-6 shadow-xl space-y-5">
-          <form onSubmit={handleSubmit} className="space-y-5">
-            {/* Infos de connexion */}
+        {/* Step indicators */}
+        <div className="flex items-center justify-center mb-8">
+          {STEPS.map((label, i) => (
+            <div key={label} className="flex items-center">
+              <div className="flex items-center gap-2">
+                <div
+                  className={cn(
+                    'flex h-7 w-7 items-center justify-center rounded-full text-xs font-bold transition-all',
+                    i < step ? 'bg-emerald-100 text-emerald-600' : i === step ? 'text-white' : 'bg-gray-100 text-gray-400'
+                  )}
+                  style={i === step ? { background: 'linear-gradient(135deg, #6366f1, #8b5cf6)' } : undefined}
+                >
+                  {i < step ? <CheckCircle2 size={14} /> : i + 1}
+                </div>
+                <span className={cn('text-xs font-medium', i === step ? 'text-indigo-600' : 'text-gray-400')}>
+                  {label}
+                </span>
+              </div>
+              {i < STEPS.length - 1 && (
+                <div className={cn('h-px w-8 mx-2', i < step ? 'bg-emerald-200' : 'bg-gray-200')} />
+              )}
+            </div>
+          ))}
+        </div>
+
+        {/* Card */}
+        <div className="rounded-2xl border border-[#e8eaf8] bg-white p-6 shadow-xl">
+
+          {/* Step 0: Account */}
+          {step === 0 && (
             <div className="space-y-4">
-              <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">Connexion</p>
+              <div className="mb-2">
+                <h2 className="text-base font-bold text-gray-900">Informations de connexion</h2>
+                <p className="text-xs text-gray-500 mt-0.5">Ces identifiants vous serviront à vous connecter.</p>
+              </div>
               <div>
-                <label className="mb-1.5 block text-sm font-medium text-foreground">Email *</label>
+                <label className="mb-1.5 block text-sm font-medium text-gray-700">Email *</label>
                 <input
                   type="email"
                   value={email}
                   onChange={(e) => setEmail(e.target.value)}
                   placeholder="vous@votresociete.com"
-                  className="w-full rounded-lg border border-border bg-input px-3 py-2.5 text-sm text-foreground placeholder:text-muted-foreground focus:border-primary focus:outline-none focus:ring-1 focus:ring-primary"
+                  className="w-full rounded-xl border border-[#e4e7f8] bg-[#f7f8ff] px-4 py-3 text-sm text-gray-900 placeholder:text-gray-400 focus:border-indigo-500 focus:outline-none focus:ring-2 focus:ring-indigo-100"
                 />
               </div>
               <div>
-                <label className="mb-1.5 block text-sm font-medium text-foreground">Mot de passe * <span className="text-muted-foreground font-normal">(min. 8 caractères)</span></label>
+                <label className="mb-1.5 block text-sm font-medium text-gray-700">
+                  Mot de passe * <span className="font-normal text-gray-400">(min. 8 caractères)</span>
+                </label>
                 <input
                   type="password"
                   value={password}
                   onChange={(e) => setPassword(e.target.value)}
                   placeholder="••••••••"
-                  className="w-full rounded-lg border border-border bg-input px-3 py-2.5 text-sm text-foreground placeholder:text-muted-foreground focus:border-primary focus:outline-none focus:ring-1 focus:ring-primary"
+                  className="w-full rounded-xl border border-[#e4e7f8] bg-[#f7f8ff] px-4 py-3 text-sm text-gray-900 placeholder:text-gray-400 focus:border-indigo-500 focus:outline-none focus:ring-2 focus:ring-indigo-100"
                 />
               </div>
               <div>
-                <label className="mb-1.5 block text-sm font-medium text-foreground">Confirmer le mot de passe *</label>
+                <label className="mb-1.5 block text-sm font-medium text-gray-700">Confirmer le mot de passe *</label>
                 <input
                   type="password"
                   value={confirm}
                   onChange={(e) => setConfirm(e.target.value)}
                   placeholder="••••••••"
-                  className="w-full rounded-lg border border-border bg-input px-3 py-2.5 text-sm text-foreground placeholder:text-muted-foreground focus:border-primary focus:outline-none focus:ring-1 focus:ring-primary"
+                  className="w-full rounded-xl border border-[#e4e7f8] bg-[#f7f8ff] px-4 py-3 text-sm text-gray-900 placeholder:text-gray-400 focus:border-indigo-500 focus:outline-none focus:ring-2 focus:ring-indigo-100"
                 />
               </div>
             </div>
+          )}
 
-            {/* Nom de la société */}
-            <div className="border-t border-border pt-5 space-y-4">
-              <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">Votre société</p>
+          {/* Step 1: Company */}
+          {step === 1 && (
+            <div className="space-y-4">
+              <div className="mb-2">
+                <h2 className="text-base font-bold text-gray-900">Votre société</h2>
+                <p className="text-xs text-gray-500 mt-0.5">Ce nom apparaîtra dans votre CRM.</p>
+              </div>
               <div>
-                <label className="mb-1.5 block text-sm font-medium text-foreground">Nom de la société *</label>
+                <label className="mb-1.5 block text-sm font-medium text-gray-700">Nom de la société *</label>
                 <input
                   type="text"
                   value={companyName}
                   onChange={(e) => setCompanyName(e.target.value)}
                   placeholder="Photopya, Ma Boîte, …"
-                  className="w-full rounded-lg border border-border bg-input px-3 py-2.5 text-sm text-foreground placeholder:text-muted-foreground focus:border-primary focus:outline-none focus:ring-1 focus:ring-primary"
+                  className="w-full rounded-xl border border-[#e4e7f8] bg-[#f7f8ff] px-4 py-3 text-sm text-gray-900 placeholder:text-gray-400 focus:border-indigo-500 focus:outline-none focus:ring-2 focus:ring-indigo-100"
                 />
               </div>
             </div>
+          )}
 
-            {/* Couleur */}
-            <div className="border-t border-border pt-5 space-y-3">
-              <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">Couleur principale</p>
-              <ColorPicker value={color} onChange={handleColorChange} />
-            </div>
+          {/* Step 2: Customization + submit */}
+          {step === 2 && (
+            <form onSubmit={handleSubmit} className="space-y-5">
+              <div className="mb-2">
+                <h2 className="text-base font-bold text-gray-900">Personnalisez votre CRM</h2>
+                <p className="text-xs text-gray-500 mt-0.5">Choisissez vos couleurs et ajoutez votre logo.</p>
+              </div>
+              <div className="space-y-3">
+                <p className="text-sm font-medium text-gray-700">Couleur principale</p>
+                <ColorPicker value={color} onChange={handleColorChange} />
+              </div>
+              <div className="border-t border-[#e8eaf8] pt-5 space-y-3">
+                <p className="text-sm font-medium text-gray-700">
+                  Logo <span className="font-normal text-gray-400">(optionnel)</span>
+                </p>
+                <LogoUpload currentUrl={null} onFile={setLogoFile} onClear={() => setLogoFile(null)} />
+              </div>
 
-            {/* Logo */}
-            <div className="border-t border-border pt-5 space-y-3">
-              <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">Logo <span className="normal-case font-normal text-muted-foreground">(optionnel)</span></p>
-              <LogoUpload
-                currentUrl={null}
-                onFile={setLogoFile}
-                onClear={() => setLogoFile(null)}
-              />
-            </div>
-
-            {error && (
-              <p className="rounded-lg border border-red-700 bg-red-900/30 px-3 py-2 text-xs text-red-300">
-                {error}
-              </p>
-            )}
-
-            <button
-              type="submit"
-              disabled={loading}
-              className={cn(
-                'w-full rounded-lg bg-primary py-2.5 text-sm font-semibold text-primary-foreground hover:bg-primary/90 transition-colors',
-                loading && 'opacity-50 cursor-not-allowed'
+              {error && (
+                <p className="rounded-xl border border-red-100 bg-red-50 px-4 py-2.5 text-xs text-red-600">
+                  {error}
+                </p>
               )}
-            >
-              {loading ? 'Création en cours…' : 'Créer mon espace'}
-            </button>
-          </form>
 
-          <p className="text-center text-xs text-muted-foreground">
+              <div className="flex items-center gap-3 pt-1">
+                <button
+                  type="button"
+                  onClick={() => { setStep(s => s - 1); setError('') }}
+                  className="flex items-center gap-1.5 rounded-xl border border-[#e8eaf8] px-4 py-3 text-sm font-medium text-gray-600 hover:border-indigo-200 hover:text-indigo-600 transition-colors"
+                >
+                  <ArrowLeft size={14} />
+                  Retour
+                </button>
+                <button
+                  type="submit"
+                  disabled={loading}
+                  className={cn(
+                    'flex flex-1 items-center justify-center gap-2 rounded-xl py-3 text-sm font-semibold text-white hover:opacity-90 transition-opacity shadow-md',
+                    loading && 'opacity-50 cursor-not-allowed'
+                  )}
+                  style={{ background: 'linear-gradient(135deg, #6366f1, #8b5cf6)' }}
+                >
+                  {loading ? 'Création en cours…' : 'Créer mon espace'}
+                </button>
+              </div>
+            </form>
+          )}
+
+          {/* Navigation for steps 0 and 1 */}
+          {step < 2 && (
+            <div className="mt-5 space-y-3">
+              {error && (
+                <p className="rounded-xl border border-red-100 bg-red-50 px-4 py-2.5 text-xs text-red-600">
+                  {error}
+                </p>
+              )}
+              <div className="flex items-center gap-3">
+                {step > 0 && (
+                  <button
+                    type="button"
+                    onClick={() => { setStep(s => s - 1); setError('') }}
+                    className="flex items-center gap-1.5 rounded-xl border border-[#e8eaf8] px-4 py-3 text-sm font-medium text-gray-600 hover:border-indigo-200 hover:text-indigo-600 transition-colors"
+                  >
+                    <ArrowLeft size={14} />
+                    Retour
+                  </button>
+                )}
+                <button
+                  type="button"
+                  onClick={nextStep}
+                  className="flex flex-1 items-center justify-center gap-2 rounded-xl py-3 text-sm font-semibold text-white hover:opacity-90 transition-opacity shadow-md"
+                  style={{ background: 'linear-gradient(135deg, #6366f1, #8b5cf6)' }}
+                >
+                  Continuer
+                  <ArrowRight size={14} />
+                </button>
+              </div>
+            </div>
+          )}
+
+          <p className="mt-4 text-center text-xs text-gray-500">
             Déjà un compte ?{' '}
-            <Link to="/login" className="text-primary hover:underline">
+            <Link to="/login" className="text-indigo-600 font-medium hover:underline">
               Se connecter
             </Link>
           </p>
