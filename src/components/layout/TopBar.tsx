@@ -1,5 +1,5 @@
 import { useNavigate, useLocation, Link } from 'react-router-dom'
-import { LogOut, Settings, User } from 'lucide-react'
+import { LogOut, Settings, User, Moon, Sun } from 'lucide-react'
 import { useAuth } from '@/hooks/useAuth'
 import { useTheme } from '@/context/ThemeContext'
 
@@ -13,7 +13,7 @@ const PAGE_TITLES: Record<string, string> = {
 
 export default function TopBar() {
   const { user, logout } = useAuth()
-  const { profile } = useTheme()
+  const { profile, isDark, toggleDark } = useTheme()
   const navigate = useNavigate()
   const location = useLocation()
 
@@ -38,6 +38,13 @@ export default function TopBar() {
           </div>
           <span className="hidden sm:inline">{user?.email}</span>
         </div>
+        <button
+          onClick={toggleDark}
+          className="flex items-center justify-center rounded-lg p-1.5 text-muted-foreground hover:bg-muted hover:text-foreground transition-colors"
+          title={isDark ? 'Mode clair' : 'Mode sombre'}
+        >
+          {isDark ? <Sun size={15} /> : <Moon size={15} />}
+        </button>
         <Link
           to="/app/settings"
           className="flex items-center justify-center rounded-lg p-1.5 text-muted-foreground hover:bg-muted hover:text-foreground transition-colors"
