@@ -11,17 +11,17 @@ export default function Sidebar() {
   const companyName = profile?.company_name || 'Sky Social'
 
   const NAV = [
-    { to: '/app', label: 'Tableau de bord', icon: LayoutDashboard, end: true },
-    { to: '/app/prospects', label: 'Prospects', icon: Users },
-    { to: '/app/relances', label: 'Relances', icon: Bell },
-    { to: '/app/settings', label: 'Paramètres', icon: Settings },
-    ...(isAdmin ? [{ to: '/app/admin', label: 'Administration', icon: ShieldCheck, end: false }] : []),
+    { to: '/app', label: 'Tableau de bord', icon: LayoutDashboard, end: true, iconClass: 'text-blue-500' },
+    { to: '/app/prospects', label: 'Prospects', icon: Users, end: false, iconClass: 'text-violet-500' },
+    { to: '/app/relances', label: 'Relances', icon: Bell, end: false, iconClass: 'text-amber-500' },
+    { to: '/app/settings', label: 'Paramètres', icon: Settings, end: false, iconClass: 'text-slate-500' },
+    ...(isAdmin ? [{ to: '/app/admin', label: 'Administration', icon: ShieldCheck, end: false, iconClass: 'text-red-500' }] : []),
   ]
 
   return (
     <aside className="hidden md:flex h-screen w-60 flex-col border-r border-border bg-card">
       {/* Logo */}
-      <div className="flex items-center gap-2 px-5 py-5 border-b border-border">
+      <div className="flex items-center gap-2.5 px-5 py-5 border-b border-border">
         {profile?.logo_url ? (
           <img
             src={profile.logo_url}
@@ -29,7 +29,7 @@ export default function Sidebar() {
             className="h-8 w-8 rounded-lg object-contain border border-border bg-muted"
           />
         ) : (
-          <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-primary">
+          <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-primary shadow-sm">
             <Zap size={16} className="text-primary-foreground" fill="currentColor" />
           </div>
         )}
@@ -40,8 +40,8 @@ export default function Sidebar() {
       </div>
 
       {/* Navigation */}
-      <nav className="flex-1 p-3 space-y-1">
-        {NAV.map(({ to, label, icon: Icon, end }) => (
+      <nav className="flex-1 p-3 space-y-0.5">
+        {NAV.map(({ to, label, icon: Icon, end, iconClass }) => (
           <NavLink
             key={to}
             to={to}
@@ -50,13 +50,20 @@ export default function Sidebar() {
               cn(
                 'flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium transition-colors',
                 isActive
-                  ? 'bg-primary/15 text-primary'
+                  ? 'bg-primary/10 text-primary'
                   : 'text-muted-foreground hover:bg-muted hover:text-foreground'
               )
             }
           >
-            <Icon size={16} />
-            {label}
+            {({ isActive }) => (
+              <>
+                <Icon
+                  size={16}
+                  className={isActive ? 'text-primary' : iconClass}
+                />
+                {label}
+              </>
+            )}
           </NavLink>
         ))}
       </nav>

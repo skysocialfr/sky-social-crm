@@ -36,35 +36,40 @@ export default function DashboardPage() {
           title="Total prospects"
           value={stats.totalProspects}
           icon={Users}
-          iconColor="text-blue-400"
+          iconColor="text-blue-600 dark:text-blue-400"
+          iconBg="bg-blue-100 dark:bg-blue-900/30"
           description="dans votre pipeline"
         />
         <KpiCard
           title="Revenus potentiels"
           value={`${stats.potentialRevenue.toLocaleString('fr-FR')} €`}
           icon={TrendingUp}
-          iconColor="text-emerald-400"
+          iconColor="text-emerald-600 dark:text-emerald-400"
+          iconBg="bg-emerald-100 dark:bg-emerald-900/30"
           description="valeur estimée totale"
         />
         <KpiCard
           title="Taux de conversion"
           value={`${stats.conversionRate} %`}
           icon={Target}
-          iconColor="text-violet-400"
+          iconColor="text-violet-600 dark:text-violet-400"
+          iconBg="bg-violet-100 dark:bg-violet-900/30"
           description="prospects gagnés"
         />
         <KpiCard
           title="Prospects chauds"
           value={stats.hotProspects}
           icon={Flame}
-          iconColor="text-red-400"
+          iconColor="text-orange-600 dark:text-orange-400"
+          iconBg="bg-orange-100 dark:bg-orange-900/30"
           description="priorité haute"
         />
         <KpiCard
           title="Relances aujourd'hui"
           value={stats.followupToday}
           icon={Bell}
-          iconColor="text-amber-400"
+          iconColor="text-amber-600 dark:text-amber-400"
+          iconBg="bg-amber-100 dark:bg-amber-900/30"
           description="à contacter"
         />
         <KpiCard
