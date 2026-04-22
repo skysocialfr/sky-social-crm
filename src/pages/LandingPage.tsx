@@ -12,20 +12,20 @@ const FEATURES = [
   { emoji: '✉️', bg: 'bg-violet-50', title: 'Email direct', desc: "Envoyez des emails personnalisés depuis la fiche prospect. L'historique est enregistré automatiquement." },
   { emoji: '📁', bg: 'bg-emerald-50', title: 'Import CSV / Excel', desc: "Importez vos fichiers de prospects existants. La détection des colonnes est automatique." },
   { emoji: '🏢', bg: 'bg-pink-50', title: 'Multi-agence', desc: "Chaque client obtient son propre espace CRM avec ses couleurs, son logo et ses données." },
-  { emoji: '⚡', bg: 'bg-indigo-50', title: 'Personnalisable', desc: "Activez ou désactivez les rubriques selon vos besoins : deal, services, réseaux sociaux, et plus." },
+  { emoji: '⚡', bg: 'bg-indigo-50', title: 'Personnalisable', desc: "Activez ou désactivez les rubriques selon vos besoins : deal, services, réseaux sociaux, et plus." },
 ]
 
 const TESTIMONIALS = [
   { name: 'Sophie M.', role: 'Fondatrice, Agence Boost', text: "Sky Social CRM a transformé notre processus de vente. On ne perd plus aucun prospect.", stars: 5 },
   { name: 'Thomas L.', role: 'Directeur commercial, WebAgency', text: "L'interface est tellement claire. Toute l'équipe l'a adopté en moins d'une journée.", stars: 5 },
-  { name: 'Camille R.', role: 'Freelance, consultant marketing', text: "Le plan gratuit suffit pour mes besoins. Simple, rapide, efficace. Je recommande !", stars: 5 },
+  { name: 'Camille R.', role: 'Freelance, consultant marketing', text: "Le plan gratuit suffit pour mes besoins. Simple, rapide, efficace. Je recommande !", stars: 5 },
 ]
 
 const FAQ = [
-  { q: 'Est-ce que Sky Social CRM est gratuit ?', a: "Oui, le plan gratuit vous donne accès à 25 prospects et aux fonctionnalités essentielles. Le plan Pro à 9€/mois lève toutes les limites." },
-  { q: 'Puis-je importer mes prospects existants ?', a: "Oui, l'import CSV et Excel est disponible sur le plan Pro. La détection des colonnes est automatique." },
-  { q: 'Comment fonctionnent les emails directs ?', a: 'Depuis la fiche d\'un prospect, cliquez sur "Email" pour envoyer un message via des modèles prédéfinis (suivi, relance, RDV). L\'envoi est enregistré dans l\'historique.' },
-  { q: "Puis-je personnaliser l'apparence ?", a: "Oui, chaque espace a sa propre couleur principale et son logo. Vos clients voient votre identité visuelle." },
+  { q: 'Est-ce que Sky Social CRM est gratuit ?', a: "Oui, le plan gratuit vous donne accès à 25 prospects et aux fonctionnalités essentielles. Le plan Pro à 9€/mois lève toutes les limites." },
+  { q: 'Puis-je importer mes prospects existants ?', a: "Oui, l'import CSV et Excel est disponible sur le plan Pro. La détection des colonnes est automatique." },
+  { q: 'Comment fonctionnent les emails directs ?', a: 'Depuis la fiche d\'un prospect, cliquez sur "Email" pour envoyer un message via des modèles prédéfinis (suivi, relance, RDV). L\'envoi est enregistré dans l\'historique.' },
+  { q: "Puis-je personnaliser l'apparence ?", a: "Oui, chaque espace a sa propre couleur principale et son logo. Vos clients voient votre identité visuelle." },
 ]
 
 function FaqItem({ q, a }: { q: string; a: string }) {
@@ -284,7 +284,7 @@ export default function LandingPage() {
       <section className="px-5 py-24 text-center" style={{ background: 'linear-gradient(135deg, #6366f1, #8b5cf6)' }}>
         <div className="mx-auto max-w-xl">
           <h2 className="mb-4 text-3xl font-black text-white sm:text-4xl">
-            Prêt à organiser votre prospection ?
+            Prêt à organiser votre prospection ?
           </h2>
           <p className="mb-8 text-sm text-indigo-200">
             Créez votre espace en 30 secondes. Aucune carte bancaire requise.
