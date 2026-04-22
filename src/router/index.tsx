@@ -3,6 +3,7 @@ import { useAuth } from '@/hooks/useAuth'
 import { useIsAdmin } from '@/hooks/useIsAdmin'
 import { useTheme } from '@/context/ThemeContext'
 import AppShell from '@/components/layout/AppShell'
+import LandingPage from '@/pages/LandingPage'
 import LoginPage from '@/pages/LoginPage'
 import RegisterPage from '@/pages/RegisterPage'
 import DashboardPage from '@/pages/DashboardPage'
@@ -34,15 +35,16 @@ function AdminRoute({ children }: { children: React.ReactNode }) {
   const { isAdmin, isLoading: adminLoading } = useIsAdmin()
   if (authLoading || adminLoading) return <div className="flex h-screen items-center justify-center text-muted-foreground">Chargement…</div>
   if (!session) return <Navigate to="/login" replace />
-  if (!isAdmin) return <Navigate to="/" replace />
+  if (!isAdmin) return <Navigate to="/app" replace />
   return <>{children}</>
 }
 
 export const router = createHashRouter([
+  { path: '/', element: <LandingPage /> },
   { path: '/login', element: <LoginPage /> },
   { path: '/register', element: <RegisterPage /> },
   {
-    path: '/',
+    path: '/app',
     element: (
       <ProtectedRoute>
         <AppShell />
