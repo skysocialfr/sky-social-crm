@@ -8,7 +8,9 @@ interface ThemeContextValue {
   profile: UserProfile | null
   isLoading: boolean
   sectionPrefs: SectionPrefs
+  isDark: boolean
   applyTheme: (color: string) => void
+  toggleDark: () => void
   refreshProfile: () => Promise<void>
   updateSectionPrefs: (prefs: SectionPrefs) => Promise<void>
 }
@@ -17,18 +19,24 @@ const ThemeContext = createContext<ThemeContextValue>({
   profile: null,
   isLoading: true,
   sectionPrefs: DEFAULT_SECTION_PREFS,
+  isDark: false,
   applyTheme: () => {},
+  toggleDark: () => {},
   refreshProfile: async () => {},
   updateSectionPrefs: async () => {},
 })
 
 const STORAGE_KEY = 'sky-crm-primary'
-const DEFAULT_COLOR = '217 91% 60%'
+const DARK_STORAGE_KEY = 'sky-crm-dark'
+const DEFAULT_COLOR = '245 85% 60%'
 
 export function ThemeProvider({ children }: { children: React.ReactNode }) {
   const { user } = useAuth()
   const [profile, setProfile] = useState<UserProfile | null>(null)
   const [isLoading, setIsLoading] = useState(true)
+  const [isDark, setIsDark] = useState(() => {
+    try { return localStorage.getItem(DARK_STORAGE_KEY) === 'true' } catch { return false }
+  })
 
   const applyTheme = useCallback((color: string) => {
     document.documentElement.style.setProperty('--primary', color)
@@ -36,7 +44,21 @@ export function ThemeProvider({ children }: { children: React.ReactNode }) {
     localStorage.setItem(STORAGE_KEY, color)
   }, [])
 
-  // Applique la couleur en cache avant le premier paint (sans flash)
+  const toggleDark = useCallback(() => {
+    setIsDark(d => {
+      const next = !d
+      document.documentElement.classList.toggle('dark', next)
+      try { localStorage.setItem(DARK_STORAGE_KEY, String(next)) } catch {}
+      return next
+    })
+  }, [])
+
+  // Sync dark class on mount (in case state diverged from the inline script)
+  useLayoutEffect(() => {
+    document.documentElement.classList.toggle('dark', isDark)
+  }, [isDark])
+
+  // Apply cached primary color before first paint
   useLayoutEffect(() => {
     const cached = localStorage.getItem(STORAGE_KEY) ?? DEFAULT_COLOR
     applyTheme(cached)
@@ -93,7 +115,7 @@ export function ThemeProvider({ children }: { children: React.ReactNode }) {
   const sectionPrefs: SectionPrefs = profile?.section_prefs ?? DEFAULT_SECTION_PREFS
 
   return (
-    <ThemeContext.Provider value={{ profile, isLoading, sectionPrefs, applyTheme, refreshProfile, updateSectionPrefs }}>
+    <ThemeContext.Provider value={{ profile, isLoading, sectionPrefs, isDark, applyTheme, toggleDark, refreshProfile, updateSectionPrefs }}>
       {children}
     </ThemeContext.Provider>
   )
