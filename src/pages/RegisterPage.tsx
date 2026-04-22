@@ -206,7 +206,7 @@ export default function RegisterPage() {
             <div className="space-y-4">
               <div className="mb-2">
                 <h2 className="text-base font-bold text-gray-900">Votre société</h2>
-                <p className="text-xs text-gray-500 mt-0.5">Ce nom apparaîtra dans votre CRM.</p>
+                <p className="text-xs text-gray-500 mt-0.5">Ce nom apparaître dans votre CRM.</p>
               </div>
               <div>
                 <label className="mb-1.5 block text-sm font-medium text-gray-700">Nom de la société *</label>
