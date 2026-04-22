@@ -3,10 +3,10 @@ import { LayoutDashboard, Users, Bell, Settings } from 'lucide-react'
 import { cn } from '@/lib/cn'
 
 const NAV = [
-  { to: '/', label: 'Dashboard', icon: LayoutDashboard, end: true },
-  { to: '/prospects', label: 'Prospects', icon: Users },
-  { to: '/relances', label: 'Relances', icon: Bell },
-  { to: '/settings', label: 'Paramètres', icon: Settings },
+  { to: '/app', label: 'Dashboard', icon: LayoutDashboard, end: true },
+  { to: '/app/prospects', label: 'Prospects', icon: Users },
+  { to: '/app/relances', label: 'Relances', icon: Bell },
+  { to: '/app/settings', label: 'Paramètres', icon: Settings },
 ]
 
 export default function BottomNav() {

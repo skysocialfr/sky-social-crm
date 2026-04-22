@@ -40,7 +40,7 @@ export default function ProspectDetailPage() {
   const handleDelete = async () => {
     await deleteProspect.mutateAsync(prospect.id)
     toast('Prospect supprimé.')
-    navigate('/prospects')
+    navigate('/app/prospects')
   }
 
   return (
@@ -49,7 +49,7 @@ export default function ProspectDetailPage() {
       <div className="flex items-start justify-between gap-4">
         <div className="flex items-start gap-3">
           <button
-            onClick={() => navigate('/prospects')}
+            onClick={() => navigate('/app/prospects')}
             className="mt-1 rounded-lg p-1.5 text-muted-foreground hover:text-foreground hover:bg-muted transition-colors"
           >
             <ArrowLeft size={16} />

@@ -22,7 +22,7 @@ export default function KanbanCard({ prospect: p, index }: Props) {
           ref={provided.innerRef}
           {...provided.draggableProps}
           {...provided.dragHandleProps}
-          onClick={() => navigate(`/prospects/${p.id}`)}
+          onClick={() => navigate(`/app/prospects/${p.id}`)}
           className={cn(
             'cursor-pointer rounded-lg border border-border bg-card p-3 shadow-sm hover:border-primary/50 hover:shadow-md transition-all',
             snapshot.isDragging && 'shadow-xl border-primary/60 rotate-1 scale-105'

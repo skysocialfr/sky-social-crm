@@ -12,7 +12,7 @@ export default function FollowUpAlert({ overdue, today }: Props) {
 
   return (
     <div
-      onClick={() => navigate('/relances')}
+      onClick={() => navigate('/app/relances')}
       className="cursor-pointer flex items-center justify-between rounded-xl border border-red-700 bg-red-900/20 px-5 py-3 hover:bg-red-900/30 transition-colors"
     >
       <div className="flex items-center gap-3">

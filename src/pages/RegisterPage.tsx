@@ -81,7 +81,7 @@ export default function RegisterPage() {
         .eq('id', userId)
 
       await refreshProfile()
-      navigate('/')
+      navigate('/app')
     } catch (err: unknown) {
       const msg = err instanceof Error ? err.message : 'Une erreur est survenue.'
       setError(msg)

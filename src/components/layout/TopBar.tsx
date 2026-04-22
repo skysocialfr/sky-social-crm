@@ -4,11 +4,11 @@ import { useAuth } from '@/hooks/useAuth'
 import { useTheme } from '@/context/ThemeContext'
 
 const PAGE_TITLES: Record<string, string> = {
-  '/': 'Tableau de bord',
-  '/prospects': 'Prospects',
-  '/relances': 'Relances',
-  '/settings': 'Paramètres',
-  '/admin': 'Administration',
+  '/app': 'Tableau de bord',
+  '/app/prospects': 'Prospects',
+  '/app/relances': 'Relances',
+  '/app/settings': 'Paramètres',
+  '/app/admin': 'Administration',
 }
 
 export default function TopBar() {
@@ -39,7 +39,7 @@ export default function TopBar() {
           <span className="hidden sm:inline">{user?.email}</span>
         </div>
         <Link
-          to="/settings"
+          to="/app/settings"
           className="flex items-center justify-center rounded-lg p-1.5 text-muted-foreground hover:bg-muted hover:text-foreground transition-colors"
           title="Paramètres"
         >

@@ -23,7 +23,7 @@ export default function LoginPage() {
     setError('')
     try {
       await login(email, password)
-      navigate('/')
+      navigate('/app')
     } catch {
       setError('Identifiants incorrects. Veuillez réessayer.')
     } finally {

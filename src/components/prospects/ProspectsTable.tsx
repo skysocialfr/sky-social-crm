@@ -81,7 +81,7 @@ export default function ProspectsTable({ prospects, onEdit, onDelete }: Props) {
           {sorted.map((p) => (
             <tr
               key={p.id}
-              onClick={() => navigate(`/prospects/${p.id}`)}
+              onClick={() => navigate(`/app/prospects/${p.id}`)}
               className="cursor-pointer hover:bg-muted/20 transition-colors"
             >
               <td className="px-4 py-3"><PriorityBadge priority={p.priority} /></td>

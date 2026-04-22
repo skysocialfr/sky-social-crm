@@ -109,7 +109,7 @@ export default function RelancesPage() {
                 overdue
                 isContacting={contactingId === p.id}
                 isRescheduling={rescheduleId === p.id}
-                onNavigate={() => navigate(`/prospects/${p.id}`)}
+                onNavigate={() => navigate(`/app/prospects/${p.id}`)}
                 onContact={() => handleMarkContacted(p)}
                 onReschedule={() => setRescheduleId(rescheduleId === p.id ? null : p.id)}
                 onRescheduleDone={() => setRescheduleId(null)}
@@ -132,7 +132,7 @@ export default function RelancesPage() {
                 overdue={false}
                 isContacting={contactingId === p.id}
                 isRescheduling={rescheduleId === p.id}
-                onNavigate={() => navigate(`/prospects/${p.id}`)}
+                onNavigate={() => navigate(`/app/prospects/${p.id}`)}
                 onContact={() => handleMarkContacted(p)}
                 onReschedule={() => setRescheduleId(rescheduleId === p.id ? null : p.id)}
                 onRescheduleDone={() => setRescheduleId(null)}

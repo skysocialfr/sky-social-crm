@@ -96,7 +96,7 @@ export default function DashboardPage() {
           <p className="text-lg font-semibold text-foreground mb-2">Bienvenue sur {companyName} CRM !</p>
           <p className="text-sm text-muted-foreground mb-5">Commencez par ajouter votre premier prospect.</p>
           <button
-            onClick={() => navigate('/prospects')}
+            onClick={() => navigate('/app/prospects')}
             className="inline-flex items-center gap-2 rounded-lg bg-primary px-5 py-2.5 text-sm font-semibold text-primary-foreground hover:bg-primary/90 transition-colors"
           >
             <Plus size={15} /> Ajouter un prospect
