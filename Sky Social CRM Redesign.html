@@ -1,0 +1,147 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Sky Social CRM — Redesign</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet" />
+  <script src="https://unpkg.com/react@18.3.1/umd/react.development.js" integrity="sha384-hD6/rw4ppMLGNu3tX5cjIb+uRZ7UkRJ6BPkLpg4hAu/6onKUg4lLsHAs9EBPT82L" crossorigin="anonymous"></script>
+  <script src="https://unpkg.com/react-dom@18.3.1/umd/react-dom.development.js" integrity="sha384-u6aeetuaXnQ38mYT8rp6sbXaQe3NL9t+IBXmnYxwkUI2Hw4bsp2Wvmx4yRQF1uAm" crossorigin="anonymous"></script>
+  <script src="https://unpkg.com/@babel/standalone@7.29.0/babel.min.js" integrity="sha384-m08KidiNqLdpJqLq95G/LEi8Qvjl/xUYll3QILypMoQ65QorJ9Lvtp2RXYGBFj1y" crossorigin="anonymous"></script>
+  <script src="crm-data.js"></script>
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    html, body, #root { height: 100%; background: #f4f6ff; }
+    body { font-family: 'Plus Jakarta Sans', -apple-system, sans-serif; color: #1a1c2e; }
+    ::-webkit-scrollbar { width: 5px; height: 5px; }
+    ::-webkit-scrollbar-track { background: transparent; }
+    ::-webkit-scrollbar-thumb { background: #e4e7f8; border-radius: 4px; }
+    ::-webkit-scrollbar-thumb:hover { background: #c7ccec; }
+    input, select, textarea, button { font-family: inherit; }
+    input::placeholder { color: #9ca3af; }
+    textarea::placeholder { color: #9ca3af; }
+
+    /* Tweaks panel */
+    #tweaks-panel {
+      position: fixed; bottom: 20px; right: 20px; z-index: 2000;
+      background: #ffffff; border: 1px solid #e4e7f8; border-radius: 14px;
+      padding: 16px; width: 220px; box-shadow: 0 8px 32px rgba(99,102,241,0.15);
+      display: none;
+    }
+    #tweaks-panel.visible { display: block; }
+    #tweaks-panel h4 { font-size: 12px; font-weight: 700; color: #6366f1; margin-bottom: 12px; letter-spacing: 0.06em; text-transform: uppercase; }
+    .tweak-row { margin-bottom: 10px; }
+    .tweak-row label { font-size: 11px; color: #6b7280; display: block; margin-bottom: 4px; }
+    .tweak-row select { width: 100%; background: #f7f8ff; border: 1px solid #e4e7f8; border-radius: 7px; padding: 5px 8px; color: #1a1c2e; font-size: 12px; outline: none; font-family: inherit; }
+  </style>
+</head>
+<body>
+  <div id="root"></div>
+  <div id="tweaks-panel">
+    <h4>Tweaks</h4>
+    <div class="tweak-row">
+      <label>Page de départ</label>
+      <select id="tweak-page">
+        <option value="dashboard">Tableau de bord</option>
+        <option value="prospects">Prospects</option>
+        <option value="relances">Relances</option>
+        <option value="journal">Journal</option>
+        <option value="analytics">Analytics</option>
+        <option value="settings">Paramètres</option>
+      </select>
+    </div>
+    <div class="tweak-row">
+      <label>Vue prospects</label>
+      <select id="tweak-view" onchange="window.__setView && window.__setView(this.value)">
+        <option value="table">Table</option>
+        <option value="kanban">Kanban</option>
+      </select>
+    </div>
+    <div class="tweak-row">
+      <label>Densité</label>
+      <select id="tweak-density" onchange="document.body.style.fontSize = this.value==='compact'?'13px':this.value==='large'?'15px':'14px'">
+        <option value="normal">Normal</option>
+        <option value="compact">Compact</option>
+        <option value="large">Spacieux</option>
+      </select>
+    </div>
+  </div>
+
+  <script type="text/babel" src="crm-layout.jsx"></script>
+  <script type="text/babel" src="crm-pages-a.jsx"></script>
+  <script type="text/babel" src="crm-pages-b.jsx"></script>
+  <script type="text/babel" src="crm-dashboard-v3.jsx"></script>
+  <script type="text/babel">
+    const TWEAK_DEFAULTS = /*EDITMODE-BEGIN*/{"startPage":"dashboard","density":"normal"}/*EDITMODE-END*/;
+
+    function App() {
+      const saved = localStorage.getItem('crm-page') || TWEAK_DEFAULTS.startPage
+      const [page, setPageRaw] = React.useState(saved)
+      const [detailId, setDetailId] = React.useState('1')
+      const [searchOpen, setSearchOpen] = React.useState(false)
+
+      const setPage = (p) => { setPageRaw(p); localStorage.setItem('crm-page', p) }
+
+      // Keyboard shortcut for search
+      React.useEffect(() => {
+        const handler = (e) => {
+          if ((e.metaKey || e.ctrlKey) && e.key === 'k') {
+            e.preventDefault(); setSearchOpen(true)
+          }
+        }
+        window.addEventListener('keydown', handler)
+        return () => window.removeEventListener('keydown', handler)
+      }, [])
+
+      // Tweaks integration
+      React.useEffect(() => {
+        const listener = (e) => {
+          if (e.data?.type === '__activate_edit_mode') document.getElementById('tweaks-panel')?.classList.add('visible')
+          if (e.data?.type === '__deactivate_edit_mode') document.getElementById('tweaks-panel')?.classList.remove('visible')
+        }
+        window.addEventListener('message', listener)
+        window.parent.postMessage({ type: '__edit_mode_available' }, '*')
+        return () => window.removeEventListener('message', listener)
+      }, [])
+
+      // Sync tweak selects with current page
+      React.useEffect(() => {
+        const el = document.getElementById('tweak-page')
+        if (el) el.value = page
+        const go = () => { const v = document.getElementById('tweak-page')?.value; if(v) setPage(v) }
+        document.getElementById('tweak-page')?.addEventListener('change', go)
+        return () => document.getElementById('tweak-page')?.removeEventListener('change', go)
+      }, [page])
+
+      const overdue = window.CRM.stats.followupOverdue
+
+      const PAGES = {
+        dashboard: <DashboardPage setPage={setPage} setDetailId={setDetailId} />,
+        prospects:  <ProspectsPage setPage={setPage} setDetailId={setDetailId} />,
+        relances:   <RelancesPage setPage={setPage} setDetailId={setDetailId} />,
+        journal:    <JournalPage setPage={setPage} setDetailId={setDetailId} />,
+        analytics:  <AnalyticsPage />,
+        settings:   <SettingsPage />,
+        detail:     <ProspectDetailPage id={detailId} setPage={setPage} />,
+      }
+
+      return (
+        <div style={{ display:'flex', height:'100vh', overflow:'hidden', background:'#f4f6ff' }}>
+          <Sidebar page={page} setPage={setPage} overdue={overdue} />
+          <div style={{ flex:1, display:'flex', flexDirection:'column', overflow:'hidden' }}>
+            <TopBar page={page} setPage={setPage} searchOpen={searchOpen} setSearchOpen={setSearchOpen} />
+            <main style={{ flex:1, overflowY:'auto', padding:'20px 24px', background:'#f4f6ff' }}>
+              {PAGES[page] || PAGES.dashboard}
+            </main>
+          </div>
+          <SearchModal open={searchOpen} onClose={()=>setSearchOpen(false)} setPage={setPage} setDetailId={setDetailId} />
+        </div>
+      )
+    }
+
+    ReactDOM.createRoot(document.getElementById('root')).render(<App />)
+  </script>
+</body>
+</html>
