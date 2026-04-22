@@ -13,6 +13,9 @@ export default function DashboardPage() {
   const { profile } = useTheme()
   const companyName = profile?.company_name || 'Sky Social'
 
+  const hour = new Date().getHours()
+  const greeting = hour < 12 ? 'Bonjour' : hour < 18 ? 'Bon après-midi' : 'Bonsoir'
+
   if (isLoading) {
     return (
       <div className="grid grid-cols-2 md:grid-cols-3 gap-4 animate-pulse">
@@ -27,6 +30,36 @@ export default function DashboardPage() {
 
   return (
     <div className="flex flex-col gap-5">
+      {/* Welcome banner */}
+      <div className="rounded-xl border border-border bg-card p-5 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+        <div>
+          <p className="text-base font-bold text-foreground">{greeting}, {companyName} ! 👋</p>
+          <p className="text-sm text-muted-foreground mt-0.5">
+            {stats.followupToday > 0
+              ? `Vous avez ${stats.followupToday} relance${stats.followupToday > 1 ? 's' : ''} à faire aujourd'hui.`
+              : 'Tout est à jour, beau travail !'}
+          </p>
+        </div>
+        <div className="flex gap-2 flex-shrink-0">
+          <button
+            onClick={() => navigate('/app/prospects')}
+            className="flex items-center gap-1.5 rounded-lg bg-primary px-4 py-2 text-xs font-semibold text-primary-foreground hover:bg-primary/90 transition-colors"
+          >
+            <Plus size={13} />
+            Nouveau prospect
+          </button>
+          {stats.followupToday > 0 && (
+            <button
+              onClick={() => navigate('/app/relances')}
+              className="flex items-center gap-1.5 rounded-lg border border-amber-200 bg-amber-50 px-4 py-2 text-xs font-semibold text-amber-700 hover:bg-amber-100 transition-colors dark:border-amber-700 dark:bg-amber-900/20 dark:text-amber-300 dark:hover:bg-amber-900/30"
+            >
+              <Bell size={13} />
+              Voir les relances
+            </button>
+          )}
+        </div>
+      </div>
+
       {/* Alert banner */}
       <FollowUpAlert overdue={stats.followupOverdue} today={stats.followupToday} />
 
