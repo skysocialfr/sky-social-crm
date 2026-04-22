@@ -12,14 +12,14 @@ export const PIPELINE_STAGES: PipelineStage[] = [
 ]
 
 export const STAGE_COLORS: Record<PipelineStage, string> = {
-  'Identifié': 'bg-slate-700 text-slate-200',
-  'Premier contact': 'bg-blue-900 text-blue-200',
-  'Réponse reçue': 'bg-cyan-900 text-cyan-200',
-  'RDV fixé': 'bg-violet-900 text-violet-200',
-  'Devis envoyé': 'bg-amber-900 text-amber-200',
-  'En négociation': 'bg-orange-900 text-orange-200',
-  'Gagné': 'bg-emerald-900 text-emerald-200',
-  'Perdu': 'bg-red-900 text-red-200',
+  'Identifié': 'bg-slate-100 text-slate-600 dark:bg-slate-700 dark:text-slate-200',
+  'Premier contact': 'bg-blue-100 text-blue-700 dark:bg-blue-900 dark:text-blue-200',
+  'Réponse reçue': 'bg-cyan-100 text-cyan-700 dark:bg-cyan-900 dark:text-cyan-200',
+  'RDV fixé': 'bg-violet-100 text-violet-700 dark:bg-violet-900 dark:text-violet-200',
+  'Devis envoyé': 'bg-amber-100 text-amber-700 dark:bg-amber-900 dark:text-amber-200',
+  'En négociation': 'bg-orange-100 text-orange-700 dark:bg-orange-900 dark:text-orange-200',
+  'Gagné': 'bg-emerald-100 text-emerald-700 dark:bg-emerald-900 dark:text-emerald-200',
+  'Perdu': 'bg-red-100 text-red-600 dark:bg-red-900 dark:text-red-200',
 }
 
 export const STAGE_DOT_COLORS: Record<PipelineStage, string> = {
@@ -36,9 +36,9 @@ export const STAGE_DOT_COLORS: Record<PipelineStage, string> = {
 export const PRIORITIES: ProspectPriority[] = ['Chaud', 'Tiède', 'Froid']
 
 export const PRIORITY_CONFIG: Record<ProspectPriority, { label: string; emoji: string; classes: string }> = {
-  Chaud: { label: 'Chaud', emoji: '🔥', classes: 'bg-red-900/50 text-red-300 border border-red-700' },
-  Tiède: { label: 'Tiède', emoji: '🟡', classes: 'bg-yellow-900/50 text-yellow-300 border border-yellow-700' },
-  Froid: { label: 'Froid', emoji: '❄️', classes: 'bg-blue-900/50 text-blue-300 border border-blue-700' },
+  Chaud: { label: 'Chaud', emoji: '🔥', classes: 'bg-red-100 text-red-700 border border-red-200 dark:bg-red-900/50 dark:text-red-300 dark:border-red-700' },
+  Tiède: { label: 'Tiède', emoji: '🟡', classes: 'bg-amber-100 text-amber-700 border border-amber-200 dark:bg-yellow-900/50 dark:text-yellow-300 dark:border-yellow-700' },
+  Froid: { label: 'Froid', emoji: '❄️', classes: 'bg-blue-100 text-blue-700 border border-blue-200 dark:bg-blue-900/50 dark:text-blue-300 dark:border-blue-700' },
 }
 
 export const CHANNELS: ProspectingChannel[] = [
