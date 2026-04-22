@@ -23,7 +23,7 @@ export default function LoginPage() {
     setError('')
     try {
       await login(email, password)
-      navigate('/')
+      navigate('/app')
     } catch {
       setError('Identifiants incorrects. Veuillez réessayer.')
     } finally {
@@ -103,6 +103,12 @@ export default function LoginPage() {
             </Link>
           </p>
         </div>
+
+        <p className="mt-4 text-center text-xs text-muted-foreground">
+          <Link to="/" className="hover:text-foreground transition-colors">
+            ← Retour à l'accueil
+          </Link>
+        </p>
       </div>
     </div>
   )

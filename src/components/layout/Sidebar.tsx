@@ -11,11 +11,11 @@ export default function Sidebar() {
   const companyName = profile?.company_name || 'Sky Social'
 
   const NAV = [
-    { to: '/', label: 'Tableau de bord', icon: LayoutDashboard, end: true },
-    { to: '/prospects', label: 'Prospects', icon: Users },
-    { to: '/relances', label: 'Relances', icon: Bell },
-    { to: '/settings', label: 'Paramètres', icon: Settings },
-    ...(isAdmin ? [{ to: '/admin', label: 'Administration', icon: ShieldCheck, end: false }] : []),
+    { to: '/app', label: 'Tableau de bord', icon: LayoutDashboard, end: true },
+    { to: '/app/prospects', label: 'Prospects', icon: Users },
+    { to: '/app/relances', label: 'Relances', icon: Bell },
+    { to: '/app/settings', label: 'Paramètres', icon: Settings },
+    ...(isAdmin ? [{ to: '/app/admin', label: 'Administration', icon: ShieldCheck, end: false }] : []),
   ]
 
   return (
