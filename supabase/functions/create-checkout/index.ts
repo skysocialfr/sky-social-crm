@@ -7,6 +7,17 @@ const CORS = {
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
 }
 
+type Plan = 'pro' | 'team'
+
+function priceIdFor(plan: Plan): string {
+  if (plan === 'team') {
+    return Deno.env.get('STRIPE_PRICE_ID_TEAM')!
+  }
+  // 'pro' — kept under the legacy STRIPE_PRICE_ID name so existing
+  // Supabase secrets keep working without renaming.
+  return Deno.env.get('STRIPE_PRICE_ID')!
+}
+
 serve(async (req) => {
   if (req.method === 'OPTIONS') {
     return new Response('ok', { headers: CORS })
@@ -29,7 +40,14 @@ serve(async (req) => {
       return new Response(JSON.stringify({ error: 'Unauthorized' }), { status: 401, headers: CORS })
     }
 
-    const { return_url } = await req.json()
+    const { return_url, plan = 'pro' } = await req.json() as { return_url: string; plan?: Plan }
+    if (plan !== 'pro' && plan !== 'team') {
+      return new Response(JSON.stringify({ error: 'Invalid plan' }), { status: 400, headers: CORS })
+    }
+    const priceId = priceIdFor(plan)
+    if (!priceId) {
+      return new Response(JSON.stringify({ error: `Missing Stripe price ID for plan ${plan}` }), { status: 500, headers: CORS })
+    }
 
     const stripe = new Stripe(Deno.env.get('STRIPE_SECRET_KEY')!, { apiVersion: '2023-10-16' })
 
@@ -62,9 +80,15 @@ serve(async (req) => {
       customer: customerId,
       mode: 'subscription',
       line_items: [{
-        price: Deno.env.get('STRIPE_PRICE_ID')!,
+        price: priceId,
         quantity: 1,
       }],
+      // Stored on the Checkout Session AND propagated to the resulting
+      // subscription so the webhook can map back to the correct plan.
+      metadata: { plan, supabase_user_id: user.id },
+      subscription_data: {
+        metadata: { plan, supabase_user_id: user.id },
+      },
       success_url: `${return_url}?checkout=success`,
       cancel_url: `${return_url}?checkout=cancelled`,
     })

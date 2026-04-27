@@ -2,8 +2,11 @@ import { useQuery } from '@tanstack/react-query'
 import { supabase } from '@/lib/supabase'
 import { useAuth } from '@/hooks/useAuth'
 
+export type SubscriptionPlan = 'free' | 'pro' | 'team'
+
 export interface SubscriptionData {
   status: 'free' | 'active' | 'cancelled' | 'past_due'
+  plan: SubscriptionPlan
   prospect_limit: number
   current_period_end: string | null
   stripe_customer_id: string | null
@@ -11,9 +14,36 @@ export interface SubscriptionData {
 
 export const FREE_PLAN: SubscriptionData = {
   status: 'free',
+  plan: 'free',
   prospect_limit: 25,
   current_period_end: null,
   stripe_customer_id: null,
+}
+
+export const PLAN_DETAILS: Record<SubscriptionPlan, {
+  label: string
+  price: string
+  prospectLimit: number
+  features: string[]
+}> = {
+  free: {
+    label: 'Gratuit',
+    price: '0€',
+    prospectLimit: 25,
+    features: ['25 prospects', 'Pipeline visuel', 'Relances manuelles'],
+  },
+  pro: {
+    label: 'Pro',
+    price: '9€/mois',
+    prospectLimit: 500,
+    features: ['500 prospects', 'Import CSV', 'Export données', 'Email direct prospect', 'Statistiques avancées'],
+  },
+  team: {
+    label: 'Team',
+    price: '29€/mois',
+    prospectLimit: 9999,
+    features: ['Prospects illimités', 'Tout ce qui est Pro', 'Multi-utilisateurs (à venir)', 'Support prioritaire'],
+  },
 }
 
 export function useSubscription() {
@@ -23,7 +53,7 @@ export function useSubscription() {
     queryFn: async () => {
       const { data, error } = await supabase
         .from('subscriptions')
-        .select('status, prospect_limit, current_period_end, stripe_customer_id')
+        .select('status, plan, prospect_limit, current_period_end, stripe_customer_id')
         .eq('user_id', user!.id)
         .maybeSingle()
       if (error) throw error
@@ -33,7 +63,7 @@ export function useSubscription() {
   })
 }
 
-export async function createCheckoutSession(returnUrl: string): Promise<string> {
+export async function createCheckoutSession(returnUrl: string, plan: 'pro' | 'team' = 'pro'): Promise<string> {
   const { data: { session } } = await supabase.auth.getSession()
   const res = await fetch(
     `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/create-checkout`,
@@ -43,7 +73,7 @@ export async function createCheckoutSession(returnUrl: string): Promise<string> 
         'Content-Type': 'application/json',
         Authorization: `Bearer ${session?.access_token}`,
       },
-      body: JSON.stringify({ return_url: returnUrl }),
+      body: JSON.stringify({ return_url: returnUrl, plan }),
     }
   )
   if (!res.ok) {

@@ -1,11 +1,11 @@
 import { useEffect, useState } from 'react'
 import { format } from 'date-fns'
 import { fr } from 'date-fns/locale'
-import { Zap } from 'lucide-react'
+import { Zap, Check } from 'lucide-react'
 import { supabase } from '@/lib/supabase'
 import { useTheme } from '@/context/ThemeContext'
 import { useUpdateProfile } from '@/hooks/useUserProfile'
-import { useSubscription, createCheckoutSession, FREE_PLAN } from '@/hooks/useSubscription'
+import { useSubscription, createCheckoutSession, FREE_PLAN, PLAN_DETAILS, type SubscriptionPlan } from '@/hooks/useSubscription'
 import { useAuth } from '@/hooks/useAuth'
 import { useProspects } from '@/hooks/useProspects'
 import { exportProspectsToCsv } from '@/lib/csvUtils'
@@ -103,7 +103,7 @@ export default function SettingsPage() {
   const [sectionSuccess, setSectionSuccess] = useState(false)
 
   // Abonnement
-  const [upgrading, setUpgrading] = useState(false)
+  const [upgrading, setUpgrading] = useState<SubscriptionPlan | null>(null)
   const [upgradeError, setUpgradeError] = useState('')
 
   // Sécurité
@@ -188,15 +188,15 @@ export default function SettingsPage() {
     }
   }
 
-  const handleUpgrade = async () => {
+  const handleUpgrade = async (plan: 'pro' | 'team') => {
     setUpgradeError('')
-    setUpgrading(true)
+    setUpgrading(plan)
     try {
-      const url = await createCheckoutSession(window.location.href)
+      const url = await createCheckoutSession(window.location.href, plan)
       window.location.href = url
     } catch (err) {
       setUpgradeError(err instanceof Error ? err.message : 'Une erreur est survenue.')
-      setUpgrading(false)
+      setUpgrading(null)
     }
   }
 
@@ -375,12 +375,17 @@ export default function SettingsPage() {
           <h2 className="text-base font-bold text-text">Abonnement</h2>
           <p className="text-[13px] text-muted mt-0.5">Gérez votre plan Sky Social CRM.</p>
         </div>
-        <div className="rounded-card border border-border bg-card p-5 flex flex-col gap-4">
-          <div className="flex items-center justify-between">
+
+        {/* Current status */}
+        <div className="rounded-card border border-border bg-card p-5">
+          <p className="text-[11px] font-semibold uppercase tracking-wider text-muted mb-2">Plan actuel</p>
+          <div className="flex items-center justify-between flex-wrap gap-2">
             <div>
               <p className="text-sm font-bold text-text">
                 {subscription.status === 'active' ? (
-                  <span className="text-crm-green flex items-center gap-1.5"><Zap size={13} /> Plan Pro</span>
+                  <span className="text-crm-green flex items-center gap-1.5">
+                    <Zap size={13} /> Plan {PLAN_DETAILS[subscription.plan].label}
+                  </span>
                 ) : subscription.status === 'past_due' ? (
                   <span className="text-crm-amber">Paiement en attente</span>
                 ) : subscription.status === 'cancelled' ? (
@@ -391,28 +396,88 @@ export default function SettingsPage() {
               </p>
               {subscription.status === 'active' && subscription.current_period_end && (
                 <p className="text-[11px] text-muted mt-0.5">
-                  Actif jusqu'au {format(new Date(subscription.current_period_end), 'd MMM yyyy', { locale: fr })}
+                  Renouvellement le {format(new Date(subscription.current_period_end), 'd MMM yyyy', { locale: fr })}
                 </p>
               )}
-              {subscription.status !== 'active' && (
-                <p className="text-[11px] text-muted mt-0.5">
-                  Limite : {subscription.prospect_limit} prospects
-                </p>
-              )}
+              <p className="text-[11px] text-muted mt-0.5">
+                Limite : {subscription.prospect_limit >= 9999 ? 'illimité' : subscription.prospect_limit} prospects
+              </p>
             </div>
-            {subscription.status !== 'active' && (
-              <button
-                onClick={handleUpgrade}
-                disabled={upgrading}
-                className="flex items-center gap-1.5 rounded-btn bg-primary px-4 py-2 text-xs font-bold text-white hover:bg-primary-hover disabled:opacity-50 transition-colors shadow-primary"
-              >
-                <Zap size={13} />
-                {upgrading ? 'Redirection…' : 'Passer au Pro — 9€/mois'}
-              </button>
-            )}
           </div>
-          {upgradeError && <p className="text-xs text-crm-red">{upgradeError}</p>}
+          {upgradeError && <p className="text-xs text-crm-red mt-3">{upgradeError}</p>}
         </div>
+
+        {/* Plan cards */}
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          {(['pro', 'team'] as const).map((planKey) => {
+            const plan = PLAN_DETAILS[planKey]
+            const isCurrent = subscription.status === 'active' && subscription.plan === planKey
+            const isLoading = upgrading === planKey
+            return (
+              <div
+                key={planKey}
+                className={cn(
+                  'rounded-card border bg-card p-5 flex flex-col gap-4 transition-all',
+                  isCurrent ? 'border-primary shadow-primary' : 'border-border'
+                )}
+              >
+                <div className="flex items-center justify-between">
+                  <div>
+                    <p className="text-sm font-bold text-text flex items-center gap-1.5">
+                      {plan.label}
+                      {planKey === 'team' && (
+                        <span className="text-[9px] font-extrabold text-primary bg-primary-light border border-primary-border rounded-[4px] px-[6px] py-[2px] tracking-[0.06em]">
+                          POPULAIRE
+                        </span>
+                      )}
+                    </p>
+                    <p className="text-[11px] text-muted mt-0.5">{plan.price}</p>
+                  </div>
+                  {isCurrent && (
+                    <span className="inline-flex items-center gap-1 rounded-pill bg-crm-green-light border border-crm-green px-2 py-0.5 text-[10px] font-semibold text-crm-green">
+                      <Check size={10} /> Actif
+                    </span>
+                  )}
+                </div>
+
+                <ul className="flex flex-col gap-1.5">
+                  {plan.features.map((feature) => (
+                    <li key={feature} className="flex items-start gap-2 text-[12px] text-text">
+                      <Check size={13} className="text-crm-green flex-shrink-0 mt-0.5" />
+                      <span>{feature}</span>
+                    </li>
+                  ))}
+                </ul>
+
+                <button
+                  type="button"
+                  onClick={() => handleUpgrade(planKey)}
+                  disabled={isCurrent || upgrading !== null}
+                  className={cn(
+                    'mt-auto flex items-center justify-center gap-1.5 rounded-btn px-4 py-2.5 text-xs font-bold transition-colors disabled:opacity-50',
+                    isCurrent
+                      ? 'border border-border bg-card text-muted cursor-default'
+                      : 'bg-primary text-white hover:bg-primary-hover shadow-primary'
+                  )}
+                >
+                  {isCurrent
+                    ? 'Plan actuel'
+                    : isLoading
+                      ? 'Redirection…'
+                      : subscription.status === 'active'
+                        ? `Passer au ${plan.label}`
+                        : `Choisir ${plan.label}`}
+                </button>
+              </div>
+            )
+          })}
+        </div>
+
+        {subscription.status === 'active' && (
+          <p className="text-[11px] text-muted">
+            Pour annuler ou modifier votre moyen de paiement, contactez le support.
+          </p>
+        )}
       </div>
     ),
 
