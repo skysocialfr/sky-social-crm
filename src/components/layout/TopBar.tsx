@@ -1,5 +1,6 @@
 import { useLocation, useNavigate } from 'react-router-dom'
 import { useRelances } from '@/hooks/useRelances'
+import { useAuth } from '@/hooks/useAuth'
 
 const PAGE_TITLES: Record<string, string> = {
   '/app':             'Tableau de bord',
@@ -19,6 +20,7 @@ export default function TopBar({ onSearchOpen }: Props) {
   const location = useLocation()
   const navigate = useNavigate()
   const { data: relances } = useRelances()
+  const { logout } = useAuth()
   const overdueCount = relances?.length ?? 0
 
   const title = PAGE_TITLES[location.pathname] ?? 'Sky Social CRM'
@@ -57,6 +59,20 @@ export default function TopBar({ onSearchOpen }: Props) {
         {overdueCount > 0 && (
           <span className="absolute top-[7px] right-[7px] w-[6px] h-[6px] rounded-full bg-[#dc2626] border-[1.5px] border-white" />
         )}
+      </button>
+
+      {/* Logout */}
+      <button
+        onClick={() => logout()}
+        title="Se déconnecter"
+        aria-label="Se déconnecter"
+        className="flex items-center justify-center w-[34px] h-[34px] rounded-[9px] text-[#6b7280] border border-transparent transition-all hover:bg-[#fef2f2] hover:text-[#dc2626] hover:border-[#fecaca]"
+      >
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+          <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4" />
+          <polyline points="16 17 21 12 16 7" />
+          <line x1="21" y1="12" x2="9" y2="12" />
+        </svg>
       </button>
     </header>
   )

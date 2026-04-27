@@ -14,7 +14,7 @@ const NAV = [
 ]
 
 export default function Sidebar() {
-  const { user } = useAuth()
+  const { user, logout } = useAuth()
   const { profile } = useTheme()
   const { data: relances } = useRelances()
   const overdueCount = relances?.length ?? 0
@@ -91,7 +91,18 @@ export default function Sidebar() {
           </p>
           <p className="text-[10px] text-[#9ca3af] truncate">{user?.email}</p>
         </div>
-        <span className="w-[7px] h-[7px] rounded-full bg-[#16a34a] flex-shrink-0" />
+        <button
+          onClick={() => logout()}
+          title="Se déconnecter"
+          aria-label="Se déconnecter"
+          className="flex items-center justify-center w-[30px] h-[30px] rounded-[8px] text-[#6b7280] border border-transparent transition-all hover:bg-[#fef2f2] hover:text-[#dc2626] hover:border-[#fecaca] flex-shrink-0"
+        >
+          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+            <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4" />
+            <polyline points="16 17 21 12 16 7" />
+            <line x1="21" y1="12" x2="9" y2="12" />
+          </svg>
+        </button>
       </div>
     </aside>
   )
