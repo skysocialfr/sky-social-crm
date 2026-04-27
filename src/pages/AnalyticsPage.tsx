@@ -58,7 +58,7 @@ export default function AnalyticsPage() {
     return (
       <div className="flex flex-col gap-4 max-w-5xl animate-pulse">
         <div className="h-8 w-48 rounded bg-border" />
-        <div className="grid grid-cols-3 gap-4">
+        <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
           {[1, 2, 3].map((i) => <div key={i} className="h-24 rounded-card bg-border" />)}
         </div>
         {[1, 2].map((i) => <div key={i} className="h-64 rounded-card bg-border" />)}

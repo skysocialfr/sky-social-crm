@@ -90,7 +90,7 @@ export default function DashboardPage() {
             )}
           </p>
         </div>
-        <div className="flex gap-2 flex-shrink-0">
+        <div className="flex gap-2 flex-shrink-0 flex-wrap sm:flex-nowrap">
           <button
             onClick={() => navigate('/app/relances')}
             className="flex items-center gap-1.5 rounded-btn border border-border bg-card px-3 py-2 text-xs font-bold text-text hover:bg-bg transition-colors"

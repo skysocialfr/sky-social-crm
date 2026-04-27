@@ -221,9 +221,9 @@ function CalendarView({ prospects }: { prospects: Prospect[] }) {
   const WEEKDAYS = ['Lun', 'Mar', 'Mer', 'Jeu', 'Ven', 'Sam', 'Dim']
 
   return (
-    <div>
+    <div className="overflow-x-auto">
       {/* Month nav */}
-      <div className="flex items-center justify-between mb-4 rounded-card border border-border bg-card px-4 py-3">
+      <div className="flex items-center justify-between mb-4 rounded-card border border-border bg-card px-4 py-3 min-w-[320px]">
         <button
           onClick={() => setMonth((m) => subMonths(m, 1))}
           className="p-1.5 rounded-btn text-muted hover:text-text hover:bg-bg transition-colors"
@@ -242,7 +242,7 @@ function CalendarView({ prospects }: { prospects: Prospect[] }) {
       </div>
 
       {/* Week headers */}
-      <div className="grid grid-cols-7 mb-1 px-0.5">
+      <div className="grid grid-cols-7 mb-1 px-0.5 min-w-[320px]">
         {WEEKDAYS.map((d) => (
           <div key={d} className="text-center text-[10px] font-semibold text-muted py-1">
             {d}
@@ -251,7 +251,7 @@ function CalendarView({ prospects }: { prospects: Prospect[] }) {
       </div>
 
       {/* Day grid */}
-      <div className="grid grid-cols-7 gap-0.5">
+      <div className="grid grid-cols-7 gap-0.5 min-w-[320px]">
         {days.map((day) => {
           const dayProspects = getDay(day)
           const inMonth = isSameMonth(day, month)

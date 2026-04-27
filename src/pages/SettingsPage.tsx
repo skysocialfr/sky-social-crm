@@ -345,10 +345,29 @@ export default function SettingsPage() {
   }
 
   return (
-    <div className="flex gap-6 max-w-5xl">
-      {/* Sidebar */}
-      <aside className="w-52 flex-shrink-0">
-        <div className="rounded-card border border-border bg-card overflow-hidden">
+    <div className="flex flex-col md:flex-row gap-6 max-w-5xl">
+      {/* Sidebar — horizontal scroll tabs on mobile, vertical list on desktop */}
+      <aside className="md:w-52 md:flex-shrink-0">
+        {/* Mobile: horizontal scrollable pill tabs */}
+        <div className="flex gap-1.5 overflow-x-auto pb-1 md:hidden">
+          {NAV.map((item) => (
+            <button
+              key={item.id}
+              onClick={() => setActiveSection(item.id)}
+              className={cn(
+                'flex items-center gap-1.5 flex-shrink-0 rounded-btn px-3 py-2 text-xs font-semibold transition-colors whitespace-nowrap',
+                activeSection === item.id
+                  ? 'bg-primary text-white'
+                  : 'border border-border bg-card text-muted hover:text-text'
+              )}
+            >
+              <span className="text-sm">{item.emoji}</span>
+              {item.label}
+            </button>
+          ))}
+        </div>
+        {/* Desktop: vertical list */}
+        <div className="hidden md:block rounded-card border border-border bg-card overflow-hidden">
           {NAV.map((item) => (
             <button
               key={item.id}

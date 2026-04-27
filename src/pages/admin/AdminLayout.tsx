@@ -18,7 +18,7 @@ export default function AdminLayout() {
   return (
     <div className="flex min-h-screen" style={{ fontFamily: "'Plus Jakarta Sans', sans-serif" }}>
       {/* Sidebar */}
-      <aside className="flex w-60 flex-col border-r bg-gray-950 text-white flex-shrink-0">
+      <aside className="hidden md:flex w-60 flex-col border-r bg-gray-950 text-white flex-shrink-0">
         {/* Logo */}
         <div className="flex items-center gap-2.5 px-5 py-5 border-b border-white/10">
           <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-indigo-600">
@@ -67,20 +67,50 @@ export default function AdminLayout() {
       {/* Main */}
       <div className="flex flex-1 flex-col min-w-0 bg-[#f4f6ff]">
         {/* Top bar */}
-        <header className="flex items-center justify-between h-14 px-6 bg-white border-b border-[#e4e7f8] flex-shrink-0">
-          <div className="flex items-center gap-2">
-            <Shield size={15} className="text-indigo-600" />
-            <span className="text-sm font-bold text-gray-900">Admin</span>
-            <span className="mx-1 text-gray-300">·</span>
-            <span className="text-xs text-gray-400">Console interne</span>
+        <header className="flex flex-col bg-white border-b border-[#e4e7f8] flex-shrink-0">
+          {/* Mobile nav strip */}
+          <div className="flex md:hidden gap-1 overflow-x-auto px-3 py-2 border-b border-[#e4e7f8]">
+            {NAV.map(({ to, label, icon: Icon, end }) => (
+              <NavLink
+                key={to}
+                to={to}
+                end={end}
+                className={({ isActive }) =>
+                  cn(
+                    'flex items-center gap-1.5 flex-shrink-0 rounded-lg px-3 py-1.5 text-xs font-semibold transition-colors',
+                    isActive ? 'bg-indigo-600 text-white' : 'text-gray-500 hover:bg-gray-100'
+                  )
+                }
+              >
+                <Icon size={13} />
+                {label}
+              </NavLink>
+            ))}
           </div>
-          <span className="rounded-full bg-indigo-50 px-2.5 py-1 text-[11px] font-semibold text-indigo-600">
-            Super Admin
-          </span>
+          <div className="flex items-center justify-between h-14 px-4 md:px-6">
+            <div className="flex items-center gap-2">
+              <Shield size={15} className="text-indigo-600" />
+              <span className="text-sm font-bold text-gray-900">Admin</span>
+              <span className="mx-1 text-gray-300 hidden sm:inline">·</span>
+              <span className="text-xs text-gray-400 hidden sm:inline">Console interne</span>
+            </div>
+            <div className="flex items-center gap-2">
+              <button
+                onClick={() => navigate('/app')}
+                className="md:hidden flex items-center gap-1.5 rounded-lg border border-[#e4e7f8] px-3 py-1.5 text-xs text-gray-500 hover:text-gray-900"
+              >
+                <ArrowLeft size={12} />
+                App
+              </button>
+              <span className="rounded-full bg-indigo-50 px-2.5 py-1 text-[11px] font-semibold text-indigo-600">
+                Super Admin
+              </span>
+            </div>
+          </div>
         </header>
 
         {/* Content */}
-        <main className="flex-1 overflow-auto p-6">
+        <main className="flex-1 overflow-auto p-4 md:p-6">
           <Outlet />
         </main>
       </div>
