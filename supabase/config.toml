@@ -1,0 +1,20 @@
+# Supabase project config — Edge Functions only.
+#
+# Stripe checkout creates its own auth check inside the function via
+# supabase.auth.getUser(), so the gateway-level JWT verification is
+# redundant. We disable it because the project uses the new ES256 JWT
+# signing keys, which the Edge Functions gateway does not yet
+# transparently verify (see UNAUTHORIZED_UNSUPPORTED_TOKEN_ALGORITHM).
+#
+# stripe-webhook is called by Stripe (no Supabase JWT) — it must not
+# verify the gateway JWT either, and authenticates via the Stripe
+# webhook signature instead.
+
+[functions.create-checkout]
+verify_jwt = false
+
+[functions.stripe-webhook]
+verify_jwt = false
+
+[functions.send-prospect-email]
+verify_jwt = false
