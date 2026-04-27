@@ -1,0 +1,630 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Sky Social CRM — Landing & Auth</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800;900&display=swap" rel="stylesheet" />
+  <script src="https://unpkg.com/react@18.3.1/umd/react.development.js" integrity="sha384-hD6/rw4ppMLGNu3tX5cjIb+uRZ7UkRJ6BPkLpg4hAu/6onKUg4lLsHAs9EBPT82L" crossorigin="anonymous"></script>
+  <script src="https://unpkg.com/react-dom@18.3.1/umd/react-dom.development.js" integrity="sha384-u6aeetuaXnQ38mYT8rp6sbXaQe3NL9t+IBXmnYxwkUI2Hw4bsp2Wvmx4yRQF1uAm" crossorigin="anonymous"></script>
+  <script src="https://unpkg.com/@babel/standalone@7.29.0/babel.min.js" integrity="sha384-m08KidiNqLdpJqLq95G/LEi8Qvjl/xUYll3QILypMoQ65QorJ9Lvtp2RXYGBFj1y" crossorigin="anonymous"></script>
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    html { scroll-behavior: smooth; }
+    body { font-family: 'Plus Jakarta Sans', sans-serif; background: #f4f6ff; color: #1a1c2e; }
+    ::-webkit-scrollbar { width: 5px; }
+    ::-webkit-scrollbar-thumb { background: #c7ccec; border-radius: 4px; }
+    input, button, select, textarea { font-family: inherit; }
+    input::placeholder, textarea::placeholder { color: #9ca3af; }
+
+    /* Page nav pills (prototype only) */
+    #proto-nav {
+      position: fixed; bottom: 20px; left: 50%; transform: translateX(-50%);
+      z-index: 9999; display: flex; gap: 6px;
+      background: white; border: 1px solid #e4e7f8; border-radius: 40px;
+      padding: 6px 10px; box-shadow: 0 8px 32px rgba(99,102,241,0.15);
+    }
+    #proto-nav button {
+      padding: 6px 14px; border-radius: 20px; border: none; cursor: pointer;
+      font-size: 12px; font-weight: 600; font-family: inherit; transition: all 0.13s;
+    }
+    #proto-nav button.active { background: #6366f1; color: white; }
+    #proto-nav button:not(.active) { background: transparent; color: #6b7280; }
+    #proto-nav button:not(.active):hover { background: #f4f5ff; color: #6366f1; }
+  </style>
+</head>
+<body>
+  <div id="root"></div>
+  <nav id="proto-nav">
+    <button id="btn-landing" class="active" onclick="showPage('landing')">🏠 Landing</button>
+    <button id="btn-login" onclick="showPage('login')">🔑 Connexion</button>
+    <button id="btn-register" onclick="showPage('register')">✨ Inscription</button>
+  </nav>
+
+  <script type="text/babel">
+
+  // ─── Color tokens ──────────────────────────────────────────────────────────
+  const C = {
+    primary: '#6366f1', primaryHover: '#4f52d4',
+    primaryLight: 'rgba(99,102,241,0.08)', primaryBorder: 'rgba(99,102,241,0.2)',
+    green: '#16a34a', greenLight: 'rgba(22,163,74,0.08)',
+    text: '#1a1c2e', muted: '#6b7280', subtle: '#9ca3af',
+    border: '#e4e7f8', card: '#ffffff', bg: '#f4f6ff',
+    gradient: 'linear-gradient(135deg, #6366f1 0%, #8b5cf6 100%)',
+  }
+
+  // ─── Logo mark ─────────────────────────────────────────────────────────────
+  function LogoMark({ size=32 }) {
+    return (
+      <div style={{ width:size, height:size, borderRadius:size*0.28, background:C.gradient, display:'flex', alignItems:'center', justifyContent:'center', boxShadow:`0 4px 14px rgba(99,102,241,0.4)`, flexShrink:0 }}>
+        <svg width={size*0.5} height={size*0.5} viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+          <polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/>
+        </svg>
+      </div>
+    )
+  }
+
+  // ─── Input component ────────────────────────────────────────────────────────
+  function Input({ label, type='text', placeholder, value, onChange, required }) {
+    return (
+      <div style={{ marginBottom:14 }}>
+        {label && <label style={{ display:'block', fontSize:13, fontWeight:600, color:C.text, marginBottom:6 }}>{label}{required&&<span style={{ color:C.primary }}>*</span>}</label>}
+        <input type={type} placeholder={placeholder} value={value} onChange={onChange}
+          style={{ width:'100%', background:'#f7f8ff', border:`1.5px solid ${C.border}`, borderRadius:10, padding:'10px 14px', fontSize:13, color:C.text, outline:'none', transition:'border-color 0.13s' }}
+          onFocus={e=>e.target.style.borderColor=C.primary}
+          onBlur={e=>e.target.style.borderColor=C.border}
+        />
+      </div>
+    )
+  }
+
+  // ═══════════════════════════════════════════════════════════════════════════
+  // LANDING PAGE
+  // ═══════════════════════════════════════════════════════════════════════════
+
+  const FEATURES = [
+    { emoji:'📊', title:'Pipeline visuel', desc:'Kanban drag-and-drop ou tableau — visualisez chaque étape de votre cycle de vente en un coup d\'œil.', color:'#6366f1' },
+    { emoji:'🔔', title:'Relances intelligentes', desc:'Planifiez vos contacts et recevez des alertes. Ne laissez plus jamais un prospect sans suite.', color:'#8b5cf6' },
+    { emoji:'📓', title:'Journal d\'activité', desc:'Chaque échange documenté avec débrief, prochaine action et historique complet par prospect.', color:'#0891b2' },
+    { emoji:'✉️', title:'Email direct', desc:'Envoyez des emails personnalisés depuis la fiche prospect — l\'historique est enregistré automatiquement.', color:'#16a34a' },
+    { emoji:'📥', title:'Import CSV / Excel', desc:'Importez vos fichiers existants en quelques secondes. Détection automatique des colonnes.', color:'#d97706' },
+    { emoji:'📈', title:'Analytics avancés', desc:'Courbes de revenus, taux de conversion, funnel par étape. Pilotez avec les bons chiffres.', color:'#db2777' },
+  ]
+
+  const TESTIMONIALS = [
+    { name:'Sophie M.', role:'Directrice commerciale', company:'Agence Bloom', text:'En 2 semaines, j\'avais un pipeline clair et aucune relance ne tombait à l\'eau. Sky Social CRM a transformé notre process.', avatar:'SM', color:'#ec4899' },
+    { name:'Thomas R.', role:'Fondateur', company:'Pixel Studio', text:'Interface ultra-claire, aucune courbe d\'apprentissage. On l\'a adopté en équipe en une journée.', avatar:'TR', color:'#6366f1' },
+    { name:'Julie C.', role:'Business Developer', company:'FinScale', text:'Le journal d\'activité et les débriefs changent tout. On ne perd plus aucune information sur nos prospects.', avatar:'JC', color:'#0891b2' },
+  ]
+
+  const PRICING = [
+    { plan:'Gratuit', price:'0€', period:'', desc:'Pour démarrer', highlight:false, features:["Jusqu'à 25 prospects","Pipeline Kanban & tableau","Historique des interactions","Relances planifiées","Personnalisation visuelle"] },
+    { plan:'Pro', price:'9€', period:'/mois', desc:'Sans engagement', highlight:true, features:["Prospects illimités","Journal d'activité complet","Analytics avancés","Import CSV / Excel","Email direct","Intégrations (Gmail, LinkedIn…)","Support prioritaire"] },
+  ]
+
+  function LandingPage({ setPage }) {
+    const [faqOpen, setFaqOpen] = React.useState(null)
+    const FAQ = [
+      { q:"Est-ce que Sky Social CRM est gratuit ?", a:"Oui, le plan gratuit donne accès à 25 prospects et aux fonctionnalités essentielles. Le plan Pro à 9€/mois lève toutes les limites." },
+      { q:"Puis-je importer mes prospects existants ?", a:"Oui, l'import CSV et Excel est disponible sur le plan Pro. La détection des colonnes est automatique." },
+      { q:"Comment fonctionnent les emails directs ?", a:"Depuis la fiche d'un prospect, cliquez sur Email pour envoyer via des modèles prédéfinis. L'envoi est enregistré dans l'historique et le journal." },
+      { q:"Puis-je personnaliser l'apparence ?", a:"Oui, chaque espace a sa propre couleur principale et son logo. Vos clients voient votre identité visuelle dans tout le CRM." },
+      { q:"Le Journal d'activité est-il partagé avec l'équipe ?", a:"Vous choisissez ce qui est partagé. Les débriefs personnels restent privés, les interactions peuvent être visibles par votre équipe." },
+    ]
+
+    return (
+      <div style={{ background:C.bg }}>
+
+        {/* ── NAV ── */}
+        <header style={{ position:'sticky', top:0, zIndex:100, background:'rgba(244,246,255,0.85)', backdropFilter:'blur(12px)', borderBottom:`1px solid ${C.border}` }}>
+          <div style={{ maxWidth:1100, margin:'0 auto', padding:'0 24px', height:60, display:'flex', alignItems:'center', justifyContent:'space-between' }}>
+            <div style={{ display:'flex', alignItems:'center', gap:10 }}>
+              <LogoMark size={34} />
+              <span style={{ fontSize:15, fontWeight:800, color:C.text }}>Sky Social CRM</span>
+            </div>
+            <div style={{ display:'flex', gap:24, alignItems:'center' }}>
+              {['Fonctionnalités','Tarifs','FAQ'].map(l=>(
+                <a key={l} href={`#${l.toLowerCase()}`} style={{ fontSize:13, fontWeight:500, color:C.muted, textDecoration:'none', transition:'color 0.13s' }}
+                  onMouseEnter={e=>e.target.style.color=C.primary} onMouseLeave={e=>e.target.style.color=C.muted}>{l}</a>
+              ))}
+            </div>
+            <div style={{ display:'flex', gap:8 }}>
+              <button onClick={()=>setPage('login')} style={{ padding:'8px 18px', borderRadius:9, border:`1.5px solid ${C.border}`, background:'transparent', fontSize:13, fontWeight:600, color:C.muted, cursor:'pointer', transition:'all 0.13s' }}
+                onMouseEnter={e=>{ e.currentTarget.style.borderColor=C.primary; e.currentTarget.style.color=C.primary }}
+                onMouseLeave={e=>{ e.currentTarget.style.borderColor=C.border; e.currentTarget.style.color=C.muted }}
+              >Se connecter</button>
+              <button onClick={()=>setPage('register')} style={{ padding:'8px 20px', borderRadius:9, border:'none', background:C.gradient, color:'#fff', fontSize:13, fontWeight:700, cursor:'pointer', boxShadow:'0 4px 14px rgba(99,102,241,0.3)', transition:'all 0.13s' }}
+                onMouseEnter={e=>e.currentTarget.style.opacity='0.9'} onMouseLeave={e=>e.currentTarget.style.opacity='1'}
+              >Essai gratuit</button>
+            </div>
+          </div>
+        </header>
+
+        {/* ── HERO ── */}
+        <section style={{ maxWidth:1100, margin:'0 auto', padding:'80px 24px 60px', textAlign:'center', position:'relative' }}>
+          {/* BG glow */}
+          <div style={{ position:'absolute', top:'20%', left:'50%', transform:'translateX(-50%)', width:700, height:400, borderRadius:'50%', background:'radial-gradient(circle, rgba(99,102,241,0.1) 0%, transparent 70%)', pointerEvents:'none' }} />
+
+          <div style={{ display:'inline-flex', alignItems:'center', gap:6, background:C.card, border:`1px solid ${C.primaryBorder}`, borderRadius:40, padding:'6px 14px', fontSize:12, fontWeight:600, color:C.primary, marginBottom:24 }}>
+            <span>⚡</span> CRM pensé pour les agences de prospection
+          </div>
+
+          <h1 style={{ fontSize:58, fontWeight:900, color:C.text, lineHeight:1.1, marginBottom:20, letterSpacing:'-0.02em' }}>
+            Gérez votre prospection{' '}
+            <span style={{ background:'linear-gradient(135deg,#6366f1,#8b5cf6)', WebkitBackgroundClip:'text', WebkitTextFillColor:'transparent' }}>
+              comme un pro.
+            </span>
+          </h1>
+
+          <p style={{ fontSize:18, color:C.muted, maxWidth:560, margin:'0 auto 36px', lineHeight:1.65 }}>
+            Pipeline visuel, journal d'activité, relances intelligentes et analytics. Tout ce dont vous avez besoin pour convertir vos prospects en clients.
+          </p>
+
+          <div style={{ display:'flex', justifyContent:'center', gap:12, marginBottom:32 }}>
+            <button onClick={()=>setPage('register')} style={{ display:'inline-flex', alignItems:'center', gap:8, padding:'14px 28px', borderRadius:12, border:'none', background:C.gradient, color:'#fff', fontSize:15, fontWeight:700, cursor:'pointer', boxShadow:'0 8px 28px rgba(99,102,241,0.35)', transition:'all 0.15s' }}
+              onMouseEnter={e=>{ e.currentTarget.style.transform='translateY(-1px)'; e.currentTarget.style.boxShadow='0 12px 36px rgba(99,102,241,0.4)' }}
+              onMouseLeave={e=>{ e.currentTarget.style.transform='translateY(0)'; e.currentTarget.style.boxShadow='0 8px 28px rgba(99,102,241,0.35)' }}
+            >
+              Commencer gratuitement →
+            </button>
+            <button onClick={()=>setPage('login')} style={{ padding:'14px 24px', borderRadius:12, border:`1.5px solid ${C.border}`, background:C.card, color:C.muted, fontSize:15, fontWeight:600, cursor:'pointer', transition:'all 0.13s' }}
+              onMouseEnter={e=>{ e.currentTarget.style.borderColor=C.primary; e.currentTarget.style.color=C.primary }}
+              onMouseLeave={e=>{ e.currentTarget.style.borderColor=C.border; e.currentTarget.style.color=C.muted }}
+            >Se connecter</button>
+          </div>
+
+          <div style={{ display:'flex', justifyContent:'center', flexWrap:'wrap', gap:20, fontSize:13, color:C.subtle }}>
+            {['✅ Gratuit jusqu\'à 25 prospects','✅ Sans carte bancaire','✅ Prêt en 30 secondes'].map(t=>(
+              <span key={t} style={{ display:'flex', alignItems:'center', gap:6 }}>{t}</span>
+            ))}
+          </div>
+
+          {/* Dashboard preview mockup */}
+          <div style={{ marginTop:52, background:C.card, border:`1px solid ${C.border}`, borderRadius:20, padding:20, boxShadow:'0 24px 80px rgba(99,102,241,0.12)', maxWidth:820, margin:'52px auto 0', position:'relative' }}>
+            <div style={{ display:'flex', gap:6, marginBottom:14 }}>
+              {['#ef4444','#f59e0b','#22c55e'].map(c=><div key={c} style={{ width:10, height:10, borderRadius:'50%', background:c }} />)}
+            </div>
+            {/* Mini dashboard mockup */}
+            <div style={{ display:'grid', gridTemplateColumns:'repeat(4,1fr)', gap:10, marginBottom:12 }}>
+              {[['👥','47','Prospects','#6366f1'],['💰','284k €','Revenus','#16a34a'],['🎯','23%','Conversion','#8b5cf6'],['⚡','3','Gagnés','#d97706']].map(([e,v,l,c])=>(
+                <div key={l} style={{ background:'#f9faff', border:`1px solid ${C.border}`, borderRadius:12, padding:'12px 14px' }}>
+                  <div style={{ fontSize:16, marginBottom:4 }}>{e}</div>
+                  <div style={{ fontSize:18, fontWeight:800, color:c }}>{v}</div>
+                  <div style={{ fontSize:10, color:C.subtle, marginTop:2 }}>{l}</div>
+                </div>
+              ))}
+            </div>
+            <div style={{ display:'grid', gridTemplateColumns:'3fr 2fr', gap:10 }}>
+              <div style={{ background:'#f9faff', border:`1px solid ${C.border}`, borderRadius:12, padding:14 }}>
+                <div style={{ fontSize:11, fontWeight:700, color:C.text, marginBottom:10 }}>Pipeline par étape</div>
+                {[['Premier contact',10,'#0891b2'],['RDV fixé',6,'#d97706'],['En négociation',4,'#6366f1'],['Gagné',5,'#16a34a']].map(([s,n,c])=>(
+                  <div key={s} style={{ display:'flex', alignItems:'center', gap:8, marginBottom:7 }}>
+                    <span style={{ fontSize:10, color:C.muted, width:110, textAlign:'right', flexShrink:0 }}>{s}</span>
+                    <div style={{ flex:1, height:8, background:'#eef0ff', borderRadius:4 }}>
+                      <div style={{ width:`${n*10}%`, height:'100%', background:c, borderRadius:4 }} />
+                    </div>
+                    <span style={{ fontSize:10, fontWeight:700, color:C.text, width:12 }}>{n}</span>
+                  </div>
+                ))}
+              </div>
+              <div style={{ background:'#f9faff', border:`1px solid ${C.border}`, borderRadius:12, padding:14 }}>
+                <div style={{ fontSize:11, fontWeight:700, color:C.text, marginBottom:10 }}>Activité récente</div>
+                {[['📞','TechStart SAS','Appel qualif…'],['💼','Beauté Concept','RDV confirmé'],['📧','ModaLux','Devis envoyé']].map(([ic,p,s])=>(
+                  <div key={p} style={{ display:'flex', gap:8, marginBottom:8, alignItems:'flex-start' }}>
+                    <span style={{ fontSize:12 }}>{ic}</span>
+                    <div>
+                      <div style={{ fontSize:10, fontWeight:700, color:C.text }}>{p}</div>
+                      <div style={{ fontSize:10, color:C.subtle }}>{s}</div>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+          </div>
+        </section>
+
+        {/* ── FEATURES ── */}
+        <section id="fonctionnalités" style={{ maxWidth:1100, margin:'0 auto', padding:'80px 24px' }}>
+          <div style={{ textAlign:'center', marginBottom:48 }}>
+            <div style={{ fontSize:12, fontWeight:700, color:C.primary, textTransform:'uppercase', letterSpacing:'0.1em', marginBottom:10 }}>Fonctionnalités</div>
+            <h2 style={{ fontSize:36, fontWeight:800, color:C.text, marginBottom:12 }}>Tout ce qu'il vous faut pour prospecter</h2>
+            <p style={{ fontSize:16, color:C.muted, maxWidth:480, margin:'0 auto' }}>Un outil simple et puissant, pensé pour les agences et freelances.</p>
+          </div>
+          <div style={{ display:'grid', gridTemplateColumns:'repeat(3,1fr)', gap:16 }}>
+            {FEATURES.map(f=>(
+              <div key={f.title} style={{ background:C.card, border:`1px solid ${C.border}`, borderRadius:16, padding:'24px', transition:'all 0.15s', boxShadow:'0 1px 4px rgba(99,102,241,0.05)' }}
+                onMouseEnter={e=>{ e.currentTarget.style.boxShadow=`0 8px 32px ${f.color}18`; e.currentTarget.style.borderColor=`${f.color}35`; e.currentTarget.style.transform='translateY(-2px)' }}
+                onMouseLeave={e=>{ e.currentTarget.style.boxShadow='0 1px 4px rgba(99,102,241,0.05)'; e.currentTarget.style.borderColor=C.border; e.currentTarget.style.transform='translateY(0)' }}
+              >
+                <div style={{ width:44, height:44, borderRadius:12, background:`${f.color}12`, display:'flex', alignItems:'center', justifyContent:'center', fontSize:20, marginBottom:14 }}>{f.emoji}</div>
+                <h3 style={{ fontSize:15, fontWeight:700, color:C.text, marginBottom:8 }}>{f.title}</h3>
+                <p style={{ fontSize:13, color:C.muted, lineHeight:1.6 }}>{f.desc}</p>
+              </div>
+            ))}
+          </div>
+        </section>
+
+        {/* ── SOCIAL PROOF ── */}
+        <section style={{ background:'linear-gradient(135deg,#6366f1,#8b5cf6)', padding:'64px 24px' }}>
+          <div style={{ maxWidth:1100, margin:'0 auto' }}>
+            <div style={{ textAlign:'center', marginBottom:40 }}>
+              <h2 style={{ fontSize:32, fontWeight:800, color:'#fff', marginBottom:8 }}>Ils ont transformé leur prospection</h2>
+              <p style={{ fontSize:15, color:'rgba(255,255,255,0.7)' }}>Des agences et freelances qui pilotent leur pipeline avec Sky Social CRM</p>
+            </div>
+            <div style={{ display:'grid', gridTemplateColumns:'repeat(3,1fr)', gap:16 }}>
+              {TESTIMONIALS.map(t=>(
+                <div key={t.name} style={{ background:'rgba(255,255,255,0.12)', backdropFilter:'blur(8px)', border:'1px solid rgba(255,255,255,0.2)', borderRadius:16, padding:24 }}>
+                  <div style={{ fontSize:20, marginBottom:14 }}>⭐⭐⭐⭐⭐</div>
+                  <p style={{ fontSize:13, color:'rgba(255,255,255,0.9)', lineHeight:1.65, marginBottom:18 }}>"{t.text}"</p>
+                  <div style={{ display:'flex', alignItems:'center', gap:10 }}>
+                    <div style={{ width:36, height:36, borderRadius:10, background:`${t.color}`, display:'flex', alignItems:'center', justifyContent:'center', fontSize:12, fontWeight:800, color:'#fff' }}>{t.avatar}</div>
+                    <div>
+                      <div style={{ fontSize:13, fontWeight:700, color:'#fff' }}>{t.name}</div>
+                      <div style={{ fontSize:11, color:'rgba(255,255,255,0.6)' }}>{t.role} · {t.company}</div>
+                    </div>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+        </section>
+
+        {/* ── PRICING ── */}
+        <section id="tarifs" style={{ maxWidth:800, margin:'0 auto', padding:'80px 24px' }}>
+          <div style={{ textAlign:'center', marginBottom:48 }}>
+            <div style={{ fontSize:12, fontWeight:700, color:C.primary, textTransform:'uppercase', letterSpacing:'0.1em', marginBottom:10 }}>Tarifs</div>
+            <h2 style={{ fontSize:36, fontWeight:800, color:C.text, marginBottom:10 }}>Simple et transparent</h2>
+            <p style={{ fontSize:15, color:C.muted }}>Commencez gratuitement, passez au Pro quand vous êtes prêt.</p>
+          </div>
+          <div style={{ display:'grid', gridTemplateColumns:'1fr 1fr', gap:16 }}>
+            {PRICING.map(p=>(
+              <div key={p.plan} style={{ background:p.highlight?'#fff':'#fff', border:`2px solid ${p.highlight?C.primary:C.border}`, borderRadius:20, padding:'28px 24px', position:'relative', boxShadow:p.highlight?`0 16px 48px rgba(99,102,241,0.14)`:'' }}>
+                {p.highlight && <div style={{ position:'absolute', top:-12, left:'50%', transform:'translateX(-50%)', background:C.gradient, color:'#fff', fontSize:11, fontWeight:700, borderRadius:20, padding:'3px 14px', whiteSpace:'nowrap' }}>⭐ Recommandé</div>}
+                <div style={{ fontSize:12, fontWeight:700, color:p.highlight?C.primary:C.muted, textTransform:'uppercase', letterSpacing:'0.08em', marginBottom:12 }}>{p.plan}</div>
+                <div style={{ marginBottom:4 }}>
+                  <span style={{ fontSize:40, fontWeight:900, color:C.text }}>{p.price}</span>
+                  <span style={{ fontSize:14, color:C.muted }}>{p.period}</span>
+                </div>
+                <div style={{ fontSize:12, color:C.subtle, marginBottom:20 }}>{p.desc}</div>
+                <ul style={{ listStyle:'none', marginBottom:24 }}>
+                  {p.features.map(f=>(
+                    <li key={f} style={{ display:'flex', alignItems:'center', gap:8, fontSize:13, color:p.highlight?C.text:C.muted, marginBottom:10 }}>
+                      <span style={{ color:p.highlight?C.primary:C.green, fontWeight:700, flexShrink:0 }}>✓</span>{f}
+                    </li>
+                  ))}
+                </ul>
+                <button onClick={()=>setPage('register')} style={{ width:'100%', padding:'12px', borderRadius:12, border: p.highlight?'none':`1.5px solid ${C.border}`, background:p.highlight?C.gradient:'transparent', color:p.highlight?'#fff':C.muted, fontSize:14, fontWeight:700, cursor:'pointer', boxShadow:p.highlight?'0 4px 18px rgba(99,102,241,0.3)':'', transition:'all 0.13s', fontFamily:'inherit' }}>
+                  {p.highlight ? '⚡ Commencer avec le Pro' : 'Commencer gratuitement'}
+                </button>
+              </div>
+            ))}
+          </div>
+        </section>
+
+        {/* ── FAQ ── */}
+        <section id="faq" style={{ maxWidth:680, margin:'0 auto', padding:'0 24px 80px' }}>
+          <div style={{ textAlign:'center', marginBottom:40 }}>
+            <h2 style={{ fontSize:32, fontWeight:800, color:C.text }}>Questions fréquentes</h2>
+          </div>
+          <div style={{ background:C.card, border:`1px solid ${C.border}`, borderRadius:16, overflow:'hidden', boxShadow:'0 1px 4px rgba(99,102,241,0.06)' }}>
+            {FAQ.map((item,i)=>(
+              <div key={item.q} style={{ borderBottom: i<FAQ.length-1 ? `1px solid ${C.border}` : 'none' }}>
+                <button onClick={()=>setFaqOpen(faqOpen===i?null:i)} style={{ width:'100%', display:'flex', justifyContent:'space-between', alignItems:'center', padding:'18px 22px', background:'none', border:'none', cursor:'pointer', textAlign:'left', fontFamily:'inherit' }}>
+                  <span style={{ fontSize:14, fontWeight:600, color:faqOpen===i?C.primary:C.text }}>{item.q}</span>
+                  <span style={{ fontSize:16, color:C.subtle, marginLeft:12 }}>{faqOpen===i?'▲':'▼'}</span>
+                </button>
+                {faqOpen===i && (
+                  <div style={{ padding:'0 22px 18px', fontSize:13, color:C.muted, lineHeight:1.65 }}>{item.a}</div>
+                )}
+              </div>
+            ))}
+          </div>
+        </section>
+
+        {/* ── CTA FINAL ── */}
+        <section style={{ background:'linear-gradient(135deg,#6366f1,#8b5cf6)', padding:'80px 24px', textAlign:'center' }}>
+          <h2 style={{ fontSize:40, fontWeight:900, color:'#fff', marginBottom:12 }}>Prêt à organiser votre prospection ?</h2>
+          <p style={{ fontSize:16, color:'rgba(255,255,255,0.75)', marginBottom:36 }}>Créez votre espace en 30 secondes. Aucune carte bancaire requise.</p>
+          <button onClick={()=>setPage('register')} style={{ display:'inline-flex', alignItems:'center', gap:8, padding:'16px 36px', borderRadius:14, background:'#fff', color:C.primary, fontSize:16, fontWeight:800, cursor:'pointer', border:'none', boxShadow:'0 8px 28px rgba(0,0,0,0.2)', transition:'all 0.15s', fontFamily:'inherit' }}
+            onMouseEnter={e=>{ e.currentTarget.style.transform='translateY(-2px)'; e.currentTarget.style.boxShadow='0 14px 40px rgba(0,0,0,0.25)' }}
+            onMouseLeave={e=>{ e.currentTarget.style.transform='translateY(0)'; e.currentTarget.style.boxShadow='0 8px 28px rgba(0,0,0,0.2)' }}
+          >
+            Créer mon espace gratuit →
+          </button>
+        </section>
+
+        {/* Footer */}
+        <footer style={{ borderTop:`1px solid ${C.border}`, padding:'20px 24px', textAlign:'center', fontSize:12, color:C.subtle }}>
+          Sky Social Agency © 2026 · CRM de prospection
+        </footer>
+      </div>
+    )
+  }
+
+  // ═══════════════════════════════════════════════════════════════════════════
+  // LOGIN PAGE
+  // ═══════════════════════════════════════════════════════════════════════════
+  function LoginPage({ setPage }) {
+    const [email, setEmail] = React.useState('')
+    const [password, setPassword] = React.useState('')
+    const [showPw, setShowPw] = React.useState(false)
+    const [loading, setLoading] = React.useState(false)
+    const [error, setError] = React.useState('')
+
+    const handleSubmit = (e) => {
+      e.preventDefault()
+      if (!email||!password) { setError('Veuillez remplir tous les champs.'); return }
+      setLoading(true); setError('')
+      setTimeout(()=>{ setLoading(false); setError('Identifiants incorrects. Veuillez réessayer.') }, 1200)
+    }
+
+    return (
+      <div style={{ minHeight:'100vh', display:'flex', background:C.bg }}>
+        {/* Left — branding */}
+        <div style={{ flex:1, background:'linear-gradient(135deg,#6366f1,#8b5cf6)', display:'flex', flexDirection:'column', justifyContent:'center', alignItems:'center', padding:48, position:'relative', overflow:'hidden' }}>
+          <div style={{ position:'absolute', top:-100, right:-100, width:400, height:400, borderRadius:'50%', background:'rgba(255,255,255,0.06)' }} />
+          <div style={{ position:'absolute', bottom:-80, left:-80, width:300, height:300, borderRadius:'50%', background:'rgba(255,255,255,0.04)' }} />
+          <div style={{ position:'relative', textAlign:'center', maxWidth:380 }}>
+            <LogoMark size={56} />
+            <h1 style={{ fontSize:36, fontWeight:900, color:'#fff', marginTop:20, marginBottom:10, lineHeight:1.2 }}>Sky Social CRM</h1>
+            <p style={{ fontSize:16, color:'rgba(255,255,255,0.75)', lineHeight:1.6, marginBottom:40 }}>Gérez votre prospection, pilotez votre pipeline, convertissez plus de clients.</p>
+            <div style={{ display:'flex', flexDirection:'column', gap:12 }}>
+              {['Pipeline Kanban & tableau','Journal d\'activité complet','Relances intelligentes','Analytics avancés'].map(f=>(
+                <div key={f} style={{ display:'flex', alignItems:'center', gap:10, fontSize:14, color:'rgba(255,255,255,0.85)' }}>
+                  <div style={{ width:20, height:20, borderRadius:6, background:'rgba(255,255,255,0.2)', display:'flex', alignItems:'center', justifyContent:'center', fontSize:10, flexShrink:0 }}>✓</div>
+                  {f}
+                </div>
+              ))}
+            </div>
+          </div>
+        </div>
+
+        {/* Right — form */}
+        <div style={{ width:480, display:'flex', flexDirection:'column', justifyContent:'center', padding:'48px 56px', background:C.card }}>
+          <button onClick={()=>setPage('landing')} style={{ alignSelf:'flex-start', background:'none', border:'none', cursor:'pointer', fontSize:12, color:C.subtle, marginBottom:32, display:'flex', alignItems:'center', gap:4, fontFamily:'inherit', padding:0 }}>← Retour à l'accueil</button>
+
+          <h2 style={{ fontSize:26, fontWeight:800, color:C.text, marginBottom:6 }}>Bon retour 👋</h2>
+          <p style={{ fontSize:14, color:C.muted, marginBottom:32 }}>Connectez-vous à votre espace CRM</p>
+
+          <form onSubmit={handleSubmit}>
+            <Input label="Email" type="email" placeholder="vous@skysocial.fr" value={email} onChange={e=>setEmail(e.target.value)} required />
+            <div style={{ marginBottom:14, position:'relative' }}>
+              <label style={{ display:'block', fontSize:13, fontWeight:600, color:C.text, marginBottom:6 }}>Mot de passe<span style={{ color:C.primary }}>*</span></label>
+              <input type={showPw?'text':'password'} placeholder="••••••••" value={password} onChange={e=>setPassword(e.target.value)}
+                style={{ width:'100%', background:'#f7f8ff', border:`1.5px solid ${C.border}`, borderRadius:10, padding:'10px 40px 10px 14px', fontSize:13, color:C.text, outline:'none', transition:'border-color 0.13s' }}
+                onFocus={e=>e.target.style.borderColor=C.primary} onBlur={e=>e.target.style.borderColor=C.border}
+              />
+              <button type="button" onClick={()=>setShowPw(!showPw)} style={{ position:'absolute', right:12, top:34, background:'none', border:'none', cursor:'pointer', color:C.subtle, padding:0 }}>{showPw?'🙈':'👁'}</button>
+            </div>
+            <div style={{ display:'flex', justifyContent:'flex-end', marginBottom:20 }}>
+              <button type="button" style={{ background:'none', border:'none', cursor:'pointer', fontSize:12, color:C.primary, fontFamily:'inherit', padding:0 }}>Mot de passe oublié ?</button>
+            </div>
+
+            {error && <div style={{ background:'rgba(220,38,38,0.06)', border:'1px solid rgba(220,38,38,0.2)', borderRadius:9, padding:'10px 14px', fontSize:12, color:'#dc2626', marginBottom:16 }}>{error}</div>}
+
+            <button type="submit" disabled={loading} style={{ width:'100%', padding:'13px', borderRadius:12, border:'none', background:loading?'#9ca3af':C.gradient, color:'#fff', fontSize:14, fontWeight:700, cursor:loading?'not-allowed':'pointer', boxShadow:loading?'none':'0 4px 18px rgba(99,102,241,0.3)', transition:'all 0.13s', fontFamily:'inherit' }}>
+              {loading ? 'Connexion…' : 'Se connecter'}
+            </button>
+          </form>
+
+          <div style={{ display:'flex', alignItems:'center', gap:12, margin:'24px 0' }}>
+            <div style={{ flex:1, height:1, background:C.border }} />
+            <span style={{ fontSize:12, color:C.subtle }}>ou</span>
+            <div style={{ flex:1, height:1, background:C.border }} />
+          </div>
+
+          <button style={{ width:'100%', padding:'12px', borderRadius:12, border:`1.5px solid ${C.border}`, background:C.card, color:C.text, fontSize:13, fontWeight:600, cursor:'pointer', display:'flex', alignItems:'center', justifyContent:'center', gap:10, fontFamily:'inherit', transition:'all 0.13s' }}
+            onMouseEnter={e=>e.currentTarget.style.borderColor=C.primary} onMouseLeave={e=>e.currentTarget.style.borderColor=C.border}
+          >
+            <svg width="16" height="16" viewBox="0 0 24 24"><path fill="#4285F4" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"/><path fill="#34A853" d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z"/><path fill="#FBBC05" d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z"/><path fill="#EA4335" d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z"/></svg>
+            Continuer avec Google
+          </button>
+
+          <p style={{ textAlign:'center', fontSize:13, color:C.subtle, marginTop:24 }}>
+            Pas encore de compte ?{' '}
+            <button onClick={()=>setPage('register')} style={{ background:'none', border:'none', cursor:'pointer', color:C.primary, fontWeight:700, fontSize:13, fontFamily:'inherit', padding:0 }}>Créer votre espace →</button>
+          </p>
+        </div>
+      </div>
+    )
+  }
+
+  // ═══════════════════════════════════════════════════════════════════════════
+  // REGISTER PAGE
+  // ═══════════════════════════════════════════════════════════════════════════
+  function RegisterPage({ setPage }) {
+    const [step, setStep] = React.useState(1)
+    const [form, setForm] = React.useState({ email:'', password:'', confirm:'', company:'', sector:'', color:'#6366f1' })
+    const set = (k,v) => setForm(f=>({...f,[k]:v}))
+    const [loading, setLoading] = React.useState(false)
+    const [done, setDone] = React.useState(false)
+
+    const COLORS = ['#6366f1','#8b5cf6','#16a34a','#d97706','#db2777','#2563eb','#dc2626','#0891b2']
+    const STEPS = ['Compte','Société','Personnalisation']
+
+    const handleNext = () => {
+      if (step < 3) setStep(step+1)
+      else { setLoading(true); setTimeout(()=>{ setLoading(false); setDone(true) },1200) }
+    }
+
+    if (done) return (
+      <div style={{ minHeight:'100vh', background:C.bg, display:'flex', alignItems:'center', justifyContent:'center', padding:24 }}>
+        <div style={{ textAlign:'center', maxWidth:400 }}>
+          <div style={{ fontSize:56, marginBottom:16 }}>🎉</div>
+          <h2 style={{ fontSize:24, fontWeight:800, color:C.text, marginBottom:10 }}>Votre espace est prêt !</h2>
+          <p style={{ fontSize:14, color:C.muted, marginBottom:28, lineHeight:1.6 }}>Un email de confirmation a été envoyé à <strong>{form.email||'votre adresse'}</strong>. Cliquez sur le lien pour activer votre compte.</p>
+          <button onClick={()=>setPage('login')} style={{ padding:'12px 28px', borderRadius:12, border:'none', background:C.gradient, color:'#fff', fontSize:14, fontWeight:700, cursor:'pointer', boxShadow:'0 4px 18px rgba(99,102,241,0.3)', fontFamily:'inherit' }}>Aller à la connexion →</button>
+        </div>
+      </div>
+    )
+
+    return (
+      <div style={{ minHeight:'100vh', background:C.bg, display:'flex', flexDirection:'column', alignItems:'center', justifyContent:'center', padding:24 }}>
+        <div style={{ width:'100%', maxWidth:520 }}>
+          {/* Header */}
+          <div style={{ textAlign:'center', marginBottom:32 }}>
+            <LogoMark size={44} />
+            <h1 style={{ fontSize:24, fontWeight:800, color:C.text, marginTop:14, marginBottom:4 }}>Créer votre espace CRM</h1>
+            <p style={{ fontSize:13, color:C.muted }}>Votre CRM personnalisé en quelques secondes</p>
+          </div>
+
+          {/* Step indicator */}
+          <div style={{ display:'flex', alignItems:'center', marginBottom:28 }}>
+            {STEPS.map((s,i)=>(
+              <React.Fragment key={s}>
+                <div style={{ display:'flex', flexDirection:'column', alignItems:'center', flex:1 }}>
+                  <div style={{ width:32, height:32, borderRadius:'50%', background:step>i+1?C.primary:step===i+1?C.gradient:'#e4e7f8', color:step>=i+1?'#fff':C.subtle, display:'flex', alignItems:'center', justifyContent:'center', fontSize:13, fontWeight:700, marginBottom:4, boxShadow:step===i+1?`0 4px 12px rgba(99,102,241,0.35)`:'' }}>
+                    {step>i+1?'✓':i+1}
+                  </div>
+                  <span style={{ fontSize:11, fontWeight:step===i+1?700:400, color:step===i+1?C.primary:C.subtle }}>{s}</span>
+                </div>
+                {i<STEPS.length-1 && <div style={{ flex:1, height:2, background:step>i+1?C.primary:'#e4e7f8', borderRadius:1, maxWidth:60, margin:'0 4px', marginBottom:20 }} />}
+              </React.Fragment>
+            ))}
+          </div>
+
+          {/* Card */}
+          <div style={{ background:C.card, border:`1px solid ${C.border}`, borderRadius:20, padding:32, boxShadow:'0 8px 32px rgba(99,102,241,0.08)' }}>
+
+            {step === 1 && (
+              <div>
+                <h3 style={{ fontSize:16, fontWeight:700, color:C.text, marginBottom:20 }}>Informations de connexion</h3>
+                <Input label="Email" type="email" placeholder="vous@votresociete.com" value={form.email} onChange={e=>set('email',e.target.value)} required />
+                <Input label="Mot de passe" type="password" placeholder="Min. 8 caractères" value={form.password} onChange={e=>set('password',e.target.value)} required />
+                <Input label="Confirmer le mot de passe" type="password" placeholder="••••••••" value={form.confirm} onChange={e=>set('confirm',e.target.value)} required />
+              </div>
+            )}
+
+            {step === 2 && (
+              <div>
+                <h3 style={{ fontSize:16, fontWeight:700, color:C.text, marginBottom:20 }}>Votre société</h3>
+                <Input label="Nom de la société" placeholder="Sky Social Agency, Ma Boîte…" value={form.company} onChange={e=>set('company',e.target.value)} required />
+                <div style={{ marginBottom:14 }}>
+                  <label style={{ display:'block', fontSize:13, fontWeight:600, color:C.text, marginBottom:6 }}>Secteur d'activité</label>
+                  <select value={form.sector} onChange={e=>set('sector',e.target.value)}
+                    style={{ width:'100%', background:'#f7f8ff', border:`1.5px solid ${C.border}`, borderRadius:10, padding:'10px 14px', fontSize:13, color:form.sector?C.text:C.subtle, outline:'none', cursor:'pointer', fontFamily:'inherit' }}>
+                    <option value="">Sélectionner…</option>
+                    {['Marketing & Communication','Tech / SaaS','Conseil','E-commerce','Immobilier','Finance','Agence créative','Autre'].map(s=><option key={s}>{s}</option>)}
+                  </select>
+                </div>
+                <div style={{ background:'#f9faff', border:`1px solid ${C.border}`, borderRadius:12, padding:'14px 16px', display:'flex', alignItems:'center', gap:12 }}>
+                  <span style={{ fontSize:20 }}>🏢</span>
+                  <div style={{ flex:1 }}>
+                    <div style={{ fontSize:12, fontWeight:600, color:C.muted, marginBottom:4 }}>Logo (optionnel)</div>
+                    <button style={{ fontSize:12, color:C.primary, background:C.primaryLight, border:`1px solid ${C.primaryBorder}`, borderRadius:7, padding:'4px 12px', cursor:'pointer', fontFamily:'inherit', fontWeight:600 }}>Importer un fichier</button>
+                  </div>
+                </div>
+              </div>
+            )}
+
+            {step === 3 && (
+              <div>
+                <h3 style={{ fontSize:16, fontWeight:700, color:C.text, marginBottom:6 }}>Personnalisation</h3>
+                <p style={{ fontSize:13, color:C.muted, marginBottom:20 }}>Choisissez la couleur principale de votre CRM. Vous pourrez la modifier à tout moment.</p>
+                <div style={{ marginBottom:20 }}>
+                  <label style={{ display:'block', fontSize:13, fontWeight:600, color:C.text, marginBottom:12 }}>Couleur principale</label>
+                  <div style={{ display:'flex', gap:10, flexWrap:'wrap' }}>
+                    {COLORS.map(col=>(
+                      <div key={col} onClick={()=>set('color',col)}
+                        style={{ width:40, height:40, borderRadius:11, background:col, cursor:'pointer', border:`3px solid ${form.color===col?col:'transparent'}`, outline:form.color===col?`3px solid ${col}40`:'', outlineOffset:2, transition:'all 0.13s', transform:form.color===col?'scale(1.12)':'scale(1)' }}
+                      />
+                    ))}
+                  </div>
+                </div>
+                <div style={{ background:C.primaryLight, border:`1px solid ${C.primaryBorder}`, borderRadius:14, padding:'16px 18px' }}>
+                  <div style={{ fontSize:12, fontWeight:700, color:C.primary, marginBottom:8 }}>Aperçu de votre espace</div>
+                  <div style={{ display:'flex', alignItems:'center', gap:10 }}>
+                    <div style={{ width:36, height:36, borderRadius:10, background:`linear-gradient(135deg,${form.color},${form.color}bb)`, display:'flex', alignItems:'center', justifyContent:'center' }}>
+                      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/></svg>
+                    </div>
+                    <div>
+                      <div style={{ fontSize:13, fontWeight:700, color:C.text }}>{form.company||'Votre société'}</div>
+                      <div style={{ fontSize:10, color:C.subtle }}>CRM Prospection</div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            )}
+
+            {/* Actions */}
+            <div style={{ display:'flex', justifyContent:'space-between', alignItems:'center', marginTop:24 }}>
+              {step > 1 ? (
+                <button onClick={()=>setStep(step-1)} style={{ background:'none', border:`1.5px solid ${C.border}`, borderRadius:10, padding:'10px 20px', color:C.muted, fontSize:13, fontWeight:600, cursor:'pointer', fontFamily:'inherit' }}>← Retour</button>
+              ) : (
+                <button onClick={()=>setPage('landing')} style={{ background:'none', border:'none', cursor:'pointer', fontSize:13, color:C.subtle, fontFamily:'inherit', padding:0 }}>← Retour</button>
+              )}
+              <button onClick={handleNext} disabled={loading}
+                style={{ padding:'11px 28px', borderRadius:10, border:'none', background:loading?'#9ca3af':C.gradient, color:'#fff', fontSize:13, fontWeight:700, cursor:loading?'not-allowed':'pointer', boxShadow:loading?'none':'0 4px 14px rgba(99,102,241,0.3)', fontFamily:'inherit' }}>
+                {loading ? 'Création…' : step < 3 ? 'Continuer →' : '🚀 Créer mon espace'}
+              </button>
+            </div>
+          </div>
+
+          <p style={{ textAlign:'center', fontSize:13, color:C.subtle, marginTop:16 }}>
+            Déjà un compte ?{' '}
+            <button onClick={()=>setPage('login')} style={{ background:'none', border:'none', cursor:'pointer', color:C.primary, fontWeight:700, fontSize:13, fontFamily:'inherit', padding:0 }}>Se connecter</button>
+          </p>
+        </div>
+      </div>
+    )
+  }
+
+  // ═══════════════════════════════════════════════════════════════════════════
+  // APP ROOT
+  // ═══════════════════════════════════════════════════════════════════════════
+  function App() {
+    const saved = localStorage.getItem('auth-page') || 'landing'
+    const [page, setPageRaw] = React.useState(saved)
+
+    const setPage = (p) => {
+      setPageRaw(p)
+      localStorage.setItem('auth-page', p)
+      // sync prototype nav
+      document.querySelectorAll('#proto-nav button').forEach(b=>b.classList.remove('active'))
+      const map = { landing:'btn-landing', login:'btn-login', register:'btn-register' }
+      document.getElementById(map[p])?.classList.add('active')
+      window.scrollTo(0,0)
+    }
+
+    // sync proto-nav on external click
+    React.useEffect(()=>{
+      const map = { landing:'btn-landing', login:'btn-login', register:'btn-register' }
+      document.querySelectorAll('#proto-nav button').forEach(b=>b.classList.remove('active'))
+      document.getElementById(map[page])?.classList.add('active')
+    },[page])
+
+    return (
+      <div>
+        {page === 'landing'  && <LandingPage setPage={setPage} />}
+        {page === 'login'    && <LoginPage setPage={setPage} />}
+        {page === 'register' && <RegisterPage setPage={setPage} />}
+      </div>
+    )
+  }
+
+  // expose showPage for prototype nav
+  window.showPage = (p) => { window.__setPage && window.__setPage(p) }
+
+  function Root() {
+    const [page, setPage] = React.useState(localStorage.getItem('auth-page')||'landing')
+    window.__setPage = (p) => { setPage(p); localStorage.setItem('auth-page',p); window.scrollTo(0,0) }
+    React.useEffect(()=>{
+      const map = { landing:'btn-landing', login:'btn-login', register:'btn-register' }
+      document.querySelectorAll('#proto-nav button').forEach(b=>b.classList.remove('active'))
+      document.getElementById(map[page])?.classList.add('active')
+    },[page])
+    const setPageWrapped = (p) => { setPage(p); localStorage.setItem('auth-page',p); window.scrollTo(0,0) }
+    return (
+      <>
+        {page==='landing'  && <LandingPage setPage={setPageWrapped} />}
+        {page==='login'    && <LoginPage setPage={setPageWrapped} />}
+        {page==='register' && <RegisterPage setPage={setPageWrapped} />}
+      </>
+    )
+  }
+
+  ReactDOM.createRoot(document.getElementById('root')).render(<Root />)
+  </script>
+</body>
+</html>

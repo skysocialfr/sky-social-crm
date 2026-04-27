@@ -101,7 +101,6 @@ export default function ImportCSVModal({ open, onOpenChange, onImport }: Props) 
         <Dialog.Overlay className="fixed inset-0 z-50 bg-black/60 backdrop-blur-sm" />
         <Dialog.Content className="fixed left-1/2 top-1/2 z-50 w-full max-w-2xl -translate-x-1/2 -translate-y-1/2 rounded-xl border border-border bg-card shadow-xl max-h-[90vh] flex flex-col">
 
-          {/* Header */}
           <div className="flex items-center justify-between p-5 border-b border-border flex-shrink-0">
             <div>
               <Dialog.Title className="text-base font-semibold text-foreground">
@@ -116,10 +115,8 @@ export default function ImportCSVModal({ open, onOpenChange, onImport }: Props) 
             </button>
           </div>
 
-          {/* Body */}
           <div className="overflow-y-auto flex-1">
 
-            {/* Step 1 — Upload */}
             {step === 'upload' && (
               <div className="p-6 space-y-4">
                 <div
@@ -161,10 +158,8 @@ export default function ImportCSVModal({ open, onOpenChange, onImport }: Props) 
               </div>
             )}
 
-            {/* Step 2 — Mapping + preview */}
             {(step === 'mapping' || step === 'importing') && result && rawData && (
               <div className="p-5 space-y-4">
-                {/* File stats banner */}
                 <div className="flex items-center gap-3 rounded-lg bg-muted/50 px-4 py-3">
                   <FileSpreadsheet size={18} className="text-primary flex-shrink-0" />
                   <div className="flex-1 min-w-0">
@@ -179,7 +174,6 @@ export default function ImportCSVModal({ open, onOpenChange, onImport }: Props) 
                   </div>
                 </div>
 
-                {/* Mapping table */}
                 <div>
                   <p className="text-xs font-semibold uppercase tracking-wide text-muted-foreground mb-2">
                     Correspondance des colonnes
@@ -221,7 +215,6 @@ export default function ImportCSVModal({ open, onOpenChange, onImport }: Props) 
                   </div>
                 </div>
 
-                {/* Error summary */}
                 {result.errorCount > 0 && (
                   <div className="rounded-lg border border-amber-800 bg-amber-900/20 p-3 space-y-1.5">
                     <p className="text-xs font-medium text-amber-300 flex items-center gap-1.5">
@@ -247,7 +240,6 @@ export default function ImportCSVModal({ open, onOpenChange, onImport }: Props) 
               </div>
             )}
 
-            {/* Step — Done */}
             {step === 'done' && (
               <div className="p-10 flex flex-col items-center gap-3 text-center">
                 <div className="rounded-full bg-emerald-900/30 p-4">
@@ -261,7 +253,6 @@ export default function ImportCSVModal({ open, onOpenChange, onImport }: Props) 
             )}
           </div>
 
-          {/* Footer */}
           <div className="flex justify-end gap-3 p-4 border-t border-border flex-shrink-0">
             {step !== 'done' ? (
               <>

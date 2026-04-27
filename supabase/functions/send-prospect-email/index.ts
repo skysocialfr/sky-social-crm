@@ -12,7 +12,6 @@ serve(async (req) => {
   }
 
   try {
-    // Verify auth
     const authHeader = req.headers.get('Authorization')
     if (!authHeader) {
       return new Response(JSON.stringify({ error: 'Unauthorized' }), { status: 401, headers: CORS })
@@ -32,17 +31,16 @@ serve(async (req) => {
     const { to, subject, body, prospect_id, prospect_first_name } = await req.json()
 
     if (!to || !subject || !body || !prospect_id) {
-      return new Response(JSON.stringify({ error: 'Paramètres manquants' }), { status: 400, headers: CORS })
+      return new Response(JSON.stringify({ error: 'Param\u00e8tres manquants' }), { status: 400, headers: CORS })
     }
 
     const resendKey = Deno.env.get('RESEND_API_KEY')
     const fromEmail = Deno.env.get('RESEND_FROM_EMAIL') ?? 'noreply@skysocial.fr'
 
     if (!resendKey) {
-      return new Response(JSON.stringify({ error: 'RESEND_API_KEY non configuré' }), { status: 500, headers: CORS })
+      return new Response(JSON.stringify({ error: 'RESEND_API_KEY non configur\u00e9' }), { status: 500, headers: CORS })
     }
 
-    // Send email via Resend
     const emailRes = await fetch('https://api.resend.com/emails', {
       method: 'POST',
       headers: {
@@ -65,14 +63,13 @@ serve(async (req) => {
       })
     }
 
-    // Log interaction in DB
     await supabase.from('interactions').insert({
       prospect_id,
       user_id: user.id,
       type: 'Email',
       date: new Date().toISOString().split('T')[0],
-      summary: `Email envoyé : ${subject}`,
-      outcome: 'Email envoyé avec succès',
+      summary: `Email envoy\u00e9 : ${subject}`,
+      outcome: 'Email envoy\u00e9 avec succ\u00e8s',
     })
 
     return new Response(JSON.stringify({ success: true }), {

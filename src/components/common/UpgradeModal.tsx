@@ -58,7 +58,6 @@ export default function UpgradeModal({ open, onOpenChange }: Props) {
             </Dialog.Description>
           </div>
 
-          {/* Price */}
           <div className="rounded-xl border border-primary/30 bg-primary/5 p-4 text-center mb-5">
             <p className="text-3xl font-bold text-foreground">
               9€
@@ -67,7 +66,6 @@ export default function UpgradeModal({ open, onOpenChange }: Props) {
             <p className="text-xs text-muted-foreground mt-1">Sans engagement · Annulable à tout moment</p>
           </div>
 
-          {/* Features */}
           <ul className="mb-6 space-y-2">
             {PRO_FEATURES.map((f) => (
               <li key={f} className="flex items-center gap-2 text-sm text-foreground">
