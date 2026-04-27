@@ -3,31 +3,32 @@
 @tailwind utilities;
 
 @layer base {
-  /* ── Light mode (default) ── */
+  /* ── Light mode (default) — aligned with design tokens ── */
   :root {
-    --background: 229 100% 98%;
-    --foreground: 224 20% 12%;
-    --card: 0 0% 100%;
-    --card-foreground: 224 20% 12%;
+    /* HSL equivalents of the hex design tokens */
+    --background: 229 100% 98%;       /* #f4f6ff */
+    --foreground: 234 26% 14%;        /* #1a1c2e */
+    --card: 0 0% 100%;                /* #ffffff */
+    --card-foreground: 234 26% 14%;
     --popover: 0 0% 100%;
-    --popover-foreground: 224 20% 12%;
-    --primary: 245 85% 60%;
+    --popover-foreground: 234 26% 14%;
+    --primary: 239 84% 67%;           /* #6366f1 */
     --primary-foreground: 0 0% 100%;
-    --secondary: 245 50% 95%;
-    --secondary-foreground: 245 60% 35%;
+    --secondary: 239 50% 95%;
+    --secondary-foreground: 239 60% 35%;
     --muted: 220 14% 95%;
-    --muted-foreground: 220 9% 48%;
-    --accent: 245 50% 95%;
-    --accent-foreground: 245 60% 35%;
-    --destructive: 0 72% 51%;
+    --muted-foreground: 220 9% 42%;   /* #6b7280 */
+    --accent: 239 50% 95%;
+    --accent-foreground: 239 60% 35%;
+    --destructive: 0 72% 51%;         /* #dc2626 */
     --destructive-foreground: 0 0% 100%;
-    --border: 220 15% 88%;
-    --input: 220 14% 93%;
-    --ring: 245 85% 60%;
+    --border: 230 43% 91%;            /* #e4e7f8 */
+    --input: 230 43% 91%;
+    --ring: 239 84% 67%;
     --radius: 0.5rem;
   }
 
-  /* ── Dark mode ── */
+  /* ── Dark mode (kept for toggle, secondary usage) ── */
   .dark {
     --background: 222 47% 8%;
     --foreground: 210 40% 95%;
@@ -35,7 +36,7 @@
     --card-foreground: 210 40% 95%;
     --popover: 222 47% 11%;
     --popover-foreground: 210 40% 95%;
-    --primary: 245 80% 65%;
+    --primary: 239 80% 65%;
     --primary-foreground: 0 0% 100%;
     --secondary: 217 32% 17%;
     --secondary-foreground: 210 40% 95%;
@@ -47,7 +48,7 @@
     --destructive-foreground: 210 40% 95%;
     --border: 217 32% 22%;
     --input: 217 32% 17%;
-    --ring: 245 80% 65%;
+    --ring: 239 80% 65%;
   }
 }
 
@@ -56,20 +57,22 @@
     @apply border-border;
   }
   body {
-    @apply bg-background text-foreground;
-    font-family: 'Plus Jakarta Sans', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+    background-color: #f4f6ff;
+    color: #1a1c2e;
+    font-family: 'Plus Jakarta Sans', system-ui, sans-serif;
   }
-  ::-webkit-scrollbar {
-    width: 6px;
-    height: 6px;
+  .dark body {
+    background-color: hsl(var(--background));
+    color: hsl(var(--foreground));
   }
-  ::-webkit-scrollbar-track {
-    @apply bg-background;
-  }
-  ::-webkit-scrollbar-thumb {
-    @apply bg-border rounded-full;
-  }
-  ::-webkit-scrollbar-thumb:hover {
-    @apply bg-muted-foreground;
-  }
+
+  /* ── Scrollbar ── */
+  ::-webkit-scrollbar { width: 6px; height: 6px; }
+  ::-webkit-scrollbar-track { background: transparent; }
+  ::-webkit-scrollbar-thumb { background: #e4e7f8; border-radius: 9999px; }
+  ::-webkit-scrollbar-thumb:hover { background: #c7cbee; }
+
+  /* ── Typography scale helpers ── */
+  .text-label { font-size: 11px; font-weight: 600; letter-spacing: 0.04em; text-transform: uppercase; }
+  .text-kpi   { font-size: 28px; font-weight: 800; line-height: 1.05; letter-spacing: -0.01em; }
 }
