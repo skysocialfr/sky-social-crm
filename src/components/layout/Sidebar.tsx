@@ -1,76 +1,97 @@
 import { NavLink } from 'react-router-dom'
-import { LayoutDashboard, Users, Bell, Settings, ShieldCheck, Zap } from 'lucide-react'
-import { cn } from '@/lib/cn'
+import { useAuth } from '@/hooks/useAuth'
 import { useTheme } from '@/context/ThemeContext'
-import { useIsAdmin } from '@/hooks/useIsAdmin'
+import { useRelances } from '@/hooks/useRelances'
+import { dicebearAvatar } from '@/lib/avatar'
+
+const NAV = [
+  { to: '/app',           label: 'Tableau de bord', emoji: '◉',  end: true  },
+  { to: '/app/prospects', label: 'Prospects',        emoji: '👥', end: false },
+  { to: '/app/relances',  label: 'Relances',         emoji: '🔔', end: false, badge: true },
+  { to: '/app/journal',   label: 'Journal',          emoji: '📓', end: false },
+  { to: '/app/analytics', label: 'Analytics',        emoji: '📊', end: false, isNew: true },
+  { to: '/app/settings',  label: 'Paramètres',       emoji: '⚙️', end: false },
+]
 
 export default function Sidebar() {
+  const { user } = useAuth()
   const { profile } = useTheme()
-  const { isAdmin } = useIsAdmin()
-
+  const { data: relances } = useRelances()
+  const overdueCount = relances?.length ?? 0
   const companyName = profile?.company_name || 'Sky Social'
 
-  const NAV = [
-    { to: '/app', label: 'Tableau de bord', icon: LayoutDashboard, end: true, iconClass: 'text-blue-500' },
-    { to: '/app/prospects', label: 'Prospects', icon: Users, end: false, iconClass: 'text-violet-500' },
-    { to: '/app/relances', label: 'Relances', icon: Bell, end: false, iconClass: 'text-amber-500' },
-    { to: '/app/settings', label: 'Paramètres', icon: Settings, end: false, iconClass: 'text-slate-500' },
-    ...(isAdmin ? [{ to: '/app/admin', label: 'Administration', icon: ShieldCheck, end: false, iconClass: 'text-red-500' }] : []),
-  ]
-
   return (
-    <aside className="hidden md:flex h-screen w-60 flex-col border-r border-border bg-card">
+    <aside className="hidden md:flex h-screen w-[220px] flex-col flex-shrink-0 bg-white border-r border-[#e4e7f8]">
+
       {/* Logo */}
-      <div className="flex items-center gap-2.5 px-5 py-5 border-b border-border">
+      <div className="flex items-center gap-[10px] px-4 py-[18px] border-b border-[#e4e7f8]">
         {profile?.logo_url ? (
           <img
             src={profile.logo_url}
             alt={companyName}
-            className="h-8 w-8 rounded-lg object-contain border border-border bg-muted"
+            className="h-[34px] w-[34px] rounded-[10px] object-contain border border-[#e4e7f8] flex-shrink-0"
           />
         ) : (
-          <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-primary shadow-sm">
-            <Zap size={16} className="text-primary-foreground" fill="currentColor" />
+          <div
+            className="flex h-[34px] w-[34px] items-center justify-center rounded-[10px] flex-shrink-0"
+            style={{ background: 'linear-gradient(135deg, #6366f1, #7c3aed)', boxShadow: '0 4px 12px rgba(99,102,241,0.4)' }}
+          >
+            <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+              <polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2" />
+            </svg>
           </div>
         )}
-        <div>
-          <p className="text-sm font-bold leading-none text-foreground">{companyName}</p>
-          <p className="text-[10px] text-muted-foreground mt-0.5">CRM Prospection</p>
+        <div className="min-w-0">
+          <p className="text-[13px] font-extrabold text-[#1a1c2e] leading-none truncate">{companyName}</p>
+          <p className="text-[10px] text-[#9ca3af] mt-[3px]">CRM Prospection</p>
         </div>
       </div>
 
       {/* Navigation */}
-      <nav className="flex-1 p-3 space-y-0.5">
-        {NAV.map(({ to, label, icon: Icon, end, iconClass }) => (
+      <nav className="flex-1 px-2 py-[10px] flex flex-col gap-[2px] overflow-y-auto">
+        {NAV.map(({ to, label, emoji, end, badge, isNew }) => (
           <NavLink
             key={to}
             to={to}
             end={end}
             className={({ isActive }) =>
-              cn(
-                'flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium transition-colors',
+              `flex items-center gap-[9px] px-[10px] py-2 rounded-[9px] text-[13px] transition-all duration-[130ms] border ${
                 isActive
-                  ? 'bg-primary/10 text-primary'
-                  : 'text-muted-foreground hover:bg-muted hover:text-foreground'
-              )
+                  ? 'bg-[rgba(99,102,241,0.08)] text-[#6366f1] font-bold border-[rgba(99,102,241,0.2)]'
+                  : 'text-[#6b7280] font-medium border-transparent hover:bg-[rgba(99,102,241,0.05)] hover:text-[#374151]'
+              }`
             }
           >
-            {({ isActive }) => (
-              <>
-                <Icon
-                  size={16}
-                  className={isActive ? 'text-primary' : iconClass}
-                />
-                {label}
-              </>
+            <span className="text-[14px] leading-none flex-shrink-0">{emoji}</span>
+            <span className="flex-1">{label}</span>
+            {badge && overdueCount > 0 && (
+              <span className="text-[10px] font-bold text-white bg-[#dc2626] rounded-[10px] px-[6px] py-[1px] leading-[1.4] flex-shrink-0">
+                {overdueCount}
+              </span>
+            )}
+            {isNew && (
+              <span className="text-[9px] font-extrabold text-[#6366f1] bg-[rgba(99,102,241,0.08)] border border-[rgba(99,102,241,0.2)] rounded-[4px] px-[6px] py-[2px] tracking-[0.06em] flex-shrink-0">
+                NEW
+              </span>
             )}
           </NavLink>
         ))}
       </nav>
 
-      {/* Footer */}
-      <div className="p-4 border-t border-border">
-        <p className="text-xs text-muted-foreground text-center">Sky Social Agency © 2025</p>
+      {/* Footer — user */}
+      <div className="flex items-center gap-[10px] px-4 py-3 border-t border-[#e4e7f8]">
+        <img
+          src={dicebearAvatar(user?.email ?? 'user')}
+          alt=""
+          className="w-8 h-8 rounded-[9px] flex-shrink-0 bg-[#f0f1f8]"
+        />
+        <div className="flex-1 min-w-0">
+          <p className="text-[12px] font-bold text-[#1a1c2e] truncate">
+            {profile?.company_name ?? user?.email?.split('@')[0] ?? 'Utilisateur'}
+          </p>
+          <p className="text-[10px] text-[#9ca3af] truncate">{user?.email}</p>
+        </div>
+        <span className="w-[7px] h-[7px] rounded-full bg-[#16a34a] flex-shrink-0" />
       </div>
     </aside>
   )

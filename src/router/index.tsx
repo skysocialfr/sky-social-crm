@@ -10,6 +10,8 @@ import DashboardPage from '@/pages/DashboardPage'
 import ProspectsPage from '@/pages/ProspectsPage'
 import ProspectDetailPage from '@/pages/ProspectDetailPage'
 import RelancesPage from '@/pages/RelancesPage'
+import JournalPage from '@/pages/JournalPage'
+import AnalyticsPage from '@/pages/AnalyticsPage'
 import SettingsPage from '@/pages/SettingsPage'
 import AdminPage from '@/pages/AdminPage'
 import NotFoundPage from '@/pages/NotFoundPage'
@@ -17,13 +19,15 @@ import NotFoundPage from '@/pages/NotFoundPage'
 function ProtectedRoute({ children }: { children: React.ReactNode }) {
   const { session, loading } = useAuth()
   const { profile, isLoading: profileLoading } = useTheme()
-  if (loading || profileLoading) return <div className="flex h-screen items-center justify-center text-muted-foreground">Chargement…</div>
+  if (loading || profileLoading) return (
+    <div className="flex h-screen items-center justify-center text-[#6b7280] text-sm">Chargement…</div>
+  )
   if (!session) return <Navigate to="/login" replace />
   if (profile?.suspended) {
     return (
-      <div className="flex h-screen flex-col items-center justify-center gap-3 bg-background text-center px-6">
-        <p className="text-lg font-semibold text-foreground">Compte suspendu</p>
-        <p className="text-sm text-muted-foreground max-w-sm">Votre accès a été temporairement suspendu. Contactez l'administrateur pour plus d'informations.</p>
+      <div className="flex h-screen flex-col items-center justify-center gap-3 bg-[#f4f6ff] text-center px-6">
+        <p className="text-lg font-semibold text-[#1a1c2e]">Compte suspendu</p>
+        <p className="text-sm text-[#6b7280] max-w-sm">Votre accès a été temporairement suspendu. Contactez l'administrateur.</p>
       </div>
     )
   }
@@ -33,7 +37,9 @@ function ProtectedRoute({ children }: { children: React.ReactNode }) {
 function AdminRoute({ children }: { children: React.ReactNode }) {
   const { session, loading: authLoading } = useAuth()
   const { isAdmin, isLoading: adminLoading } = useIsAdmin()
-  if (authLoading || adminLoading) return <div className="flex h-screen items-center justify-center text-muted-foreground">Chargement…</div>
+  if (authLoading || adminLoading) return (
+    <div className="flex h-screen items-center justify-center text-[#6b7280] text-sm">Chargement…</div>
+  )
   if (!session) return <Navigate to="/login" replace />
   if (!isAdmin) return <Navigate to="/app" replace />
   return <>{children}</>
@@ -55,6 +61,8 @@ export const router = createHashRouter([
       { path: 'prospects', element: <ProspectsPage /> },
       { path: 'prospects/:id', element: <ProspectDetailPage /> },
       { path: 'relances', element: <RelancesPage /> },
+      { path: 'journal', element: <JournalPage /> },
+      { path: 'analytics', element: <AnalyticsPage /> },
       { path: 'settings', element: <SettingsPage /> },
       {
         path: 'admin',
