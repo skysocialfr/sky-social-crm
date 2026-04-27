@@ -213,12 +213,12 @@ export default function LandingPage() {
 
       {/* Pricing */}
       <section className="px-5 py-20 bg-white">
-        <div className="mx-auto max-w-3xl">
+        <div className="mx-auto max-w-5xl">
           <div className="mb-12 text-center">
             <h2 className="text-2xl font-bold text-gray-900 sm:text-3xl">Tarifs simples et transparents</h2>
             <p className="mt-3 text-sm text-gray-500">Commencez gratuitement, passez au Pro quand vous êtes prêt.</p>
           </div>
-          <div className="grid gap-4 sm:grid-cols-2 items-start">
+          <div className="grid gap-4 sm:grid-cols-3 items-start">
             {/* Free */}
             <div className="rounded-2xl border border-[#e8eaf8] p-6">
               <p className="text-xs font-semibold uppercase tracking-wider text-gray-400 mb-3">Gratuit</p>
@@ -238,7 +238,7 @@ export default function LandingPage() {
             </div>
 
             {/* Pro */}
-            <div className="rounded-2xl p-6 relative overflow-visible -mt-4" style={{ background: 'linear-gradient(135deg, #6366f1, #8b5cf6)' }}>
+            <div className="rounded-2xl p-6 relative overflow-visible -mt-4" style={{ background: 'linear-gradient(135deg, #6366f1, #7c3aed)' }}>
               <div className="absolute -top-3.5 left-1/2 -translate-x-1/2 whitespace-nowrap">
                 <span className="rounded-full bg-yellow-400 px-3 py-1 text-[10px] font-bold text-yellow-900 uppercase tracking-wide shadow-md">
                   ⭐ Recommandé
@@ -261,6 +261,39 @@ export default function LandingPage() {
                 <Zap size={14} />
                 Commencer avec le Pro
               </Link>
+            </div>
+
+            {/* Agence */}
+            <div className="rounded-2xl border border-[#e8eaf8] p-6">
+              <div className="flex items-center gap-2 mb-3">
+                <p className="text-xs font-semibold uppercase tracking-wider text-gray-400">Agence</p>
+                <span className="rounded-full bg-indigo-50 px-2 py-0.5 text-[10px] font-semibold text-indigo-600">Sur devis</span>
+              </div>
+              <p className="text-4xl font-black text-gray-900 mb-1">
+                <span className="text-2xl">À partir de</span><br />29€
+              </p>
+              <p className="text-sm text-gray-400 mb-6">par mois / utilisateur</p>
+              <ul className="space-y-2.5 mb-6">
+                {[
+                  'Tout le plan Pro',
+                  'Multi-utilisateurs & équipes',
+                  'Espaces clients séparés',
+                  'Analytics avancées',
+                  'Intégrations API & webhooks',
+                  'Account manager dédié',
+                ].map(f => (
+                  <li key={f} className="flex items-center gap-2 text-sm text-gray-600">
+                    <CheckCircle2 size={13} className="text-emerald-500 flex-shrink-0" />
+                    {f}
+                  </li>
+                ))}
+              </ul>
+              <a
+                href="mailto:contact@skysocial.fr"
+                className="block w-full rounded-xl border border-[#e8eaf8] py-2.5 text-center text-sm font-semibold text-gray-700 hover:border-indigo-200 hover:text-indigo-600 transition-colors"
+              >
+                Nous contacter
+              </a>
             </div>
           </div>
         </div>
