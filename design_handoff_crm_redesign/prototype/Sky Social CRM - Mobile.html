@@ -1,0 +1,683 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Sky Social CRM — Mobile</title>
+  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800;900&display=swap" rel="stylesheet" />
+  <script src="https://unpkg.com/react@18.3.1/umd/react.development.js" integrity="sha384-hD6/rw4ppMLGNu3tX5cjIb+uRZ7UkRJ6BPkLpg4hAu/6onKUg4lLsHAs9EBPT82L" crossorigin="anonymous"></script>
+  <script src="https://unpkg.com/react-dom@18.3.1/umd/react-dom.development.js" integrity="sha384-u6aeetuaXnQ38mYT8rp6sbXaQe3NL9t+IBXmnYxwkUI2Hw4bsp2Wvmx4yRQF1uAm" crossorigin="anonymous"></script>
+  <script src="https://unpkg.com/@babel/standalone@7.29.0/babel.min.js" integrity="sha384-m08KidiNqLdpJqLq95G/LEi8Qvjl/xUYll3QILypMoQ65QorJ9Lvtp2RXYGBFj1y" crossorigin="anonymous"></script>
+  <script type="text/babel" src="ios-frame.jsx"></script>
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    body { font-family: 'Plus Jakarta Sans', sans-serif; background: #e8eaf6; display: flex; flex-direction: column; align-items: center; justify-content: center; min-height: 100vh; padding: 24px; }
+    input, button, select, textarea { font-family: inherit; }
+    input::placeholder { color: #9ca3af; }
+  </style>
+</head>
+<body>
+  <div id="root"></div>
+  <script type="text/babel">
+
+  const C = {
+    primary: '#6366f1', primaryLight: 'rgba(99,102,241,0.1)', primaryBorder: 'rgba(99,102,241,0.2)',
+    green: '#16a34a', greenLight: 'rgba(22,163,74,0.09)',
+    amber: '#d97706', amberLight: 'rgba(217,119,6,0.09)',
+    red: '#dc2626', redLight: 'rgba(220,38,38,0.08)',
+    blue: '#2563eb',
+    text: '#1a1c2e', muted: '#6b7280', subtle: '#9ca3af',
+    border: '#e4e7f8', card: '#ffffff', bg: '#f4f6ff',
+    gradient: 'linear-gradient(135deg, #6366f1 0%, #8b5cf6 100%)',
+  }
+
+  const STAGE_META = {
+    'Identifié':{'color':'#6b7280'},
+    'Premier contact':{'color':'#0891b2'},
+    'Réponse reçue':{'color':'#7c3aed'},
+    'RDV fixé':{'color':'#d97706'},
+    'Devis envoyé':{'color':'#ea580c'},
+    'En négociation':{'color':'#6366f1'},
+    'Gagné':{'color':'#16a34a'},
+    'Perdu':{'color':'#dc2626'},
+  }
+  const PM = {
+    'Chaud':{'color':'#dc2626','dot':'#ef4444','bg':'rgba(220,38,38,0.09)'},
+    'Tiède':{'color':'#d97706','dot':'#f59e0b','bg':'rgba(217,119,6,0.09)'},
+    'Froid':{'color':'#6b7280','dot':'#9ca3af','bg':'rgba(107,114,128,0.09)'},
+  }
+
+  const PROSPECTS = [
+    {id:'1',company:'TechStart SAS',contact:'Jean Martin',title:'CEO',stage:'En négociation',priority:'Chaud',channel:'LinkedIn',value:12000,followup:'2026-04-23',score:87,initials:'TS',color:'#6366f1'},
+    {id:'2',company:'Beauté Concept',contact:'Sophie Leroi',title:'Dir. Mktg',stage:'RDV fixé',priority:'Chaud',channel:'Instagram/DMs',value:4500,followup:'2026-04-22',score:74,initials:'BC',color:'#ec4899'},
+    {id:'3',company:'Immo Plus',contact:'Pierre Dubois',title:'Gérant',stage:'Devis envoyé',priority:'Tiède',channel:'Email froid',value:8000,followup:'2026-04-25',score:61,initials:'IP',color:'#10b981'},
+    {id:'4',company:'RestauGroup',contact:'Camille Laurent',title:'Co-fondatrice',stage:'Premier contact',priority:'Froid',channel:'Téléphone',value:3200,followup:null,score:32,initials:'RG',color:'#f59e0b'},
+    {id:'5',company:'ModaLux',contact:'Antoine Petit',title:'CMO',stage:'Réponse reçue',priority:'Chaud',channel:'Instagram/DMs',value:6500,followup:'2026-04-21',score:79,initials:'ML',color:'#8b5cf6'},
+    {id:'6',company:'Startup Labs',contact:'Léa Bernard',title:'Founder',stage:'Identifié',priority:'Tiède',channel:'LinkedIn',value:9000,followup:null,score:45,initials:'SL',color:'#06b6d4'},
+    {id:'11',company:'FinTech Solutions',contact:'David Hamid',title:'CTO',stage:'En négociation',priority:'Chaud',channel:'LinkedIn',value:22000,followup:'2026-04-26',score:82,initials:'FS',color:'#3b82f6'},
+  ]
+
+  const RELANCES = [
+    {id:'5',company:'ModaLux',contact:'Antoine Petit',priority:'Chaud',stage:'Réponse reçue',date:'2026-04-21',overdue:true},
+    {id:'1',company:'TechStart SAS',contact:'Jean Martin',priority:'Chaud',stage:'En négociation',date:'2026-04-22',overdue:false},
+    {id:'2',company:'Beauté Concept',contact:'Sophie Leroi',priority:'Chaud',stage:'RDV fixé',date:'2026-04-22',overdue:false},
+    {id:'11',company:'FinTech Solutions',contact:'David Hamid',priority:'Chaud',stage:'En négociation',date:'2026-04-26',overdue:false},
+    {id:'3',company:'Immo Plus',contact:'Pierre Dubois',priority:'Tiède',stage:'Devis envoyé',date:'2026-04-25',overdue:false},
+  ]
+
+  const JOURNAL = [
+    {id:'j1',prospectId:'1',prospect:'TechStart SAS',initials:'TS',color:'#6366f1',type:'Appel',stage:'En négociation',outcome:'Positif',date:"Aujourd'hui",time:'14:32',icon:'📞',summary:'Appel de qualification approfondi. Jean très réceptif.'},
+    {id:'j2',prospectId:'2',prospect:'Beauté Concept',initials:'BC',color:'#ec4899',type:'LinkedIn',stage:'RDV fixé',outcome:'Positif',date:"Aujourd'hui",time:'11:15',icon:'💼',summary:'Réponse positive LinkedIn, RDV confirmé pour jeudi.'},
+    {id:'j4',prospectId:'7',prospect:'AutoMoto FR',initials:'AM',color:'#22c55e',type:'Réunion',stage:'Gagné',outcome:'Gagné',date:'Hier',time:'16:00',icon:'🤝',summary:'Signature du contrat. Deal gagné ! 🎉'},
+    {id:'j5',prospectId:'3',prospect:'Immo Plus',initials:'IP',color:'#10b981',type:'Email',stage:'Devis envoyé',outcome:'En attente',date:'Hier',time:'10:20',icon:'📧',summary:'Relance suite au devis envoyé la semaine dernière.'},
+    {id:'j6',prospectId:'11',prospect:'FinTech Solutions',initials:'FS',color:'#3b82f6',type:'LinkedIn',stage:'En négociation',outcome:'Positif',date:'20 avr.',time:'16:45',icon:'💼',summary:'David Hamid a accepté notre connexion LinkedIn.'},
+  ]
+
+  // ── Small components ────────────────────────────────────────────────────────
+  function Avatar({ initials, color, size=36 }) {
+    return (
+      <div style={{ width:size, height:size, borderRadius:size*0.28, background:`${color}20`, border:`1.5px solid ${color}40`, display:'flex', alignItems:'center', justifyContent:'center', flexShrink:0 }}>
+        <span style={{ fontSize:size*0.33, fontWeight:800, color }}>{initials}</span>
+      </div>
+    )
+  }
+
+  function StagePill({ stage }) {
+    const m = STAGE_META[stage] || { color:'#6b7280' }
+    return <span style={{ fontSize:10, fontWeight:700, color:m.color, background:`${m.color}12`, borderRadius:5, padding:'2px 7px', whiteSpace:'nowrap' }}>{stage}</span>
+  }
+
+  function PriorityDot({ priority, size=7 }) {
+    const m = PM[priority] || PM['Froid']
+    return <span style={{ width:size, height:size, borderRadius:'50%', background:m.dot, display:'inline-block', flexShrink:0 }} />
+  }
+
+  function ScoreRing({ score, size=36 }) {
+    const color = score>=75?C.green:score>=50?C.amber:C.red
+    const R=14, circ=2*Math.PI*R, dash=(score/100)*circ
+    return (
+      <svg width={size} height={size} viewBox="0 0 36 36">
+        <circle cx="18" cy="18" r={R} fill="none" stroke="#f0f1f8" strokeWidth="3"/>
+        <circle cx="18" cy="18" r={R} fill="none" stroke={color} strokeWidth="3"
+          strokeDasharray={`${dash} ${circ-dash}`} strokeDashoffset={circ/4} strokeLinecap="round"/>
+        <text x="18" y="22" textAnchor="middle" fontSize="9" fontWeight="800" fill={color}>{score}</text>
+      </svg>
+    )
+  }
+
+  // ── Bottom Tab Bar ────────────────────────────────────────────────────────
+  function TabBar({ active, setActive }) {
+    const TABS = [
+      { id:'dashboard', label:'Accueil', icon:'◉' },
+      { id:'prospects', label:'Prospects', icon:'👥' },
+      { id:'relances',  label:'Relances',  icon:'🔔', badge:1 },
+      { id:'journal',   label:'Journal',   icon:'📓' },
+      { id:'more',      label:'Plus',      icon:'⋯' },
+    ]
+    return (
+      <div style={{ position:'absolute', bottom:0, left:0, right:0, height:72, background:'rgba(255,255,255,0.95)', backdropFilter:'blur(12px)', borderTop:`1px solid ${C.border}`, display:'flex', paddingBottom:8, zIndex:100 }}>
+        {TABS.map(t=>(
+          <button key={t.id} onClick={()=>setActive(t.id)}
+            style={{ flex:1, display:'flex', flexDirection:'column', alignItems:'center', justifyContent:'center', gap:3, background:'none', border:'none', cursor:'pointer', padding:'6px 0', position:'relative', fontFamily:'inherit' }}>
+            <div style={{ position:'relative' }}>
+              <span style={{ fontSize:18 }}>{t.icon}</span>
+              {t.badge && <span style={{ position:'absolute', top:-3, right:-5, width:14, height:14, borderRadius:'50%', background:C.red, color:'#fff', fontSize:8, fontWeight:800, display:'flex', alignItems:'center', justifyContent:'center', border:'1.5px solid #fff' }}>{t.badge}</span>}
+            </div>
+            <span style={{ fontSize:10, fontWeight:active===t.id?700:500, color:active===t.id?C.primary:C.subtle }}>{t.label}</span>
+            {active===t.id && <div style={{ position:'absolute', bottom:0, left:'50%', transform:'translateX(-50%)', width:4, height:4, borderRadius:'50%', background:C.primary }} />}
+          </button>
+        ))}
+      </div>
+    )
+  }
+
+  // ── Page header ────────────────────────────────────────────────────────────
+  function PageHeader({ title, subtitle, action, onAction, back, onBack }) {
+    return (
+      <div style={{ padding:'8px 16px 10px', background:C.card, borderBottom:`1px solid ${C.border}`, display:'flex', alignItems:'center', justifyContent:'space-between', gap:8, flexShrink:0 }}>
+        <div style={{ display:'flex', alignItems:'center', gap:8 }}>
+          {back && <button onClick={onBack} style={{ width:32, height:32, borderRadius:9, background:'#f7f8ff', border:`1px solid ${C.border}`, cursor:'pointer', fontSize:16, display:'flex', alignItems:'center', justifyContent:'center', flexShrink:0 }}>←</button>}
+          <div>
+            <div style={{ fontSize:17, fontWeight:800, color:C.text, lineHeight:1.2 }}>{title}</div>
+            {subtitle && <div style={{ fontSize:11, color:C.subtle, marginTop:1 }}>{subtitle}</div>}
+          </div>
+        </div>
+        {action && <button onClick={onAction} style={{ background:C.gradient, border:'none', borderRadius:10, padding:'7px 14px', color:'#fff', fontSize:12, fontWeight:700, cursor:'pointer', boxShadow:`0 3px 10px ${C.primary}40`, fontFamily:'inherit' }}>{action}</button>}
+      </div>
+    )
+  }
+
+  // ════════════════════════════════════════════════════════════════════════════
+  // DASHBOARD
+  // ════════════════════════════════════════════════════════════════════════════
+  function DashboardScreen({ setTab, setScreen }) {
+    return (
+      <div style={{ flex:1, overflowY:'auto', background:C.bg, paddingBottom:80 }}>
+        {/* Top bar */}
+        <div style={{ padding:'10px 16px 12px', background:C.card, borderBottom:`1px solid ${C.border}`, display:'flex', alignItems:'center', justifyContent:'space-between' }}>
+          <div style={{ display:'flex', alignItems:'center', gap:10 }}>
+            <div style={{ width:34, height:34, borderRadius:10, background:C.gradient, display:'flex', alignItems:'center', justifyContent:'center', boxShadow:`0 3px 10px ${C.primary}40` }}>
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/></svg>
+            </div>
+            <div>
+              <div style={{ fontSize:14, fontWeight:800, color:C.text }}>Sky Social CRM</div>
+              <div style={{ fontSize:10, color:C.subtle }}>Bonjour, Marie 👋</div>
+            </div>
+          </div>
+          <div style={{ width:34, height:34, borderRadius:10, background:'#f7f8ff', border:`1px solid ${C.border}`, display:'flex', alignItems:'center', justifyContent:'center', fontSize:15 }}>🔍</div>
+        </div>
+
+        {/* Alert banner */}
+        <div onClick={()=>setTab('relances')} style={{ margin:'12px 14px 0', background:C.redLight, border:`1px solid rgba(220,38,38,0.2)`, borderRadius:12, padding:'10px 14px', display:'flex', alignItems:'center', gap:8, cursor:'pointer' }}>
+          <span style={{ fontSize:15 }}>⚠️</span>
+          <div style={{ flex:1 }}>
+            <div style={{ fontSize:12, fontWeight:700, color:C.red }}>1 relance en retard</div>
+            <div style={{ fontSize:11, color:'rgba(220,38,38,0.7)' }}>ModaLux · Antoine Petit</div>
+          </div>
+          <span style={{ fontSize:12, color:C.red, fontWeight:700 }}>→</span>
+        </div>
+
+        {/* KPI grid 2x2 */}
+        <div style={{ display:'grid', gridTemplateColumns:'1fr 1fr', gap:10, padding:'12px 14px 0' }}>
+          {[
+            {label:'Prospects',val:'47',icon:'👥',color:C.primary,trend:'+12'},
+            {label:'Potentiel',val:'284k€',icon:'💰',color:C.green,trend:'+8%'},
+            {label:'Conversion',val:'23%',icon:'🎯',color:'#7c3aed',trend:'+2%'},
+            {label:'Chauds',val:'8',icon:'🔥',color:C.red,trend:'-1'},
+          ].map(k=>(
+            <div key={k.label} style={{ background:C.card, border:`1px solid ${C.border}`, borderRadius:14, padding:'14px', boxShadow:'0 1px 4px rgba(99,102,241,0.05)' }}>
+              <div style={{ display:'flex', justifyContent:'space-between', alignItems:'flex-start', marginBottom:6 }}>
+                <span style={{ fontSize:20 }}>{k.icon}</span>
+                <span style={{ fontSize:10, fontWeight:700, color:k.trend.startsWith('-')?C.red:C.green, background:k.trend.startsWith('-')?C.redLight:C.greenLight, borderRadius:5, padding:'1px 5px' }}>{k.trend}</span>
+              </div>
+              <div style={{ fontSize:22, fontWeight:800, color:k.color, lineHeight:1 }}>{k.val}</div>
+              <div style={{ fontSize:11, color:C.subtle, marginTop:3 }}>{k.label}</div>
+            </div>
+          ))}
+        </div>
+
+        {/* Goal bar */}
+        <div style={{ margin:'10px 14px 0', background:C.card, border:`1px solid ${C.border}`, borderRadius:14, padding:'14px' }}>
+          <div style={{ display:'flex', justifyContent:'space-between', alignItems:'center', marginBottom:10 }}>
+            <div>
+              <div style={{ fontSize:12, fontWeight:700, color:C.text }}>Objectif mensuel</div>
+              <div style={{ fontSize:18, fontWeight:800, color:C.text, marginTop:2 }}>31 200 €<span style={{ fontSize:11, color:C.subtle, fontWeight:400 }}> / 50 000 €</span></div>
+            </div>
+            <div style={{ textAlign:'right' }}>
+              <div style={{ fontSize:22, fontWeight:800, color:C.amber }}>62%</div>
+              <div style={{ fontSize:10, color:C.subtle }}>atteint</div>
+            </div>
+          </div>
+          <div style={{ height:7, borderRadius:4, background:'#eef0ff' }}>
+            <div style={{ width:'62%', height:'100%', borderRadius:4, background:`linear-gradient(90deg,${C.amber}aa,${C.amber})` }} />
+          </div>
+        </div>
+
+        {/* Today's relances */}
+        <div style={{ margin:'10px 14px 0' }}>
+          <div style={{ display:'flex', justifyContent:'space-between', alignItems:'center', marginBottom:8 }}>
+            <div style={{ fontSize:13, fontWeight:700, color:C.text }}>Relances du jour</div>
+            <button onClick={()=>setTab('relances')} style={{ fontSize:11, color:C.primary, fontWeight:600, background:'none', border:'none', cursor:'pointer', fontFamily:'inherit', padding:0 }}>Voir tout →</button>
+          </div>
+          {RELANCES.slice(1,3).map(r=>(
+            <div key={r.id} style={{ background:C.card, border:`1px solid ${C.border}`, borderLeft:`3px solid ${C.amber}`, borderRadius:12, padding:'11px 13px', marginBottom:8, display:'flex', alignItems:'center', gap:10 }}>
+              <PriorityDot priority={r.priority} size={8} />
+              <div style={{ flex:1 }}>
+                <div style={{ fontSize:13, fontWeight:700, color:C.text }}>{r.company}</div>
+                <div style={{ fontSize:11, color:C.subtle }}>{r.contact}</div>
+              </div>
+              <StagePill stage={r.stage} />
+            </div>
+          ))}
+        </div>
+
+        {/* Activity feed */}
+        <div style={{ margin:'10px 14px 0' }}>
+          <div style={{ display:'flex', justifyContent:'space-between', alignItems:'center', marginBottom:8 }}>
+            <div style={{ fontSize:13, fontWeight:700, color:C.text }}>Activité récente</div>
+            <button onClick={()=>setTab('journal')} style={{ fontSize:11, color:C.primary, fontWeight:600, background:'none', border:'none', cursor:'pointer', fontFamily:'inherit', padding:0 }}>Journal →</button>
+          </div>
+          <div style={{ background:C.card, border:`1px solid ${C.border}`, borderRadius:14, overflow:'hidden' }}>
+            {JOURNAL.slice(0,3).map((item,i)=>(
+              <div key={item.id} style={{ display:'flex', gap:10, padding:'11px 13px', borderBottom:i<2?`1px solid ${C.border}`:'none', alignItems:'flex-start' }}>
+                <div style={{ width:30, height:30, borderRadius:8, background:`${C.primary}10`, display:'flex', alignItems:'center', justifyContent:'center', fontSize:13, flexShrink:0 }}>{item.icon}</div>
+                <div style={{ flex:1, minWidth:0 }}>
+                  <div style={{ display:'flex', justifyContent:'space-between', alignItems:'center', gap:6 }}>
+                    <span style={{ fontSize:12, fontWeight:700, color:C.text, overflow:'hidden', textOverflow:'ellipsis', whiteSpace:'nowrap' }}>{item.prospect}</span>
+                    <span style={{ fontSize:10, color:C.subtle, flexShrink:0 }}>{item.time}</span>
+                  </div>
+                  <div style={{ fontSize:11, color:C.muted, marginTop:2, overflow:'hidden', textOverflow:'ellipsis', whiteSpace:'nowrap' }}>{item.summary}</div>
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+      </div>
+    )
+  }
+
+  // ════════════════════════════════════════════════════════════════════════════
+  // PROSPECTS LIST
+  // ════════════════════════════════════════════════════════════════════════════
+  function ProspectsScreen({ setScreen, setDetailId }) {
+    const [search, setSearch] = React.useState('')
+    const [filter, setFilter] = React.useState('')
+    const filtered = PROSPECTS.filter(p=>{
+      if(search && !p.company.toLowerCase().includes(search.toLowerCase())) return false
+      if(filter && p.priority !== filter) return false
+      return true
+    })
+    return (
+      <div style={{ flex:1, display:'flex', flexDirection:'column', overflow:'hidden', background:C.bg }}>
+        <PageHeader title="Prospects" subtitle={`${PROSPECTS.length} au total`} action="+ Ajouter" />
+        {/* Search + filter */}
+        <div style={{ padding:'10px 14px', background:C.card, borderBottom:`1px solid ${C.border}`, display:'flex', gap:8 }}>
+          <input value={search} onChange={e=>setSearch(e.target.value)} placeholder="🔍 Rechercher…"
+            style={{ flex:1, background:'#f7f8ff', border:`1px solid ${C.border}`, borderRadius:9, padding:'8px 12px', fontSize:13, color:C.text, outline:'none' }} />
+          <select value={filter} onChange={e=>setFilter(e.target.value)}
+            style={{ background:'#f7f8ff', border:`1px solid ${C.border}`, borderRadius:9, padding:'8px 10px', fontSize:12, color:C.muted, outline:'none', cursor:'pointer' }}>
+            <option value="">Tous</option>
+            <option>Chaud</option><option>Tiède</option><option>Froid</option>
+          </select>
+        </div>
+        {/* List */}
+        <div style={{ flex:1, overflowY:'auto', padding:'10px 14px', paddingBottom:80, display:'flex', flexDirection:'column', gap:8 }}>
+          {filtered.map(p=>{
+            const pm = PM[p.priority]
+            const sm = STAGE_META[p.stage]
+            const overdue = p.followup && new Date(p.followup) < new Date()
+            return (
+              <div key={p.id} onClick={()=>{ setDetailId(p.id); setScreen('detail') }}
+                style={{ background:C.card, border:`1px solid ${C.border}`, borderLeft:`3px solid ${pm.dot}`, borderRadius:14, padding:'13px 14px', cursor:'pointer', transition:'all 0.13s', boxShadow:'0 1px 3px rgba(99,102,241,0.05)' }}
+                onTouchStart={e=>e.currentTarget.style.background='#f9faff'} onTouchEnd={e=>e.currentTarget.style.background=C.card}
+              >
+                <div style={{ display:'flex', alignItems:'flex-start', gap:10 }}>
+                  <Avatar initials={p.initials} color={p.color} size={40} />
+                  <div style={{ flex:1, minWidth:0 }}>
+                    <div style={{ display:'flex', alignItems:'center', justifyContent:'space-between', gap:6, marginBottom:4 }}>
+                      <span style={{ fontSize:14, fontWeight:700, color:C.text, overflow:'hidden', textOverflow:'ellipsis', whiteSpace:'nowrap' }}>{p.company}</span>
+                      {p.value && <span style={{ fontSize:12, fontWeight:800, color:C.green, flexShrink:0 }}>{(p.value/1000).toFixed(1)}k€</span>}
+                    </div>
+                    <div style={{ fontSize:12, color:C.muted, marginBottom:7 }}>{p.contact}{p.title?` · ${p.title}`:''}</div>
+                    <div style={{ display:'flex', alignItems:'center', gap:6, flexWrap:'wrap' }}>
+                      <StagePill stage={p.stage} />
+                      <span style={{ fontSize:10, fontWeight:700, color:pm.color, background:pm.bg, borderRadius:5, padding:'2px 7px', display:'inline-flex', alignItems:'center', gap:3 }}>
+                        <PriorityDot priority={p.priority} size={5} />{p.priority}
+                      </span>
+                      {p.followup && <span style={{ fontSize:10, color:overdue?C.red:C.subtle, marginLeft:'auto' }}>
+                        {overdue?'⚠ ':''}{new Date(p.followup+'T12:00:00').toLocaleDateString('fr-FR',{day:'numeric',month:'short'})}
+                      </span>}
+                    </div>
+                  </div>
+                  <div style={{ flexShrink:0 }}>
+                    <ScoreRing score={p.score} size={36} />
+                  </div>
+                </div>
+              </div>
+            )
+          })}
+        </div>
+        {/* FAB */}
+        <button style={{ position:'absolute', bottom:84, right:16, width:52, height:52, borderRadius:'50%', background:C.gradient, border:'none', color:'#fff', fontSize:24, cursor:'pointer', boxShadow:`0 6px 20px ${C.primary}50`, display:'flex', alignItems:'center', justifyContent:'center', zIndex:50 }}>+</button>
+      </div>
+    )
+  }
+
+  // ════════════════════════════════════════════════════════════════════════════
+  // PROSPECT DETAIL
+  // ════════════════════════════════════════════════════════════════════════════
+  function ProspectDetailScreen({ id, onBack }) {
+    const p = PROSPECTS.find(x=>x.id===id) || PROSPECTS[0]
+    const pm = PM[p.priority]
+    const sm = STAGE_META[p.stage]
+    const [tab, setTab] = React.useState('timeline')
+    const PIPE = ['Identifié','Contact','Réponse','RDV','Devis','Négo','Gagné']
+    const stageIdx = ['Identifié','Premier contact','Réponse reçue','RDV fixé','Devis envoyé','En négociation','Gagné'].indexOf(p.stage)
+
+    const INTERACTIONS = [
+      {type:'Appel',summary:'Appel de qualification — très intéressé par le pack SEO + Social',date:'22 avr.',outcome:'Positif',icon:'📞'},
+      {type:'LinkedIn',summary:'Message LinkedIn de premier contact — réponse rapide',date:'18 avr.',outcome:'Positif',icon:'💼'},
+      {type:'Note',summary:'Prospect identifié via post LinkedIn sur leur levée de fonds',date:'15 avr.',outcome:null,icon:'📝'},
+    ]
+
+    return (
+      <div style={{ flex:1, display:'flex', flexDirection:'column', overflow:'hidden', background:C.bg }}>
+        {/* Header */}
+        <PageHeader title={p.company} subtitle={`${p.contact}${p.title?' · '+p.title:''}`} back onBack={onBack} />
+
+        <div style={{ flex:1, overflowY:'auto', paddingBottom:80 }}>
+          {/* Hero card */}
+          <div style={{ margin:'10px 14px 0', background:C.card, border:`1px solid ${C.border}`, borderRadius:16, padding:'16px' }}>
+            <div style={{ display:'flex', alignItems:'center', gap:12, marginBottom:14 }}>
+              <Avatar initials={p.initials} color={p.color} size={52} />
+              <div style={{ flex:1 }}>
+                <div style={{ display:'flex', gap:6, flexWrap:'wrap', marginBottom:6 }}>
+                  <StagePill stage={p.stage} />
+                  <span style={{ fontSize:10, fontWeight:700, color:pm.color, background:pm.bg, borderRadius:5, padding:'2px 7px', display:'inline-flex', alignItems:'center', gap:3 }}>
+                    <PriorityDot priority={p.priority} size={5} />{p.priority}
+                  </span>
+                </div>
+                <div style={{ fontSize:11, color:C.subtle }}>{p.channel}</div>
+              </div>
+              <div style={{ textAlign:'center' }}>
+                <ScoreRing score={p.score} size={44} />
+                <div style={{ fontSize:9, color:C.subtle, marginTop:2 }}>Score</div>
+              </div>
+            </div>
+
+            {/* Pipeline mini progress */}
+            <div style={{ marginBottom:14 }}>
+              <div style={{ display:'flex', gap:2 }}>
+                {PIPE.map((s,i)=>(
+                  <div key={s} style={{ flex:1, height:4, borderRadius:2, background: i<=stageIdx ? C.primary : '#eef0ff', transition:'background 0.3s' }} />
+                ))}
+              </div>
+              <div style={{ display:'flex', justifyContent:'space-between', marginTop:4 }}>
+                <span style={{ fontSize:9, color:C.subtle }}>Identifié</span>
+                <span style={{ fontSize:9, color:C.primary, fontWeight:700 }}>{p.stage}</span>
+                <span style={{ fontSize:9, color:C.subtle }}>Gagné</span>
+              </div>
+            </div>
+
+            {/* Deal value + followup */}
+            <div style={{ display:'grid', gridTemplateColumns:'1fr 1fr', gap:8, marginBottom:14 }}>
+              <div style={{ background:'#f9faff', borderRadius:10, padding:'10px 12px' }}>
+                <div style={{ fontSize:10, color:C.subtle, marginBottom:2 }}>Valeur du deal</div>
+                <div style={{ fontSize:18, fontWeight:800, color:C.green }}>{p.value ? `${p.value.toLocaleString('fr-FR')} €` : '—'}</div>
+              </div>
+              <div style={{ background: p.followup&&new Date(p.followup)<new Date()?C.redLight:'#f9faff', borderRadius:10, padding:'10px 12px', border: p.followup&&new Date(p.followup)<new Date()?`1px solid rgba(220,38,38,0.2)`:'none' }}>
+                <div style={{ fontSize:10, color:C.subtle, marginBottom:2 }}>Prochain contact</div>
+                <div style={{ fontSize:12, fontWeight:700, color:p.followup&&new Date(p.followup)<new Date()?C.red:C.text }}>
+                  {p.followup ? new Date(p.followup+'T12:00:00').toLocaleDateString('fr-FR',{day:'numeric',month:'short'}) : 'Non planifié'}
+                </div>
+              </div>
+            </div>
+
+            {/* Quick actions */}
+            <div style={{ display:'flex', gap:8 }}>
+              {[
+                {label:'Appeler',icon:'📞',color:C.green},
+                {label:'Email',icon:'✉️',color:C.blue},
+                {label:'LinkedIn',icon:'💼',color:C.primary},
+                {label:'Relance',icon:'📅',color:C.amber},
+              ].map(a=>(
+                <button key={a.label} style={{ flex:1, display:'flex', flexDirection:'column', alignItems:'center', gap:4, background:`${a.color}10`, border:`1px solid ${a.color}25`, borderRadius:10, padding:'8px 4px', cursor:'pointer', fontFamily:'inherit' }}>
+                  <span style={{ fontSize:16 }}>{a.icon}</span>
+                  <span style={{ fontSize:9, fontWeight:600, color:a.color }}>{a.label}</span>
+                </button>
+              ))}
+            </div>
+          </div>
+
+          {/* Tabs */}
+          <div style={{ display:'flex', gap:4, margin:'10px 14px 0', background:C.card, border:`1px solid ${C.border}`, borderRadius:12, padding:5 }}>
+            {[['timeline','⏱ Timeline'],['notes','📝 Notes'],['infos','ℹ️ Infos']].map(([k,l])=>(
+              <button key={k} onClick={()=>setTab(k)} style={{ flex:1, padding:'7px 4px', borderRadius:9, border:'none', background:tab===k?C.primaryLight:'transparent', color:tab===k?C.primary:C.muted, fontSize:11, fontWeight:tab===k?700:500, cursor:'pointer', fontFamily:'inherit', transition:'all 0.13s' }}>{l}</button>
+            ))}
+          </div>
+
+          {/* Timeline */}
+          {tab === 'timeline' && (
+            <div style={{ margin:'10px 14px 0', background:C.card, border:`1px solid ${C.border}`, borderRadius:14, overflow:'hidden' }}>
+              {/* Add note bar */}
+              <div style={{ display:'flex', gap:8, padding:'10px 12px', borderBottom:`1px solid ${C.border}` }}>
+                <input placeholder="Ajouter une interaction…" style={{ flex:1, background:'#f7f8ff', border:`1px solid ${C.border}`, borderRadius:8, padding:'8px 11px', fontSize:12, color:C.text, outline:'none' }} />
+                <button style={{ background:C.primary, border:'none', borderRadius:8, padding:'8px 12px', color:'#fff', fontSize:12, fontWeight:700, cursor:'pointer', fontFamily:'inherit' }}>+</button>
+              </div>
+              {INTERACTIONS.map((item,i)=>(
+                <div key={i} style={{ display:'flex', gap:10, padding:'11px 13px', borderBottom:i<INTERACTIONS.length-1?`1px solid ${C.border}`:'none' }}>
+                  <div style={{ width:28, height:28, borderRadius:8, background:`${C.primary}10`, border:`1.5px solid ${C.primary}25`, display:'flex', alignItems:'center', justifyContent:'center', fontSize:13, flexShrink:0 }}>{item.icon}</div>
+                  <div style={{ flex:1 }}>
+                    <div style={{ display:'flex', justifyContent:'space-between', gap:6, marginBottom:3 }}>
+                      <span style={{ fontSize:11, fontWeight:700, color:C.primary }}>{item.type}</span>
+                      <span style={{ fontSize:10, color:C.subtle }}>{item.date}</span>
+                    </div>
+                    <div style={{ fontSize:12, color:C.muted, lineHeight:1.45 }}>{item.summary}</div>
+                    {item.outcome && <span style={{ display:'inline-block', marginTop:4, fontSize:10, fontWeight:600, color:item.outcome==='Positif'?C.green:C.amber, background:item.outcome==='Positif'?C.greenLight:C.amberLight, borderRadius:4, padding:'1px 6px' }}>{item.outcome}</span>}
+                  </div>
+                </div>
+              ))}
+            </div>
+          )}
+
+          {tab === 'notes' && (
+            <div style={{ margin:'10px 14px 0', background:C.card, border:`1px solid ${C.border}`, borderRadius:14, padding:14 }}>
+              <textarea rows={6} placeholder="Notes libres sur ce prospect…" style={{ width:'100%', background:'#f9faff', border:`1px solid ${C.border}`, borderRadius:9, padding:'10px 12px', fontSize:13, fontFamily:'inherit', outline:'none', resize:'none', lineHeight:1.6, color:C.text }} />
+              <button style={{ marginTop:10, width:'100%', background:C.primary, border:'none', borderRadius:10, padding:'10px', color:'#fff', fontSize:13, fontWeight:700, cursor:'pointer', fontFamily:'inherit' }}>Sauvegarder</button>
+            </div>
+          )}
+
+          {tab === 'infos' && (
+            <div style={{ margin:'10px 14px 0', background:C.card, border:`1px solid ${C.border}`, borderRadius:14, overflow:'hidden' }}>
+              {[['Secteur','Tech'],['Canal',p.channel],['Score',p.score+'/100'],['Valeur',p.value?p.value.toLocaleString('fr-FR')+' €':'—']].map(([l,v],i,arr)=>(
+                <div key={l} style={{ display:'flex', justifyContent:'space-between', padding:'12px 14px', borderBottom:i<arr.length-1?`1px solid ${C.border}`:'none' }}>
+                  <span style={{ fontSize:12, color:C.muted }}>{l}</span>
+                  <span style={{ fontSize:12, fontWeight:600, color:C.text }}>{v}</span>
+                </div>
+              ))}
+            </div>
+          )}
+        </div>
+
+        {/* Bottom action bar */}
+        <div style={{ position:'absolute', bottom:0, left:0, right:0, padding:'10px 14px 12px', background:'rgba(255,255,255,0.97)', backdropFilter:'blur(10px)', borderTop:`1px solid ${C.border}`, display:'flex', gap:8, zIndex:50 }}>
+          <button style={{ flex:1, background:C.gradient, border:'none', borderRadius:12, padding:'12px', color:'#fff', fontSize:13, fontWeight:700, cursor:'pointer', fontFamily:'inherit', boxShadow:`0 4px 14px ${C.primary}40` }}>✓ Marquer contacté</button>
+          <button style={{ width:46, height:46, borderRadius:12, background:'#f7f8ff', border:`1px solid ${C.border}`, cursor:'pointer', fontSize:16, display:'flex', alignItems:'center', justifyContent:'center' }}>✏️</button>
+        </div>
+      </div>
+    )
+  }
+
+  // ════════════════════════════════════════════════════════════════════════════
+  // RELANCES
+  // ════════════════════════════════════════════════════════════════════════════
+  function RelancesScreen({ setScreen, setDetailId }) {
+    const overdue = RELANCES.filter(r=>r.overdue)
+    const today = RELANCES.filter(r=>!r.overdue && r.date==='2026-04-22')
+    const upcoming = RELANCES.filter(r=>!r.overdue && r.date!=='2026-04-22')
+
+    function Row({ r }) {
+      const pm = PM[r.priority]
+      return (
+        <div style={{ background:C.card, border:`1px solid ${r.overdue?'rgba(220,38,38,0.25)':C.border}`, borderLeft:`3px solid ${r.overdue?C.red:C.amber}`, borderRadius:13, padding:'12px 13px', marginBottom:8 }}>
+          <div style={{ display:'flex', alignItems:'center', gap:8, marginBottom:8 }}>
+            <PriorityDot priority={r.priority} />
+            <span onClick={()=>{ setDetailId(r.id); setScreen('detail') }} style={{ fontSize:13, fontWeight:700, color:C.text, flex:1, cursor:'pointer' }}>{r.company}</span>
+            <span style={{ fontSize:11, fontWeight:600, color:r.overdue?C.red:C.amber }}>
+              {r.overdue?'⚠ En retard':new Date(r.date+'T12:00:00').toLocaleDateString('fr-FR',{day:'numeric',month:'short'})}
+            </span>
+          </div>
+          <div style={{ fontSize:11, color:C.subtle, marginBottom:10 }}>{r.contact} · {r.stage}</div>
+          <div style={{ display:'flex', gap:7 }}>
+            <button onClick={()=>alert('Marqué contacté!')} style={{ flex:1, background:C.greenLight, border:`1px solid rgba(22,163,74,0.2)`, borderRadius:9, padding:'8px', color:C.green, fontSize:12, fontWeight:700, cursor:'pointer', fontFamily:'inherit' }}>✓ Contacté</button>
+            <button style={{ flex:1, background:'#f7f8ff', border:`1px solid ${C.border}`, borderRadius:9, padding:'8px', color:C.muted, fontSize:12, cursor:'pointer', fontFamily:'inherit' }}>📅 Reporter</button>
+          </div>
+        </div>
+      )
+    }
+
+    return (
+      <div style={{ flex:1, display:'flex', flexDirection:'column', overflow:'hidden', background:C.bg }}>
+        <PageHeader title="Relances" subtitle={`${RELANCES.length} en attente`} />
+        <div style={{ flex:1, overflowY:'auto', padding:'10px 14px', paddingBottom:80 }}>
+          {overdue.length > 0 && (
+            <div style={{ marginBottom:16 }}>
+              <div style={{ fontSize:12, fontWeight:700, color:C.red, marginBottom:8 }}>🔴 En retard ({overdue.length})</div>
+              {overdue.map(r=><Row key={r.id} r={r}/>)}
+            </div>
+          )}
+          <div style={{ marginBottom:16 }}>
+            <div style={{ fontSize:12, fontWeight:700, color:C.amber, marginBottom:8 }}>🟡 Aujourd'hui ({today.length})</div>
+            {today.length===0 && <div style={{ fontSize:12, color:C.subtle, padding:'10px 0' }}>Aucune relance ce jour.</div>}
+            {today.map(r=><Row key={r.id} r={r}/>)}
+          </div>
+          <div>
+            <div style={{ fontSize:12, fontWeight:700, color:C.muted, marginBottom:8 }}>📆 À venir ({upcoming.length})</div>
+            {upcoming.map(r=><Row key={r.id} r={r}/>)}
+          </div>
+        </div>
+      </div>
+    )
+  }
+
+  // ════════════════════════════════════════════════════════════════════════════
+  // JOURNAL
+  // ════════════════════════════════════════════════════════════════════════════
+  function JournalScreen({ setScreen, setDetailId }) {
+    const [expanded, setExpanded] = React.useState(null)
+    const TYPE_COLOR = {'Appel':C.green,'LinkedIn':C.primary,'Email':C.blue,'Réunion':C.amber,'Note':C.muted}
+    const OUTCOME_META = {'Positif':{color:C.green,bg:C.greenLight},'Gagné':{color:C.green,bg:C.greenLight},'En attente':{color:C.amber,bg:C.amberLight}}
+
+    return (
+      <div style={{ flex:1, display:'flex', flexDirection:'column', overflow:'hidden', background:C.bg }}>
+        <PageHeader title="Journal" subtitle={`${JOURNAL.length} interactions`} action="+ Entrée" />
+        <div style={{ flex:1, overflowY:'auto', padding:'10px 14px', paddingBottom:80 }}>
+          {/* Group by date */}
+          {[["Aujourd'hui", JOURNAL.filter(j=>j.date==="Aujourd'hui")],["Hier",JOURNAL.filter(j=>j.date==='Hier')],["20 avr.",JOURNAL.filter(j=>j.date==='20 avr.')]].filter(([,items])=>items.length>0).map(([date,items])=>(
+            <div key={date} style={{ marginBottom:16 }}>
+              <div style={{ display:'flex', alignItems:'center', gap:8, marginBottom:8 }}>
+                <div style={{ fontSize:11, fontWeight:700, color:C.primary, background:C.primaryLight, border:`1px solid ${C.primaryBorder}`, borderRadius:6, padding:'3px 9px' }}>{date}</div>
+                <div style={{ flex:1, height:1, background:C.border }} />
+              </div>
+              <div style={{ background:C.card, border:`1px solid ${C.border}`, borderRadius:14, overflow:'hidden' }}>
+                {items.map((item,i)=>{
+                  const tc = TYPE_COLOR[item.type]||C.muted
+                  const om = OUTCOME_META[item.outcome]||{}
+                  const isExp = expanded===item.id
+                  return (
+                    <div key={item.id} style={{ borderBottom:i<items.length-1?`1px solid ${C.border}`:'none' }}>
+                      <div onClick={()=>setExpanded(isExp?null:item.id)} style={{ display:'flex', gap:10, padding:'12px 13px', cursor:'pointer', background:isExp?'#f9faff':'transparent' }}>
+                        <div style={{ width:30, height:30, borderRadius:9, background:`${tc}12`, border:`1.5px solid ${tc}28`, display:'flex', alignItems:'center', justifyContent:'center', fontSize:14, flexShrink:0 }}>{item.icon}</div>
+                        <div style={{ flex:1, minWidth:0 }}>
+                          <div style={{ display:'flex', alignItems:'center', gap:6, marginBottom:3, flexWrap:'wrap' }}>
+                            <span style={{ fontSize:12, fontWeight:700, color:C.text, overflow:'hidden', textOverflow:'ellipsis', whiteSpace:'nowrap' }}>{item.prospect}</span>
+                            {item.outcome && <span style={{ fontSize:10, fontWeight:700, color:om.color, background:om.bg, borderRadius:4, padding:'1px 6px' }}>{item.outcome}</span>}
+                            <span style={{ fontSize:10, color:C.subtle, marginLeft:'auto', flexShrink:0 }}>{item.time}</span>
+                          </div>
+                          <div style={{ fontSize:11, color:C.muted, overflow:'hidden', textOverflow:'ellipsis', whiteSpace:'nowrap' }}>{item.summary}</div>
+                        </div>
+                        <span style={{ fontSize:12, color:C.subtle, flexShrink:0, alignSelf:'center' }}>{isExp?'▲':'▼'}</span>
+                      </div>
+                      {isExp && (
+                        <div style={{ padding:'0 13px 13px 53px', background:'#f9faff', borderTop:`1px solid ${C.border}` }}>
+                          <div style={{ paddingTop:10 }}>
+                            <p style={{ fontSize:12, color:C.text, lineHeight:1.55, background:C.card, border:`1px solid ${C.border}`, borderRadius:9, padding:'10px 12px', marginBottom:10 }}>{item.summary}</p>
+                            <div style={{ fontSize:10, fontWeight:700, color:C.subtle, textTransform:'uppercase', letterSpacing:'0.06em', marginBottom:5 }}>Débrief personnel</div>
+                            <textarea rows={2} placeholder="Votre analyse…" style={{ width:'100%', background:C.card, border:`1px dashed ${C.border}`, borderRadius:8, padding:'8px 10px', fontSize:11, fontFamily:'inherit', outline:'none', resize:'none', lineHeight:1.5, color:C.text }} />
+                            <div style={{ display:'flex', gap:6, marginTop:8 }}>
+                              <button onClick={()=>{ setDetailId(item.prospectId); setScreen('detail') }} style={{ flex:1, background:C.primaryLight, border:`1px solid ${C.primaryBorder}`, borderRadius:8, padding:'7px', color:C.primary, fontSize:11, fontWeight:600, cursor:'pointer', fontFamily:'inherit' }}>Voir fiche →</button>
+                              <button style={{ flex:1, background:C.greenLight, border:`1px solid rgba(22,163,74,0.2)`, borderRadius:8, padding:'7px', color:C.green, fontSize:11, fontWeight:600, cursor:'pointer', fontFamily:'inherit' }}>✓ Sauvegarder</button>
+                            </div>
+                          </div>
+                        </div>
+                      )}
+                    </div>
+                  )
+                })}
+              </div>
+            </div>
+          ))}
+        </div>
+      </div>
+    )
+  }
+
+  // ════════════════════════════════════════════════════════════════════════════
+  // MORE / SETTINGS
+  // ════════════════════════════════════════════════════════════════════════════
+  function MoreScreen() {
+    return (
+      <div style={{ flex:1, display:'flex', flexDirection:'column', overflow:'hidden', background:C.bg }}>
+        <div style={{ padding:'12px 16px 14px', background:C.card, borderBottom:`1px solid ${C.border}` }}>
+          <div style={{ fontSize:17, fontWeight:800, color:C.text }}>Plus</div>
+        </div>
+        <div style={{ flex:1, overflowY:'auto', padding:'14px', paddingBottom:80 }}>
+          {/* User card */}
+          <div style={{ background:C.gradient, borderRadius:16, padding:'18px', marginBottom:14, display:'flex', alignItems:'center', gap:12 }}>
+            <div style={{ width:46, height:46, borderRadius:13, background:'rgba(255,255,255,0.2)', display:'flex', alignItems:'center', justifyContent:'center', fontSize:15, fontWeight:800, color:'#fff' }}>MD</div>
+            <div>
+              <div style={{ fontSize:15, fontWeight:800, color:'#fff' }}>Marie Dupont</div>
+              <div style={{ fontSize:12, color:'rgba(255,255,255,0.7)' }}>marie@skysocial.fr</div>
+            </div>
+            <div style={{ marginLeft:'auto', background:'rgba(255,255,255,0.15)', borderRadius:8, padding:'4px 10px', fontSize:11, fontWeight:700, color:'#fff' }}>Pro ⚡</div>
+          </div>
+
+          {/* Menu sections */}
+          {[
+            { title:'Compte', items:[{icon:'👤',label:'Mon profil'},{icon:'🔒',label:'Sécurité'},{icon:'🔔',label:'Notifications'}] },
+            { title:'CRM', items:[{icon:'🎨',label:'Apparence'},{icon:'📋',label:'Fiche prospect'},{icon:'🔗',label:'Intégrations'}] },
+            { title:'Plan', items:[{icon:'💳',label:'Abonnement & Facturation'},{icon:'👥',label:'Équipe'},{icon:'🛡️',label:'Données & RGPD'}] },
+          ].map(section=>(
+            <div key={section.title} style={{ marginBottom:14 }}>
+              <div style={{ fontSize:11, fontWeight:700, color:C.subtle, textTransform:'uppercase', letterSpacing:'0.08em', marginBottom:8, paddingLeft:4 }}>{section.title}</div>
+              <div style={{ background:C.card, border:`1px solid ${C.border}`, borderRadius:14, overflow:'hidden' }}>
+                {section.items.map((item,i)=>(
+                  <div key={item.label} style={{ display:'flex', alignItems:'center', gap:12, padding:'13px 14px', borderBottom:i<section.items.length-1?`1px solid ${C.border}`:'none', cursor:'pointer' }}>
+                    <span style={{ fontSize:18 }}>{item.icon}</span>
+                    <span style={{ fontSize:13, fontWeight:500, color:C.text, flex:1 }}>{item.label}</span>
+                    <span style={{ fontSize:14, color:C.subtle }}>›</span>
+                  </div>
+                ))}
+              </div>
+            </div>
+          ))}
+
+          <button style={{ width:'100%', background:C.redLight, border:`1px solid rgba(220,38,38,0.2)`, borderRadius:12, padding:'13px', color:C.red, fontSize:13, fontWeight:600, cursor:'pointer', fontFamily:'inherit' }}>
+            Se déconnecter
+          </button>
+        </div>
+      </div>
+    )
+  }
+
+  // ════════════════════════════════════════════════════════════════════════════
+  // MAIN APP
+  // ════════════════════════════════════════════════════════════════════════════
+  function CRMApp() {
+    const [tab, setTab] = React.useState('dashboard')
+    const [screen, setScreen] = React.useState('main') // main | detail
+    const [detailId, setDetailId] = React.useState('1')
+
+    const handleSetTab = (t) => { setTab(t); setScreen('main') }
+
+    return (
+      <div style={{ width:'100%', height:'100%', display:'flex', flexDirection:'column', background:C.bg, position:'relative', overflow:'hidden' }}>
+        {screen === 'detail' ? (
+          <ProspectDetailScreen id={detailId} onBack={()=>setScreen('main')} />
+        ) : (
+          <>
+            {tab === 'dashboard' && <DashboardScreen setTab={handleSetTab} setScreen={setScreen} />}
+            {tab === 'prospects' && <ProspectsScreen setScreen={setScreen} setDetailId={setDetailId} />}
+            {tab === 'relances'  && <RelancesScreen setScreen={setScreen} setDetailId={setDetailId} />}
+            {tab === 'journal'   && <JournalScreen setScreen={setScreen} setDetailId={setDetailId} />}
+            {tab === 'more'      && <MoreScreen />}
+          </>
+        )}
+        {screen !== 'detail' && <TabBar active={tab} setActive={handleSetTab} />}
+      </div>
+    )
+  }
+
+  // ════════════════════════════════════════════════════════════════════════════
+  // ROOT
+  // ════════════════════════════════════════════════════════════════════════════
+  function Root() {
+    return (
+      <div style={{ display:'flex', flexDirection:'column', alignItems:'center', gap:16 }}>
+        <div style={{ fontSize:13, fontWeight:600, color:'#6366f1', background:'white', borderRadius:20, padding:'6px 16px', border:'1px solid #e4e7f8', boxShadow:'0 2px 8px rgba(99,102,241,0.1)' }}>
+          📱 Sky Social CRM — Vue Mobile
+        </div>
+        <IOSDevice width={390} height={844}>
+          <CRMApp />
+        </IOSDevice>
+        <div style={{ fontSize:11, color:'#9ca3af', textAlign:'center' }}>
+          Naviguez avec la barre du bas · Cliquez sur un prospect pour la fiche détail
+        </div>
+      </div>
+    )
+  }
+
+  ReactDOM.createRoot(document.getElementById('root')).render(<Root />)
+  </script>
+</body>
+</html>
