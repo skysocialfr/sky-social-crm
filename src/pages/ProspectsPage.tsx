@@ -1,24 +1,35 @@
 import { useState, useMemo } from 'react'
 import { Plus, Upload, Zap } from 'lucide-react'
-import { useProspects, useCreateProspect, useUpdateProspect, useDeleteProspect, useBulkCreateProspects } from '@/hooks/useProspects'
+import {
+  useProspects,
+  useCreateProspect,
+  useUpdateProspect,
+  useDeleteProspect,
+  useBulkCreateProspects,
+} from '@/hooks/useProspects'
 import { useSubscription, FREE_PLAN } from '@/hooks/useSubscription'
 import ProspectForm from '@/components/forms/ProspectForm'
 import ProspectsTable from '@/components/prospects/ProspectsTable'
 import KanbanBoard from '@/components/prospects/KanbanBoard'
 import ViewToggle from '@/components/prospects/ViewToggle'
 import ProspectFilters, { type Filters } from '@/components/prospects/ProspectFilters'
+import AdvancedFilterPanel from '@/components/prospects/AdvancedFilterPanel'
 import ExportButton from '@/components/prospects/ExportButton'
 import ImportCSVModal from '@/components/prospects/ImportCSVModal'
 import UpgradeModal from '@/components/common/UpgradeModal'
 import ConfirmDialog from '@/components/common/ConfirmDialog'
 import { useToast } from '@/components/common/Toast'
+import { evaluateConditions, type FilterCondition } from '@/lib/filterUtils'
 import { cn } from '@/lib/cn'
 import type { Prospect, ProspectFormData, PipelineStage } from '@/types'
 
 function useViewMode(): ['kanban' | 'table', (v: 'kanban' | 'table') => void] {
   const saved = (localStorage.getItem('crm-view') as 'kanban' | 'table') ?? 'table'
   const [view, setView] = useState<'kanban' | 'table'>(saved)
-  const set = (v: 'kanban' | 'table') => { setView(v); localStorage.setItem('crm-view', v) }
+  const set = (v: 'kanban' | 'table') => {
+    setView(v)
+    localStorage.setItem('crm-view', v)
+  }
   return [view, set]
 }
 
@@ -32,7 +43,15 @@ export default function ProspectsPage() {
   const { toast } = useToast()
 
   const [view, setView] = useViewMode()
-  const [filters, setFilters] = useState<Filters>({ search: '', stage: '', priority: '', channel: '', service: '' })
+  const [filters, setFilters] = useState<Filters>({
+    search: '',
+    stage: '',
+    priority: '',
+    channel: '',
+    service: '',
+  })
+  const [advConditions, setAdvConditions] = useState<FilterCondition[]>([])
+  const [advOpen, setAdvOpen] = useState(false)
   const [formOpen, setFormOpen] = useState(false)
   const [editProspect, setEditProspect] = useState<Prospect | null>(null)
   const [defaultStage, setDefaultStage] = useState<string>('Identifié')
@@ -40,7 +59,8 @@ export default function ProspectsPage() {
   const [importOpen, setImportOpen] = useState(false)
   const [upgradeOpen, setUpgradeOpen] = useState(false)
 
-  const isAtLimit = subscription.status !== 'active' && prospects.length >= subscription.prospect_limit
+  const isAtLimit =
+    subscription.status !== 'active' && prospects.length >= subscription.prospect_limit
 
   const filtered = useMemo(() => {
     return prospects.filter((p) => {
@@ -51,15 +71,17 @@ export default function ProspectsPage() {
           !p.first_name.toLowerCase().includes(q) &&
           !p.last_name.toLowerCase().includes(q) &&
           !(p.email ?? '').toLowerCase().includes(q)
-        ) return false
+        )
+          return false
       }
       if (filters.stage && p.stage !== filters.stage) return false
       if (filters.priority && p.priority !== filters.priority) return false
       if (filters.channel && p.channel !== filters.channel) return false
       if (filters.service && !p.services_interested.includes(filters.service)) return false
+      if (advConditions.length > 0 && !evaluateConditions(p, advConditions)) return false
       return true
     })
-  }, [prospects, filters])
+  }, [prospects, filters, advConditions])
 
   const handleOpenCreate = (stage?: PipelineStage) => {
     if (isAtLimit) { setUpgradeOpen(true); return }
@@ -86,7 +108,13 @@ export default function ProspectsPage() {
   }
 
   if (isLoading) {
-    return <div className="text-muted-foreground text-sm">Chargement…</div>
+    return (
+      <div className="flex flex-col gap-4 animate-pulse">
+        <div className="h-16 rounded-card bg-border" />
+        <div className="h-10 rounded-btn bg-border w-2/3" />
+        <div className="h-64 rounded-card bg-border" />
+      </div>
+    )
   }
 
   return (
@@ -94,19 +122,22 @@ export default function ProspectsPage() {
       {/* Header */}
       <div className="flex flex-wrap items-center justify-between gap-3">
         <div>
-          <h1 className="text-xl font-bold text-foreground">Prospects</h1>
-          <p className="text-sm text-muted-foreground">{prospects.length} prospects au total</p>
+          <h1 className="text-xl font-black text-text">Prospects</h1>
+          <p className="text-[13px] text-muted mt-0.5">
+            {filtered.length !== prospects.length
+              ? `${filtered.length} sur ${prospects.length} prospects`
+              : `${prospects.length} prospect${prospects.length !== 1 ? 's' : ''} au total`}
+          </p>
         </div>
-        <div className="flex items-center gap-2">
-          {/* Free plan counter */}
+        <div className="flex items-center gap-2 flex-wrap">
           {subscription.status !== 'active' && (
             <button
               onClick={() => setUpgradeOpen(true)}
               className={cn(
-                'flex items-center gap-1.5 rounded-lg border px-3 py-2 text-xs font-medium transition-colors',
+                'flex items-center gap-1.5 rounded-btn border px-3 py-2 text-xs font-semibold transition-colors',
                 isAtLimit
-                  ? 'border-amber-700 bg-amber-900/20 text-amber-300 hover:bg-amber-900/40'
-                  : 'border-border text-muted-foreground hover:bg-muted hover:text-foreground'
+                  ? 'border-crm-amber bg-crm-amber-light text-crm-amber'
+                  : 'border-border text-muted hover:text-text hover:bg-bg'
               )}
             >
               <Zap size={12} />
@@ -116,24 +147,30 @@ export default function ProspectsPage() {
           <ExportButton prospects={filtered} />
           <button
             onClick={() => setImportOpen(true)}
-            className="flex items-center gap-2 rounded-lg border border-border px-3 py-2 text-sm font-medium text-muted-foreground hover:text-foreground hover:bg-muted transition-colors"
+            className="flex items-center gap-2 rounded-btn border border-border px-3 py-2 text-xs font-semibold text-muted hover:text-text hover:bg-bg transition-colors"
           >
-            <Upload size={14} />
+            <Upload size={13} />
             Importer
           </button>
           <ViewToggle view={view} onChange={setView} />
           <button
             onClick={() => handleOpenCreate()}
-            className="flex items-center gap-2 rounded-lg bg-primary px-4 py-2 text-sm font-semibold text-primary-foreground hover:bg-primary/90 transition-colors"
+            className="flex items-center gap-1.5 rounded-btn px-4 py-2 text-xs font-bold text-white hover:shadow-primary transition-shadow"
+            style={{ background: 'linear-gradient(135deg, #6366f1, #4f52d4)' }}
           >
-            <Plus size={15} />
+            <Plus size={14} />
             Nouveau prospect
           </button>
         </div>
       </div>
 
       {/* Filters */}
-      <ProspectFilters filters={filters} onChange={setFilters} />
+      <ProspectFilters
+        filters={filters}
+        onChange={setFilters}
+        advancedCount={advConditions.length}
+        onAdvancedToggle={() => setAdvOpen(true)}
+      />
 
       {/* Content */}
       {view === 'table' ? (
@@ -143,13 +180,18 @@ export default function ProspectsPage() {
           onDelete={(p) => setDeleteTarget(p)}
         />
       ) : (
-        <KanbanBoard
-          prospects={filtered}
-          onAdd={handleOpenCreate}
-        />
+        <KanbanBoard prospects={filtered} onAdd={handleOpenCreate} />
       )}
 
-      {/* Form Modal */}
+      {/* Advanced Filter Panel */}
+      <AdvancedFilterPanel
+        open={advOpen}
+        onClose={() => setAdvOpen(false)}
+        conditions={advConditions}
+        onChange={setAdvConditions}
+      />
+
+      {/* Modals */}
       <ProspectForm
         open={formOpen}
         onOpenChange={setFormOpen}
@@ -157,21 +199,17 @@ export default function ProspectsPage() {
         defaultStage={defaultStage}
         onSubmit={handleSubmit}
       />
-
-      {/* Upgrade Modal */}
       <UpgradeModal open={upgradeOpen} onOpenChange={setUpgradeOpen} />
-
-      {/* Import CSV */}
       <ImportCSVModal
         open={importOpen}
         onOpenChange={setImportOpen}
         onImport={async (rows) => {
           await bulkCreate.mutateAsync(rows)
-          toast(`${rows.length} prospect${rows.length > 1 ? 's' : ''} importé${rows.length > 1 ? 's' : ''} !`)
+          toast(
+            `${rows.length} prospect${rows.length > 1 ? 's' : ''} importé${rows.length > 1 ? 's' : ''} !`
+          )
         }}
       />
-
-      {/* Delete Confirm */}
       <ConfirmDialog
         open={!!deleteTarget}
         onOpenChange={(o) => !o && setDeleteTarget(null)}
