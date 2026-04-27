@@ -8,7 +8,7 @@ export default function NotFoundPage() {
       <p className="text-xl font-semibold text-foreground">Page introuvable</p>
       <p className="text-sm text-muted-foreground">Cette page n'existe pas.</p>
       <button
-        onClick={() => navigate('/')}
+        onClick={() => navigate('/app')}
         className="rounded-lg bg-primary px-5 py-2.5 text-sm font-semibold text-primary-foreground hover:bg-primary/90 transition-colors"
       >
         Retour au dashboard

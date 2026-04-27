@@ -8,7 +8,7 @@ import ColorPicker from '@/components/common/ColorPicker'
 import LogoUpload from '@/components/common/LogoUpload'
 
 const DEFAULT_COLOR = '217 91% 60%'
-const STEPS = ['Compte', 'Société', 'Personnalisation']
+const STEPS = ['Votre compte', 'Votre société']
 
 export default function RegisterPage() {
   const navigate = useNavigate()
@@ -37,14 +37,12 @@ export default function RegisterPage() {
       if (password.length < 8) { setError('Le mot de passe doit contenir au moins 8 caractères.'); return }
       if (password !== confirm) { setError('Les mots de passe ne correspondent pas.'); return }
     }
-    if (step === 1) {
-      if (!companyName) { setError('Veuillez renseigner le nom de votre société.'); return }
-    }
-    setStep(s => s + 1)
+    setStep(1)
   }
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
+    if (!companyName) { setError('Veuillez renseigner le nom de votre société.'); return }
     setError('')
     setLoading(true)
     try {
@@ -97,7 +95,7 @@ export default function RegisterPage() {
         <div className="w-full max-w-sm text-center space-y-4 rounded-2xl border border-[#e8eaf8] bg-white p-10 shadow-xl">
           <div
             className="flex h-14 w-14 mx-auto items-center justify-center rounded-2xl"
-            style={{ background: 'linear-gradient(135deg, #6366f1, #8b5cf6)' }}
+            style={{ background: 'linear-gradient(135deg, #6366f1, #7c3aed)' }}
           >
             <Zap size={24} className="text-white" fill="currentColor" />
           </div>
@@ -121,39 +119,52 @@ export default function RegisterPage() {
         <div className="mb-8 flex flex-col items-center gap-3">
           <div
             className="flex h-12 w-12 items-center justify-center rounded-xl"
-            style={{ background: 'linear-gradient(135deg, #6366f1, #8b5cf6)' }}
+            style={{ background: 'linear-gradient(135deg, #6366f1, #7c3aed)' }}
           >
             <Zap size={22} className="text-white" fill="currentColor" />
           </div>
           <div className="text-center">
             <h1 className="text-xl font-bold text-gray-900">Créer votre espace CRM</h1>
-            <p className="text-sm text-gray-500 mt-1">Votre CRM personnalisé en quelques secondes</p>
+            <p className="text-sm text-gray-500 mt-1">Prêt en 30 secondes, sans carte bancaire</p>
           </div>
         </div>
 
-        {/* Step indicators */}
-        <div className="flex items-center justify-center mb-8">
-          {STEPS.map((label, i) => (
-            <div key={label} className="flex items-center">
-              <div className="flex items-center gap-2">
+        {/* Progress bar */}
+        <div className="mb-6">
+          <div className="flex items-center justify-between mb-2">
+            {STEPS.map((label, i) => (
+              <div key={label} className="flex items-center gap-2">
                 <div
                   className={cn(
-                    'flex h-7 w-7 items-center justify-center rounded-full text-xs font-bold transition-all',
-                    i < step ? 'bg-emerald-100 text-emerald-600' : i === step ? 'text-white' : 'bg-gray-100 text-gray-400'
+                    'flex h-6 w-6 items-center justify-center rounded-full text-[11px] font-bold transition-all',
+                    i < step
+                      ? 'bg-emerald-100 text-emerald-600'
+                      : i === step
+                      ? 'text-white'
+                      : 'bg-gray-100 text-gray-400'
                   )}
-                  style={i === step ? { background: 'linear-gradient(135deg, #6366f1, #8b5cf6)' } : undefined}
+                  style={i === step ? { background: 'linear-gradient(135deg, #6366f1, #7c3aed)' } : undefined}
                 >
-                  {i < step ? <CheckCircle2 size={14} /> : i + 1}
+                  {i < step ? <CheckCircle2 size={12} /> : i + 1}
                 </div>
                 <span className={cn('text-xs font-medium', i === step ? 'text-indigo-600' : 'text-gray-400')}>
                   {label}
                 </span>
+                {i < STEPS.length - 1 && (
+                  <div className={cn('h-px w-12 mx-1', i < step ? 'bg-emerald-300' : 'bg-gray-200')} />
+                )}
               </div>
-              {i < STEPS.length - 1 && (
-                <div className={cn('h-px w-8 mx-2', i < step ? 'bg-emerald-200' : 'bg-gray-200')} />
-              )}
-            </div>
-          ))}
+            ))}
+          </div>
+          <div className="w-full h-1.5 bg-gray-100 rounded-full overflow-hidden">
+            <div
+              className="h-full rounded-full transition-all duration-500"
+              style={{
+                width: `${((step + 1) / STEPS.length) * 100}%`,
+                background: 'linear-gradient(90deg, #6366f1, #7c3aed)',
+              }}
+            />
+          </div>
         </div>
 
         {/* Card */}
@@ -198,15 +209,31 @@ export default function RegisterPage() {
                   className="w-full rounded-xl border border-[#e4e7f8] bg-[#f7f8ff] px-4 py-3 text-sm text-gray-900 placeholder:text-gray-400 focus:border-indigo-500 focus:outline-none focus:ring-2 focus:ring-indigo-100"
                 />
               </div>
+
+              {error && (
+                <p className="rounded-xl border border-red-100 bg-red-50 px-4 py-2.5 text-xs text-red-600">
+                  {error}
+                </p>
+              )}
+
+              <button
+                type="button"
+                onClick={nextStep}
+                className="flex w-full items-center justify-center gap-2 rounded-xl py-3 text-sm font-semibold text-white hover:opacity-90 transition-opacity shadow-md"
+                style={{ background: 'linear-gradient(135deg, #6366f1, #7c3aed)' }}
+              >
+                Continuer
+                <ArrowRight size={14} />
+              </button>
             </div>
           )}
 
-          {/* Step 1: Company */}
+          {/* Step 1: Company + customization */}
           {step === 1 && (
-            <div className="space-y-4">
+            <form onSubmit={handleSubmit} className="space-y-4">
               <div className="mb-2">
                 <h2 className="text-base font-bold text-gray-900">Votre société</h2>
-                <p className="text-xs text-gray-500 mt-0.5">Ce nom apparaîtra dans votre CRM.</p>
+                <p className="text-xs text-gray-500 mt-0.5">Personnalisez votre espace CRM.</p>
               </div>
               <div>
                 <label className="mb-1.5 block text-sm font-medium text-gray-700">Nom de la société *</label>
@@ -218,21 +245,11 @@ export default function RegisterPage() {
                   className="w-full rounded-xl border border-[#e4e7f8] bg-[#f7f8ff] px-4 py-3 text-sm text-gray-900 placeholder:text-gray-400 focus:border-indigo-500 focus:outline-none focus:ring-2 focus:ring-indigo-100"
                 />
               </div>
-            </div>
-          )}
-
-          {/* Step 2: Customization + submit */}
-          {step === 2 && (
-            <form onSubmit={handleSubmit} className="space-y-5">
-              <div className="mb-2">
-                <h2 className="text-base font-bold text-gray-900">Personnalisez votre CRM</h2>
-                <p className="text-xs text-gray-500 mt-0.5">Choisissez vos couleurs et ajoutez votre logo.</p>
-              </div>
-              <div className="space-y-3">
+              <div className="space-y-2">
                 <p className="text-sm font-medium text-gray-700">Couleur principale</p>
                 <ColorPicker value={color} onChange={handleColorChange} />
               </div>
-              <div className="border-t border-[#e8eaf8] pt-5 space-y-3">
+              <div className="border-t border-[#e8eaf8] pt-4 space-y-2">
                 <p className="text-sm font-medium text-gray-700">
                   Logo <span className="font-normal text-gray-400">(optionnel)</span>
                 </p>
@@ -248,7 +265,7 @@ export default function RegisterPage() {
               <div className="flex items-center gap-3 pt-1">
                 <button
                   type="button"
-                  onClick={() => { setStep(s => s - 1); setError('') }}
+                  onClick={() => { setStep(0); setError('') }}
                   className="flex items-center gap-1.5 rounded-xl border border-[#e8eaf8] px-4 py-3 text-sm font-medium text-gray-600 hover:border-indigo-200 hover:text-indigo-600 transition-colors"
                 >
                   <ArrowLeft size={14} />
@@ -261,44 +278,12 @@ export default function RegisterPage() {
                     'flex flex-1 items-center justify-center gap-2 rounded-xl py-3 text-sm font-semibold text-white hover:opacity-90 transition-opacity shadow-md',
                     loading && 'opacity-50 cursor-not-allowed'
                   )}
-                  style={{ background: 'linear-gradient(135deg, #6366f1, #8b5cf6)' }}
+                  style={{ background: 'linear-gradient(135deg, #6366f1, #7c3aed)' }}
                 >
                   {loading ? 'Création en cours…' : 'Créer mon espace'}
                 </button>
               </div>
             </form>
-          )}
-
-          {/* Navigation for steps 0 and 1 */}
-          {step < 2 && (
-            <div className="mt-5 space-y-3">
-              {error && (
-                <p className="rounded-xl border border-red-100 bg-red-50 px-4 py-2.5 text-xs text-red-600">
-                  {error}
-                </p>
-              )}
-              <div className="flex items-center gap-3">
-                {step > 0 && (
-                  <button
-                    type="button"
-                    onClick={() => { setStep(s => s - 1); setError('') }}
-                    className="flex items-center gap-1.5 rounded-xl border border-[#e8eaf8] px-4 py-3 text-sm font-medium text-gray-600 hover:border-indigo-200 hover:text-indigo-600 transition-colors"
-                  >
-                    <ArrowLeft size={14} />
-                    Retour
-                  </button>
-                )}
-                <button
-                  type="button"
-                  onClick={nextStep}
-                  className="flex flex-1 items-center justify-center gap-2 rounded-xl py-3 text-sm font-semibold text-white hover:opacity-90 transition-opacity shadow-md"
-                  style={{ background: 'linear-gradient(135deg, #6366f1, #8b5cf6)' }}
-                >
-                  Continuer
-                  <ArrowRight size={14} />
-                </button>
-              </div>
-            </div>
           )}
 
           <p className="mt-4 text-center text-xs text-gray-500">

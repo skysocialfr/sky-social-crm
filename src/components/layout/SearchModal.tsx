@@ -20,6 +20,7 @@ export default function SearchModal({ open, onClose }: Props) {
     return () => window.removeEventListener('keydown', handler)
   }, [open, onClose])
 
+  // Global ⌘K / Ctrl+K shortcut
   useEffect(() => {
     const handler = (e: KeyboardEvent) => {
       if ((e.metaKey || e.ctrlKey) && e.key === 'k') { e.preventDefault(); onClose() }
@@ -55,6 +56,7 @@ export default function SearchModal({ open, onClose }: Props) {
         style={{ boxShadow: '0 24px 64px rgba(99,102,241,0.18), 0 4px 24px rgba(0,0,0,0.08)' }}
         onClick={e => e.stopPropagation()}
       >
+        {/* Input */}
         <div className="flex items-center gap-3 px-4 py-[14px] border-b border-[#e4e7f8]">
           <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#9ca3af" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
             <circle cx="11" cy="11" r="8" /><line x1="21" y1="21" x2="16.65" y2="16.65" />
@@ -69,6 +71,7 @@ export default function SearchModal({ open, onClose }: Props) {
           <span className="text-[11px] text-[#9ca3af] bg-[#f4f5ff] rounded-[5px] px-2 font-mono">ESC</span>
         </div>
 
+        {/* Results */}
         {q.length < 2 && (
           <p className="py-7 text-center text-[13px] text-[#9ca3af]">Commencez à taper pour rechercher…</p>
         )}
@@ -97,6 +100,7 @@ export default function SearchModal({ open, onClose }: Props) {
           </button>
         ))}
 
+        {/* Hints */}
         <div className="flex gap-4 px-4 py-[10px] border-t border-[#e4e7f8] text-[11px] text-[#9ca3af]">
           <span>↵ Ouvrir</span>
           <span>ESC Fermer</span>

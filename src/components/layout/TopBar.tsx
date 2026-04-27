@@ -25,24 +25,27 @@ export default function TopBar({ onSearchOpen }: Props) {
 
   return (
     <header
-      className="flex h-[52px] items-center gap-[10px] px-5 flex-shrink-0 bg-white border-b border-[#e4e7f8]"
+      className="flex h-[52px] items-center gap-[10px] px-4 md:px-5 flex-shrink-0 bg-white border-b border-[#e4e7f8]"
       style={{ zIndex: 10 }}
     >
-      <span className="text-[12px] text-[#9ca3af]">Sky Social</span>
-      <span className="text-[12px] text-[#9ca3af]">›</span>
+      {/* Breadcrumb — hidden on mobile */}
+      <span className="hidden md:inline text-[12px] text-[#9ca3af]">Sky Social</span>
+      <span className="hidden md:inline text-[12px] text-[#9ca3af]">›</span>
       <span className="text-[13px] font-bold text-[#1a1c2e]">{title}</span>
 
+      {/* Search — full on desktop, icon-only on mobile */}
       <button
         onClick={onSearchOpen}
-        className="ml-auto flex items-center gap-2 bg-[#f7f8ff] border border-[#e4e7f8] rounded-[9px] px-[14px] py-[6px] text-[12px] text-[#9ca3af] transition-all hover:bg-[#eef0ff] hover:text-[#6b7280] cursor-pointer"
+        className="ml-auto flex items-center gap-2 bg-[#f7f8ff] border border-[#e4e7f8] rounded-[9px] px-[10px] md:px-[14px] py-[6px] text-[12px] text-[#9ca3af] transition-all hover:bg-[#eef0ff] hover:text-[#6b7280] cursor-pointer"
       >
         <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
           <circle cx="11" cy="11" r="8" /><line x1="21" y1="21" x2="16.65" y2="16.65" />
         </svg>
-        Rechercher…
-        <span className="bg-[#e4e7f8] rounded-[4px] px-[5px] py-[1px] text-[10px] text-[#6b7280] font-mono">⌘K</span>
+        <span className="hidden md:inline">Rechercher…</span>
+        <span className="hidden md:inline bg-[#e4e7f8] rounded-[4px] px-[5px] py-[1px] text-[10px] text-[#6b7280] font-mono">⌘K</span>
       </button>
 
+      {/* Bell */}
       <button
         onClick={() => navigate('/app/relances')}
         className="relative flex items-center justify-center w-[34px] h-[34px] rounded-[9px] text-[#6b7280] border border-transparent transition-all hover:bg-[#f7f8ff] hover:border-[#e4e7f8]"

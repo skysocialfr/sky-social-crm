@@ -81,6 +81,22 @@ export interface DashboardStats {
   followupOverdue: number
   byStage: { stage: PipelineStage; count: number; value: number }[]
   byChannel: { channel: string; count: number }[]
+  // v3 — sparklines & trends
+  sparkProspects: number[]
+  sparkRevenue: number[]
+  sparkConversion: number[]
+  sparkHot: number[]
+  totalTrend: number
+  revenueTrend: number
+  conversionTrend: number
+  hotTrend: number
+  // v3 — goal & revenue chart
+  monthlyRevenue: number
+  monthlyGoal: number
+  wonThisMonth: number
+  revenueMonths: string[]
+  revenueWon: number[]
+  revenuePipeline: number[]
 }
 
 export type ProspectFormData = Omit<Prospect, 'id' | 'user_id' | 'created_at' | 'updated_at'>

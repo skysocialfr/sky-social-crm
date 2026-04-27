@@ -16,32 +16,30 @@ export default function KanbanColumn({ stage, prospects, onAdd }: Props) {
   const color = STAGE_DOT_COLORS[stage]
 
   return (
-    <div className="flex w-72 flex-shrink-0 flex-col rounded-xl border border-border bg-muted/20">
-      {/* Header */}
-      <div className="flex items-center justify-between px-3 py-3 border-b border-border">
-        <div className="flex items-center gap-2">
+    <div className="flex w-[268px] flex-shrink-0 flex-col rounded-card border border-border bg-bg">
+      <div className="flex items-center justify-between px-3 py-2.5 border-b border-border">
+        <div className="flex items-center gap-2 min-w-0">
           <span className="h-2 w-2 rounded-full flex-shrink-0" style={{ backgroundColor: color }} />
-          <span className="text-xs font-semibold text-foreground">{stage}</span>
-          <span className="rounded-full bg-muted px-1.5 py-0.5 text-[10px] font-medium text-muted-foreground">
+          <span className="text-xs font-bold text-text truncate">{stage}</span>
+          <span className="rounded-pill bg-card border border-border px-1.5 py-0.5 text-[10px] font-semibold text-muted flex-shrink-0">
             {prospects.length}
           </span>
         </div>
-        <div className="flex items-center gap-2">
+        <div className="flex items-center gap-2 flex-shrink-0 ml-2">
           {totalValue > 0 && (
-            <span className="text-[10px] text-emerald-400 font-medium">
+            <span className="text-[10px] text-crm-green font-bold">
               {totalValue.toLocaleString('fr-FR')} €
             </span>
           )}
           <button
             onClick={() => onAdd(stage)}
-            className="rounded-md p-1 text-muted-foreground hover:text-foreground hover:bg-muted transition-colors"
+            className="rounded-btn p-1 text-muted hover:text-text hover:bg-card transition-colors"
           >
             <Plus size={13} />
           </button>
         </div>
       </div>
 
-      {/* Droppable zone */}
       <Droppable droppableId={stage}>
         {(provided, snapshot) => (
           <div
@@ -49,7 +47,7 @@ export default function KanbanColumn({ stage, prospects, onAdd }: Props) {
             {...provided.droppableProps}
             className={cn(
               'flex-1 p-2 space-y-2 min-h-[120px] transition-colors',
-              snapshot.isDraggingOver && 'bg-primary/5'
+              snapshot.isDraggingOver && 'bg-primary-light'
             )}
           >
             {prospects.map((p, i) => (

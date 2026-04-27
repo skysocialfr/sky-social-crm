@@ -1,6 +1,7 @@
 import { createHashRouter, Navigate } from 'react-router-dom'
 import { useAuth } from '@/hooks/useAuth'
 import { useIsAdmin } from '@/hooks/useIsAdmin'
+import { useIsSuperAdmin } from '@/hooks/useIsSuperAdmin'
 import { useTheme } from '@/context/ThemeContext'
 import AppShell from '@/components/layout/AppShell'
 import LandingPage from '@/pages/LandingPage'
@@ -14,6 +15,14 @@ import JournalPage from '@/pages/JournalPage'
 import AnalyticsPage from '@/pages/AnalyticsPage'
 import SettingsPage from '@/pages/SettingsPage'
 import AdminPage from '@/pages/AdminPage'
+import AdminLayout from '@/pages/admin/AdminLayout'
+import AdminDashboard from '@/pages/admin/AdminDashboard'
+import AdminOrgs from '@/pages/admin/AdminOrgs'
+import AdminUsers from '@/pages/admin/AdminUsers'
+import AdminBilling from '@/pages/admin/AdminBilling'
+import AdminConfig from '@/pages/admin/AdminConfig'
+import AdminEmails from '@/pages/admin/AdminEmails'
+import AdminChangelog from '@/pages/admin/AdminChangelog'
 import NotFoundPage from '@/pages/NotFoundPage'
 
 function ProtectedRoute({ children }: { children: React.ReactNode }) {
@@ -45,6 +54,17 @@ function AdminRoute({ children }: { children: React.ReactNode }) {
   return <>{children}</>
 }
 
+function SuperAdminRoute({ children }: { children: React.ReactNode }) {
+  const { session, loading: authLoading } = useAuth()
+  const { isSuperAdmin, isLoading } = useIsSuperAdmin()
+  if (authLoading || isLoading) return (
+    <div className="flex h-screen items-center justify-center text-[#6b7280] text-sm">Chargement…</div>
+  )
+  if (!session) return <Navigate to="/login" replace />
+  if (!isSuperAdmin) return <Navigate to="/app" replace />
+  return <>{children}</>
+}
+
 export const router = createHashRouter([
   { path: '/', element: <LandingPage /> },
   { path: '/login', element: <LoginPage /> },
@@ -72,6 +92,23 @@ export const router = createHashRouter([
           </AdminRoute>
         ),
       },
+    ],
+  },
+  {
+    path: '/admin',
+    element: (
+      <SuperAdminRoute>
+        <AdminLayout />
+      </SuperAdminRoute>
+    ),
+    children: [
+      { index: true, element: <AdminDashboard /> },
+      { path: 'orgs', element: <AdminOrgs /> },
+      { path: 'users', element: <AdminUsers /> },
+      { path: 'billing', element: <AdminBilling /> },
+      { path: 'config', element: <AdminConfig /> },
+      { path: 'emails', element: <AdminEmails /> },
+      { path: 'changelog', element: <AdminChangelog /> },
     ],
   },
   { path: '*', element: <NotFoundPage /> },

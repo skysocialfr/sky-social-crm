@@ -6,7 +6,7 @@ const NAV = [
   { to: '/app/prospects', label: 'Prospects', emoji: '👥', end: false },
   { to: '/app/relances',  label: 'Relances',  emoji: '🔔', end: false },
   { to: '/app/journal',   label: 'Journal',   emoji: '📓', end: false },
-  { to: '/app/settings',  label: 'Params',    emoji: '⚙️', end: false },
+  { to: '/app/analytics', label: 'Analytics', emoji: '📊', end: false },
 ]
 
 export default function BottomNav() {

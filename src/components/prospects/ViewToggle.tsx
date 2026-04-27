@@ -8,12 +8,14 @@ interface Props {
 
 export default function ViewToggle({ view, onChange }: Props) {
   return (
-    <div className="flex rounded-lg border border-border overflow-hidden">
+    <div className="flex rounded-btn border border-border overflow-hidden">
       <button
         onClick={() => onChange('table')}
         className={cn(
-          'flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium transition-colors',
-          view === 'table' ? 'bg-primary text-primary-foreground' : 'text-muted-foreground hover:text-foreground hover:bg-muted'
+          'flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold transition-colors',
+          view === 'table'
+            ? 'bg-primary text-white'
+            : 'text-muted hover:text-text hover:bg-bg'
         )}
       >
         <Table2 size={13} />
@@ -22,8 +24,10 @@ export default function ViewToggle({ view, onChange }: Props) {
       <button
         onClick={() => onChange('kanban')}
         className={cn(
-          'flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium transition-colors',
-          view === 'kanban' ? 'bg-primary text-primary-foreground' : 'text-muted-foreground hover:text-foreground hover:bg-muted'
+          'flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold transition-colors',
+          view === 'kanban'
+            ? 'bg-primary text-white'
+            : 'text-muted hover:text-text hover:bg-bg'
         )}
       >
         <LayoutGrid size={13} />

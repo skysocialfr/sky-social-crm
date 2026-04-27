@@ -9,6 +9,7 @@ import { ToastProvider } from '@/components/common/Toast'
 export default function AppShell() {
   const [searchOpen, setSearchOpen] = useState(false)
 
+  // Global ⌘K / Ctrl+K
   useEffect(() => {
     const handler = (e: KeyboardEvent) => {
       if ((e.metaKey || e.ctrlKey) && e.key === 'k') {
