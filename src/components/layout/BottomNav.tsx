@@ -1,18 +1,18 @@
 import { NavLink } from 'react-router-dom'
-import { LayoutDashboard, Users, Bell, Settings } from 'lucide-react'
 import { cn } from '@/lib/cn'
 
 const NAV = [
-  { to: '/app', label: 'Dashboard', icon: LayoutDashboard, end: true },
-  { to: '/app/prospects', label: 'Prospects', icon: Users },
-  { to: '/app/relances', label: 'Relances', icon: Bell },
-  { to: '/app/settings', label: 'Paramètres', icon: Settings },
+  { to: '/app',           label: 'Dashboard', emoji: '◉',  end: true  },
+  { to: '/app/prospects', label: 'Prospects', emoji: '👥', end: false },
+  { to: '/app/relances',  label: 'Relances',  emoji: '🔔', end: false },
+  { to: '/app/journal',   label: 'Journal',   emoji: '📓', end: false },
+  { to: '/app/settings',  label: 'Params',    emoji: '⚙️', end: false },
 ]
 
 export default function BottomNav() {
   return (
-    <nav className="md:hidden fixed bottom-0 left-0 right-0 z-40 border-t border-border bg-card flex">
-      {NAV.map(({ to, label, icon: Icon, end }) => (
+    <nav className="md:hidden fixed bottom-0 left-0 right-0 z-40 border-t border-[#e4e7f8] bg-white flex">
+      {NAV.map(({ to, label, emoji, end }) => (
         <NavLink
           key={to}
           to={to}
@@ -20,16 +20,12 @@ export default function BottomNav() {
           className={({ isActive }) =>
             cn(
               'flex flex-1 flex-col items-center justify-center gap-1 py-3 text-[10px] font-medium transition-colors',
-              isActive ? 'text-primary' : 'text-muted-foreground'
+              isActive ? 'text-[#6366f1]' : 'text-[#9ca3af]'
             )
           }
         >
-          {({ isActive }) => (
-            <>
-              <Icon size={20} className={isActive ? 'text-primary' : 'text-muted-foreground'} />
-              {label}
-            </>
-          )}
+          <span className="text-[18px] leading-none">{emoji}</span>
+          {label}
         </NavLink>
       ))}
     </nav>
