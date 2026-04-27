@@ -49,7 +49,10 @@ serve(async (req) => {
       return new Response(JSON.stringify({ error: `Missing Stripe price ID for plan ${plan}` }), { status: 500, headers: CORS })
     }
 
-    const stripe = new Stripe(Deno.env.get('STRIPE_SECRET_KEY')!, { apiVersion: '2023-10-16' })
+    const stripe = new Stripe(Deno.env.get('STRIPE_SECRET_KEY')!, {
+      apiVersion: '2023-10-16',
+      httpClient: Stripe.createFetchHttpClient(),
+    })
 
     const supabaseAdmin = createClient(
       Deno.env.get('SUPABASE_URL')!,
@@ -97,6 +100,7 @@ serve(async (req) => {
       headers: { ...CORS, 'Content-Type': 'application/json' },
     })
   } catch (err) {
+    console.error('create-checkout error:', err)
     return new Response(JSON.stringify({ error: String(err) }), { status: 500, headers: CORS })
   }
 })

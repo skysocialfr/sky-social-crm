@@ -25,12 +25,26 @@ serve(async (req) => {
     return new Response('Missing stripe-signature', { status: 400 })
   }
 
-  const stripe = new Stripe(Deno.env.get('STRIPE_SECRET_KEY')!, { apiVersion: '2023-10-16' })
+  const stripe = new Stripe(Deno.env.get('STRIPE_SECRET_KEY')!, {
+    apiVersion: '2023-10-16',
+    httpClient: Stripe.createFetchHttpClient(),
+  })
+  // Deno's WebCrypto is async-only, so signature verification has to use
+  // constructEventAsync + the SubtleCrypto provider. The sync version
+  // throws "SubtleCryptoProvider cannot be used in a synchronous context."
+  const cryptoProvider = Stripe.createSubtleCryptoProvider()
 
   let event: Stripe.Event
   try {
-    event = stripe.webhooks.constructEvent(body, sig, Deno.env.get('STRIPE_WEBHOOK_SECRET')!)
+    event = await stripe.webhooks.constructEventAsync(
+      body,
+      sig,
+      Deno.env.get('STRIPE_WEBHOOK_SECRET')!,
+      undefined,
+      cryptoProvider,
+    )
   } catch (err) {
+    console.error('Stripe webhook signature verification failed:', err)
     return new Response(`Webhook Error: ${err}`, { status: 400 })
   }
 
