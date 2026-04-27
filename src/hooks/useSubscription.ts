@@ -77,9 +77,12 @@ export async function createCheckoutSession(returnUrl: string, plan: 'pro' | 'te
     }
   )
   if (!res.ok) {
-    const data = await res.json()
-    throw new Error(data.error ?? 'Erreur lors de la création du paiement')
+    const text = await res.text()
+    let detail = text
+    try { detail = JSON.parse(text).error ?? text } catch { /* keep raw text */ }
+    throw new Error(`HTTP ${res.status} — ${detail || 'Erreur lors de la création du paiement'}`)
   }
   const data = await res.json()
+  if (!data.url) throw new Error('Réponse invalide : URL Stripe manquante')
   return data.url as string
 }
