@@ -1,5 +1,5 @@
 import * as XLSX from 'xlsx'
-import type { ProspectFormData, PipelineStage, ProspectPriority, ProspectingChannel, CompanySize } from '@/types'
+import type { ProspectFormData, PipelineStage, ProspectPriority, ProspectingChannel, CompanySize, Prospect } from '@/types'
 import { PIPELINE_STAGES, PRIORITIES, CHANNELS, COMPANY_SIZES } from '@/lib/constants'
 
 export const FIELD_LABELS: Partial<Record<keyof ProspectFormData, string>> = {
@@ -167,4 +167,46 @@ export function computeResult(
 
 export function getValidRows(rows: ParsedRow[]): ProspectFormData[] {
   return rows.filter(r => r.errors.length === 0).map(r => r.data as ProspectFormData)
+}
+
+const EXPORT_COLUMNS: { key: keyof Prospect; label: string }[] = [
+  { key: 'company_name',        label: 'Entreprise' },
+  { key: 'first_name',          label: 'Prénom' },
+  { key: 'last_name',           label: 'Nom' },
+  { key: 'title',               label: 'Poste' },
+  { key: 'email',               label: 'Email' },
+  { key: 'phone',               label: 'Téléphone' },
+  { key: 'channel',             label: 'Canal' },
+  { key: 'stage',               label: 'Étape' },
+  { key: 'priority',            label: 'Priorité' },
+  { key: 'sector',              label: 'Secteur' },
+  { key: 'company_size',        label: 'Taille' },
+  { key: 'city',                label: 'Ville' },
+  { key: 'country',             label: 'Pays' },
+  { key: 'website',             label: 'Site web' },
+  { key: 'linkedin_url',        label: 'LinkedIn' },
+  { key: 'instagram_url',       label: 'Instagram' },
+  { key: 'deal_value',          label: 'Valeur' },
+  { key: 'currency',            label: 'Devise' },
+  { key: 'next_followup_date',  label: 'Prochain contact' },
+  { key: 'notes',               label: 'Notes' },
+  { key: 'created_at',          label: 'Créé le' },
+]
+
+export function exportProspectsToCsv(prospects: Prospect[]): void {
+  const rows = prospects.map(p => {
+    const row: Record<string, string | number | null> = {}
+    for (const { key, label } of EXPORT_COLUMNS) {
+      const value = p[key]
+      if (Array.isArray(value)) row[label] = value.join('; ')
+      else row[label] = (value as string | number | null) ?? ''
+    }
+    row['Services'] = p.services_interested.join('; ')
+    return row
+  })
+  const ws = XLSX.utils.json_to_sheet(rows)
+  const wb = XLSX.utils.book_new()
+  XLSX.utils.book_append_sheet(wb, ws, 'Prospects')
+  const today = new Date().toISOString().slice(0, 10)
+  XLSX.writeFile(wb, `prospects-${today}.csv`, { bookType: 'csv' })
 }

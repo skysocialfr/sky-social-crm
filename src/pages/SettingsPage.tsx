@@ -7,10 +7,12 @@ import { useTheme } from '@/context/ThemeContext'
 import { useUpdateProfile } from '@/hooks/useUserProfile'
 import { useSubscription, createCheckoutSession, FREE_PLAN } from '@/hooks/useSubscription'
 import { useAuth } from '@/hooks/useAuth'
+import { useProspects } from '@/hooks/useProspects'
+import { exportProspectsToCsv } from '@/lib/csvUtils'
 import { cn } from '@/lib/cn'
 import ColorPicker from '@/components/common/ColorPicker'
 import LogoUpload from '@/components/common/LogoUpload'
-import type { SectionPrefs } from '@/types'
+import type { SectionPrefs, NotificationPrefs } from '@/types'
 
 const NAV = [
   { id: 'compte', label: 'Mon compte', emoji: '👤' },
@@ -68,11 +70,18 @@ function ComingSoon({ label }: { label: string }) {
   )
 }
 
+const NOTIF_LABELS: { key: keyof NotificationPrefs; label: string; description: string }[] = [
+  { key: 'email_relances_overdue', label: 'Relances en retard',     description: 'Email quotidien si des relances sont dues.' },
+  { key: 'email_weekly_recap',     label: 'Récapitulatif hebdo',    description: 'Résumé chaque lundi : nouveaux prospects, deals avancés.' },
+  { key: 'email_new_prospect',     label: 'Nouveau prospect ajouté',description: 'Confirmation par email à chaque ajout.' },
+]
+
 export default function SettingsPage() {
-  const { profile, applyTheme, refreshProfile, sectionPrefs, updateSectionPrefs } = useTheme()
-  const { user } = useAuth()
+  const { profile, applyTheme, refreshProfile, sectionPrefs, updateSectionPrefs, notificationPrefs, updateNotificationPrefs } = useTheme()
+  const { user, logout } = useAuth()
   const updateProfile = useUpdateProfile()
   const { data: subscription = FREE_PLAN } = useSubscription()
+  const { data: prospects = [] } = useProspects()
 
   const [activeSection, setActiveSection] = useState('compte')
 
@@ -96,6 +105,22 @@ export default function SettingsPage() {
   // Abonnement
   const [upgrading, setUpgrading] = useState(false)
   const [upgradeError, setUpgradeError] = useState('')
+
+  // Sécurité
+  const [newPassword, setNewPassword] = useState('')
+  const [confirmPassword, setConfirmPassword] = useState('')
+  const [pwSaving, setPwSaving] = useState(false)
+  const [pwError, setPwError] = useState('')
+  const [pwSuccess, setPwSuccess] = useState(false)
+
+  // Notifications
+  const [notifSaving, setNotifSaving] = useState(false)
+  const [notifSuccess, setNotifSuccess] = useState(false)
+
+  // Données — suppression compte
+  const [deleteConfirm, setDeleteConfirm] = useState('')
+  const [deleting, setDeleting] = useState(false)
+  const [deleteError, setDeleteError] = useState('')
 
   useEffect(() => {
     if (profile) {
@@ -172,6 +197,61 @@ export default function SettingsPage() {
     } catch (err) {
       setUpgradeError(err instanceof Error ? err.message : 'Une erreur est survenue.')
       setUpgrading(false)
+    }
+  }
+
+  const handleChangePassword = async (e: React.FormEvent) => {
+    e.preventDefault()
+    setPwError('')
+    setPwSuccess(false)
+    if (newPassword.length < 8) { setPwError('Le mot de passe doit faire au moins 8 caractères.'); return }
+    if (newPassword !== confirmPassword) { setPwError('Les deux mots de passe ne correspondent pas.'); return }
+    setPwSaving(true)
+    try {
+      const { error } = await supabase.auth.updateUser({ password: newPassword })
+      if (error) throw error
+      setNewPassword('')
+      setConfirmPassword('')
+      setPwSuccess(true)
+      setTimeout(() => setPwSuccess(false), 4000)
+    } catch (err) {
+      setPwError(err instanceof Error ? err.message : 'Une erreur est survenue.')
+    } finally {
+      setPwSaving(false)
+    }
+  }
+
+  const handleNotifToggle = async (key: keyof NotificationPrefs) => {
+    const next: NotificationPrefs = { ...notificationPrefs, [key]: !notificationPrefs[key] }
+    setNotifSaving(true)
+    try {
+      await updateNotificationPrefs(next)
+      setNotifSuccess(true)
+      setTimeout(() => setNotifSuccess(false), 2000)
+    } finally {
+      setNotifSaving(false)
+    }
+  }
+
+  const handleExportProspects = () => {
+    exportProspectsToCsv(prospects)
+  }
+
+  const handleDeleteAccount = async () => {
+    setDeleteError('')
+    if (deleteConfirm !== 'SUPPRIMER') {
+      setDeleteError('Tape "SUPPRIMER" en majuscules pour confirmer.')
+      return
+    }
+    setDeleting(true)
+    try {
+      const { error } = await supabase.rpc('delete_my_account')
+      if (error) throw error
+      await logout()
+      window.location.href = '/'
+    } catch (err) {
+      setDeleteError(err instanceof Error ? err.message : 'Une erreur est survenue.')
+      setDeleting(false)
     }
   }
 
@@ -336,11 +416,151 @@ export default function SettingsPage() {
       </div>
     ),
 
-    securite: <ComingSoon label="Sécurité" />,
-    notifications: <ComingSoon label="Notifications" />,
+    securite: (
+      <form onSubmit={handleChangePassword} className="flex flex-col gap-5">
+        <div>
+          <h2 className="text-base font-bold text-text">Sécurité</h2>
+          <p className="text-[13px] text-muted mt-0.5">Gérez votre mot de passe et la sécurité du compte.</p>
+        </div>
+        <div className="rounded-card border border-border bg-card p-5 flex flex-col gap-4">
+          <p className="text-[11px] font-semibold uppercase tracking-wider text-muted">Email</p>
+          <p className="text-sm text-text">{user?.email}</p>
+        </div>
+        <div className="rounded-card border border-border bg-card p-5 flex flex-col gap-4">
+          <p className="text-[11px] font-semibold uppercase tracking-wider text-muted">Changer le mot de passe</p>
+          <div>
+            <label className="mb-1.5 block text-sm font-semibold text-text">Nouveau mot de passe</label>
+            <input
+              type="password"
+              autoComplete="new-password"
+              value={newPassword}
+              onChange={(e) => setNewPassword(e.target.value)}
+              className="w-full rounded-btn border border-border bg-card px-3 py-2.5 text-sm text-text focus:border-primary focus:outline-none"
+              placeholder="Minimum 8 caractères"
+            />
+          </div>
+          <div>
+            <label className="mb-1.5 block text-sm font-semibold text-text">Confirmer le nouveau mot de passe</label>
+            <input
+              type="password"
+              autoComplete="new-password"
+              value={confirmPassword}
+              onChange={(e) => setConfirmPassword(e.target.value)}
+              className="w-full rounded-btn border border-border bg-card px-3 py-2.5 text-sm text-text focus:border-primary focus:outline-none"
+            />
+          </div>
+        </div>
+        {pwError && (
+          <p className="rounded-btn border border-crm-red bg-crm-red-light px-3 py-2 text-xs text-crm-red">{pwError}</p>
+        )}
+        {pwSuccess && (
+          <p className="rounded-btn border border-crm-green bg-crm-green-light px-3 py-2 text-xs text-crm-green">
+            Mot de passe mis à jour. Tu pourras te reconnecter avec le nouveau.
+          </p>
+        )}
+        <div>
+          <button
+            type="submit"
+            disabled={pwSaving || !newPassword || !confirmPassword}
+            className="rounded-btn bg-primary px-5 py-2.5 text-sm font-bold text-white hover:bg-primary-hover disabled:opacity-50 transition-colors shadow-primary"
+          >
+            {pwSaving ? 'Mise à jour…' : 'Mettre à jour le mot de passe'}
+          </button>
+        </div>
+      </form>
+    ),
+
+    notifications: (
+      <div className="flex flex-col gap-5">
+        <div>
+          <h2 className="text-base font-bold text-text">Notifications</h2>
+          <p className="text-[13px] text-muted mt-0.5">Choisissez les emails que vous souhaitez recevoir.</p>
+        </div>
+        <div className="rounded-card border border-border bg-card divide-y divide-border">
+          <div className="px-5 py-3">
+            <p className="text-[11px] font-semibold uppercase tracking-wider text-muted">Emails</p>
+          </div>
+          {NOTIF_LABELS.map(({ key, label, description }) => (
+            <div key={key} className="flex items-center justify-between px-5 py-3.5">
+              <div>
+                <p className="text-sm font-semibold text-text">{label}</p>
+                <p className="text-[11px] text-muted">{description}</p>
+              </div>
+              <Toggle
+                checked={notificationPrefs[key]}
+                onChange={() => handleNotifToggle(key)}
+                disabled={notifSaving}
+              />
+            </div>
+          ))}
+        </div>
+        {notifSuccess && (
+          <p className="rounded-btn border border-crm-green bg-crm-green-light px-3 py-2 text-xs text-crm-green">
+            Préférences sauvegardées.
+          </p>
+        )}
+      </div>
+    ),
+
+    donnees: (
+      <div className="flex flex-col gap-5">
+        <div>
+          <h2 className="text-base font-bold text-text">Données</h2>
+          <p className="text-[13px] text-muted mt-0.5">Exportez vos données ou supprimez votre compte.</p>
+        </div>
+
+        <div className="rounded-card border border-border bg-card p-5 flex flex-col gap-3">
+          <p className="text-[11px] font-semibold uppercase tracking-wider text-muted">Export</p>
+          <p className="text-sm text-text">
+            Télécharger l'ensemble de vos prospects au format CSV ({prospects.length} {prospects.length > 1 ? 'fiches' : 'fiche'}).
+          </p>
+          <div>
+            <button
+              type="button"
+              onClick={handleExportProspects}
+              disabled={prospects.length === 0}
+              className="rounded-btn border border-border bg-card px-4 py-2 text-xs font-semibold text-text hover:bg-bg disabled:opacity-50 transition-colors"
+            >
+              Exporter les prospects (CSV)
+            </button>
+          </div>
+        </div>
+
+        <div className="rounded-card border border-crm-red bg-crm-red-light p-5 flex flex-col gap-3">
+          <p className="text-[11px] font-semibold uppercase tracking-wider text-crm-red">Zone dangereuse</p>
+          <p className="text-sm font-bold text-text">Supprimer mon compte</p>
+          <p className="text-[12px] text-muted">
+            Supprime définitivement vos prospects, interactions et préférences. Cette action est irréversible.
+          </p>
+          <div>
+            <label className="mb-1.5 block text-xs font-semibold text-text">
+              Pour confirmer, tape <span className="font-mono bg-card px-1.5 py-0.5 rounded">SUPPRIMER</span>
+            </label>
+            <input
+              type="text"
+              value={deleteConfirm}
+              onChange={(e) => setDeleteConfirm(e.target.value)}
+              className="w-full max-w-xs rounded-btn border border-border bg-card px-3 py-2 text-sm text-text focus:border-crm-red focus:outline-none"
+              placeholder="SUPPRIMER"
+            />
+          </div>
+          {deleteError && <p className="text-xs text-crm-red">{deleteError}</p>}
+          <div>
+            <button
+              type="button"
+              onClick={handleDeleteAccount}
+              disabled={deleting || deleteConfirm !== 'SUPPRIMER'}
+              className="rounded-btn bg-crm-red px-4 py-2 text-xs font-bold text-white hover:opacity-90 disabled:opacity-50 transition-opacity"
+            >
+              {deleting ? 'Suppression…' : 'Supprimer définitivement mon compte'}
+            </button>
+          </div>
+        </div>
+      </div>
+    ),
+
     integrations: <ComingSoon label="Intégrations" />,
     equipe: <ComingSoon label="Équipe" />,
-    donnees: <ComingSoon label="Données" />,
     api: <ComingSoon label="API & Webhooks" />,
   }
 

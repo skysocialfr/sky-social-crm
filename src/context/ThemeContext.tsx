@@ -1,29 +1,33 @@
 import { createContext, useCallback, useContext, useEffect, useLayoutEffect, useState } from 'react'
 import { supabase } from '@/lib/supabase'
 import { useAuth } from '@/hooks/useAuth'
-import type { UserProfile, SectionPrefs } from '@/types'
-import { DEFAULT_SECTION_PREFS } from '@/types'
+import type { UserProfile, SectionPrefs, NotificationPrefs } from '@/types'
+import { DEFAULT_SECTION_PREFS, DEFAULT_NOTIFICATION_PREFS } from '@/types'
 
 interface ThemeContextValue {
   profile: UserProfile | null
   isLoading: boolean
   sectionPrefs: SectionPrefs
+  notificationPrefs: NotificationPrefs
   isDark: boolean
   applyTheme: (color: string) => void
   toggleDark: () => void
   refreshProfile: () => Promise<void>
   updateSectionPrefs: (prefs: SectionPrefs) => Promise<void>
+  updateNotificationPrefs: (prefs: NotificationPrefs) => Promise<void>
 }
 
 const ThemeContext = createContext<ThemeContextValue>({
   profile: null,
   isLoading: true,
   sectionPrefs: DEFAULT_SECTION_PREFS,
+  notificationPrefs: DEFAULT_NOTIFICATION_PREFS,
   isDark: false,
   applyTheme: () => {},
   toggleDark: () => {},
   refreshProfile: async () => {},
   updateSectionPrefs: async () => {},
+  updateNotificationPrefs: async () => {},
 })
 
 const STORAGE_KEY = 'sky-crm-primary'
@@ -112,10 +116,21 @@ export function ThemeProvider({ children }: { children: React.ReactNode }) {
     setProfile(prev => prev ? { ...prev, section_prefs: prefs } : prev)
   }, [user?.id])
 
+  const updateNotificationPrefs = useCallback(async (prefs: NotificationPrefs) => {
+    if (!user) return
+    const { error } = await supabase
+      .from('user_profiles')
+      .update({ notification_prefs: prefs })
+      .eq('id', user.id)
+    if (error) throw error
+    setProfile(prev => prev ? { ...prev, notification_prefs: prefs } : prev)
+  }, [user?.id])
+
   const sectionPrefs: SectionPrefs = profile?.section_prefs ?? DEFAULT_SECTION_PREFS
+  const notificationPrefs: NotificationPrefs = profile?.notification_prefs ?? DEFAULT_NOTIFICATION_PREFS
 
   return (
-    <ThemeContext.Provider value={{ profile, isLoading, sectionPrefs, isDark, applyTheme, toggleDark, refreshProfile, updateSectionPrefs }}>
+    <ThemeContext.Provider value={{ profile, isLoading, sectionPrefs, notificationPrefs, isDark, applyTheme, toggleDark, refreshProfile, updateSectionPrefs, updateNotificationPrefs }}>
       {children}
     </ThemeContext.Provider>
   )

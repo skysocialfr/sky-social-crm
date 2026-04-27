@@ -117,6 +117,18 @@ export const DEFAULT_SECTION_PREFS: SectionPrefs = {
   show_social: true,
 }
 
+export interface NotificationPrefs {
+  email_relances_overdue: boolean
+  email_weekly_recap: boolean
+  email_new_prospect: boolean
+}
+
+export const DEFAULT_NOTIFICATION_PREFS: NotificationPrefs = {
+  email_relances_overdue: true,
+  email_weekly_recap: true,
+  email_new_prospect: false,
+}
+
 export interface UserProfile {
   id: string
   company_name: string
@@ -125,6 +137,7 @@ export interface UserProfile {
   is_admin: boolean
   suspended: boolean
   section_prefs: SectionPrefs | null
+  notification_prefs: NotificationPrefs | null
   created_at: string
   updated_at: string
 }
