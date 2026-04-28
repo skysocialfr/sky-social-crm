@@ -49,7 +49,14 @@ export default function RegisterPage() {
       const { data, error: signUpError } = await supabase.auth.signUp({
         email,
         password,
-        options: { data: { company_name: companyName } },
+        options: {
+          data: { company_name: companyName },
+          // Force the post-confirmation redirect to the actual app origin
+          // (e.g. https://skysocialfr.github.io/sky-social-crm/) so we no
+          // longer depend on the project's Site URL setting, which silently
+          // strips the path on some Supabase projects.
+          emailRedirectTo: window.location.origin + window.location.pathname,
+        },
       })
 
       if (signUpError) throw signUpError
