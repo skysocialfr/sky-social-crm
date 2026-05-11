@@ -16,13 +16,13 @@ const FEATURES = [
 ]
 
 const TESTIMONIALS = [
-  { name: 'Sophie M.', role: 'Fondatrice, Agence Boost', text: "Sky Social CRM a transformé notre processus de vente. On ne perd plus aucun prospect.", stars: 5 },
+  { name: 'Sophie M.', role: 'Fondatrice, Agence Boost', text: "Velmio CRM a transformé notre processus de vente. On ne perd plus aucun prospect.", stars: 5 },
   { name: 'Thomas L.', role: 'Directeur commercial, WebAgency', text: "L'interface est tellement claire. Toute l'équipe l'a adopté en moins d'une journée.", stars: 5 },
   { name: 'Camille R.', role: 'Freelance, consultant marketing', text: "Le plan gratuit suffit pour mes besoins. Simple, rapide, efficace. Je recommande !", stars: 5 },
 ]
 
 const FAQ = [
-  { q: 'Est-ce que Sky Social CRM est gratuit ?', a: "Oui, le plan gratuit vous donne accès à 25 prospects et aux fonctionnalités essentielles. Le plan Pro à 9€/mois lève toutes les limites." },
+  { q: 'Est-ce que Velmio CRM est gratuit ?', a: "Oui, le plan gratuit vous donne accès à 25 prospects et aux fonctionnalités essentielles. Le plan Pro à 9€/mois lève toutes les limites." },
   { q: 'Puis-je importer mes prospects existants ?', a: "Oui, l'import CSV et Excel est disponible sur le plan Pro. La détection des colonnes est automatique." },
   { q: 'Comment fonctionnent les emails directs ?', a: 'Depuis la fiche d\'un prospect, cliquez sur "Email" pour envoyer un message via des modèles prédéfinis (suivi, relance, RDV). L\'envoi est enregistré dans l\'historique.' },
   { q: "Puis-je personnaliser l'apparence ?", a: "Oui, chaque espace a sa propre couleur principale et son logo. Vos clients voient votre identité visuelle." },
@@ -59,7 +59,7 @@ export default function LandingPage() {
             <div className="flex h-8 w-8 items-center justify-center rounded-lg" style={{ background: 'linear-gradient(135deg, #6366f1, #8b5cf6)' }}>
               <Zap size={15} className="text-white" fill="currentColor" />
             </div>
-            <span className="text-sm font-bold text-gray-900 tracking-tight">Sky Social CRM</span>
+            <span className="text-sm font-bold text-gray-900 tracking-tight">Velmio CRM</span>
           </div>
           <div className="flex items-center gap-3">
             <Link to="/login" className="rounded-lg px-4 py-2 text-sm font-medium text-gray-600 hover:text-gray-900 transition-colors">
@@ -334,7 +334,7 @@ export default function LandingPage() {
 
       {/* Footer */}
       <footer className="border-t border-[#e8eaf8] bg-white px-5 py-6 text-center text-xs text-gray-400">
-        Sky Social Agency © {new Date().getFullYear()} · CRM de prospection
+        Velmio © {new Date().getFullYear()} · CRM de prospection
       </footer>
     </div>
   )
