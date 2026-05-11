@@ -172,6 +172,7 @@ export default function ProspectForm({ open, onOpenChange, prospect, defaultStag
         currency: form.currency || 'EUR',
         next_followup_date: form.next_followup_date || null,
         notes: form.notes.trim() || null,
+        custom_data: prospect?.custom_data ?? {},
       })
       onOpenChange(false)
     } catch (err: any) {

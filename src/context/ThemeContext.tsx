@@ -1,20 +1,22 @@
 import { createContext, useCallback, useContext, useEffect, useLayoutEffect, useState } from 'react'
 import { supabase } from '@/lib/supabase'
 import { useAuth } from '@/hooks/useAuth'
-import type { UserProfile, SectionPrefs, NotificationPrefs } from '@/types'
-import { DEFAULT_SECTION_PREFS, DEFAULT_NOTIFICATION_PREFS } from '@/types'
+import type { UserProfile, SectionPrefs, NotificationPrefs, CustomFieldsSchema } from '@/types'
+import { DEFAULT_SECTION_PREFS, DEFAULT_NOTIFICATION_PREFS, DEFAULT_CUSTOM_FIELDS_SCHEMA } from '@/types'
 
 interface ThemeContextValue {
   profile: UserProfile | null
   isLoading: boolean
   sectionPrefs: SectionPrefs
   notificationPrefs: NotificationPrefs
+  customFieldsSchema: CustomFieldsSchema
   isDark: boolean
   applyTheme: (color: string) => void
   toggleDark: () => void
   refreshProfile: () => Promise<void>
   updateSectionPrefs: (prefs: SectionPrefs) => Promise<void>
   updateNotificationPrefs: (prefs: NotificationPrefs) => Promise<void>
+  updateCustomFieldsSchema: (schema: CustomFieldsSchema) => Promise<void>
 }
 
 const ThemeContext = createContext<ThemeContextValue>({
@@ -22,12 +24,14 @@ const ThemeContext = createContext<ThemeContextValue>({
   isLoading: true,
   sectionPrefs: DEFAULT_SECTION_PREFS,
   notificationPrefs: DEFAULT_NOTIFICATION_PREFS,
+  customFieldsSchema: DEFAULT_CUSTOM_FIELDS_SCHEMA,
   isDark: false,
   applyTheme: () => {},
   toggleDark: () => {},
   refreshProfile: async () => {},
   updateSectionPrefs: async () => {},
   updateNotificationPrefs: async () => {},
+  updateCustomFieldsSchema: async () => {},
 })
 
 const STORAGE_KEY = 'sky-crm-primary'
@@ -126,11 +130,22 @@ export function ThemeProvider({ children }: { children: React.ReactNode }) {
     setProfile(prev => prev ? { ...prev, notification_prefs: prefs } : prev)
   }, [user?.id])
 
+  const updateCustomFieldsSchema = useCallback(async (schema: CustomFieldsSchema) => {
+    if (!user) return
+    const { error } = await supabase
+      .from('user_profiles')
+      .update({ custom_fields_schema: schema })
+      .eq('id', user.id)
+    if (error) throw error
+    setProfile(prev => prev ? { ...prev, custom_fields_schema: schema } : prev)
+  }, [user?.id])
+
   const sectionPrefs: SectionPrefs = profile?.section_prefs ?? DEFAULT_SECTION_PREFS
   const notificationPrefs: NotificationPrefs = profile?.notification_prefs ?? DEFAULT_NOTIFICATION_PREFS
+  const customFieldsSchema: CustomFieldsSchema = profile?.custom_fields_schema ?? DEFAULT_CUSTOM_FIELDS_SCHEMA
 
   return (
-    <ThemeContext.Provider value={{ profile, isLoading, sectionPrefs, notificationPrefs, isDark, applyTheme, toggleDark, refreshProfile, updateSectionPrefs, updateNotificationPrefs }}>
+    <ThemeContext.Provider value={{ profile, isLoading, sectionPrefs, notificationPrefs, customFieldsSchema, isDark, applyTheme, toggleDark, refreshProfile, updateSectionPrefs, updateNotificationPrefs, updateCustomFieldsSchema }}>
       {children}
     </ThemeContext.Provider>
   )
