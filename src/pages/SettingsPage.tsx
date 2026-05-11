@@ -12,6 +12,8 @@ import { exportProspectsToCsv } from '@/lib/csvUtils'
 import { cn } from '@/lib/cn'
 import ColorPicker from '@/components/common/ColorPicker'
 import LogoUpload from '@/components/common/LogoUpload'
+import Toggle from '@/components/common/Toggle'
+import CustomFieldsEditor from '@/components/settings/CustomFieldsEditor'
 import type { SectionPrefs, NotificationPrefs } from '@/types'
 
 const NAV = [
@@ -19,6 +21,7 @@ const NAV = [
   { id: 'securite', label: 'Sécurité', emoji: '🔒' },
   { id: 'notifications', label: 'Notifications', emoji: '🔔' },
   { id: 'apparence', label: 'Apparence', emoji: '🎨' },
+  { id: 'custom_fields', label: 'Rubriques & champs', emoji: '🧩' },
   { id: 'integrations', label: 'Intégrations', emoji: '🔗' },
   { id: 'abonnement', label: 'Abonnement', emoji: '💳' },
   { id: 'equipe', label: 'Équipe', emoji: '👥' },
@@ -33,30 +36,6 @@ const SECTION_LABELS: { key: keyof SectionPrefs; label: string; description: str
   { key: 'show_deal', label: 'Valeur du deal', description: 'Montant estimé du contrat' },
   { key: 'show_social', label: 'Liens sociaux', description: 'LinkedIn, Instagram, Google Maps' },
 ]
-
-function Toggle({ checked, onChange, disabled }: { checked: boolean; onChange: () => void; disabled?: boolean }) {
-  return (
-    <button
-      type="button"
-      onClick={onChange}
-      disabled={disabled}
-      className={cn(
-        'relative inline-flex h-5 w-9 flex-shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200',
-        checked ? 'bg-primary' : 'bg-border',
-        disabled && 'opacity-50 cursor-not-allowed'
-      )}
-      role="switch"
-      aria-checked={checked}
-    >
-      <span
-        className={cn(
-          'pointer-events-none inline-block h-4 w-4 rounded-full bg-white shadow transition-transform duration-200',
-          checked ? 'translate-x-4' : 'translate-x-0'
-        )}
-      />
-    </button>
-  )
-}
 
 function ComingSoon({ label }: { label: string }) {
   return (
@@ -368,6 +347,8 @@ export default function SettingsPage() {
         </div>
       </form>
     ),
+
+    custom_fields: <CustomFieldsEditor />,
 
     abonnement: (
       <div className="flex flex-col gap-5">

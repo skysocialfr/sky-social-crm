@@ -56,6 +56,7 @@ export interface Prospect {
   currency: string
   next_followup_date: string | null
   notes: string | null
+  custom_data: Record<string, CustomFieldValue>
   created_at: string
   updated_at: string
 }
@@ -138,9 +139,52 @@ export interface UserProfile {
   suspended: boolean
   section_prefs: SectionPrefs | null
   notification_prefs: NotificationPrefs | null
+  custom_fields_schema: CustomFieldsSchema | null
   created_at: string
   updated_at: string
 }
+
+// ============================================================
+// Custom fields & sections (per-tenant CRM customization)
+// ============================================================
+
+export type CustomFieldType =
+  | 'text'
+  | 'textarea'
+  | 'number'
+  | 'boolean'
+  | 'date'
+  | 'select'
+  | 'multiselect'
+  | 'url'
+
+export type CustomFieldValue = string | number | boolean | string[] | null
+
+export interface CustomField {
+  id: string
+  key: string                   // stable slug used as JSONB key in prospects.custom_data
+  label: string                 // human label shown in forms and detail
+  type: CustomFieldType
+  options?: string[]            // required for select / multiselect
+  required?: boolean
+  placeholder?: string
+  isCurrency?: boolean          // formatting hint for type=number
+  min?: number
+  max?: number
+}
+
+export interface CustomSection {
+  id: string
+  label: string
+  position: number
+  fields: CustomField[]
+}
+
+export interface CustomFieldsSchema {
+  sections: CustomSection[]
+}
+
+export const DEFAULT_CUSTOM_FIELDS_SCHEMA: CustomFieldsSchema = { sections: [] }
 
 export interface AdminUserView {
   id: string

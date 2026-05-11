@@ -1,6 +1,9 @@
-import { Globe, Linkedin, Instagram, Mail, Phone, Building2, MapPin, Tag, Euro } from 'lucide-react'
+import { Globe, Linkedin, Instagram, Mail, Phone, Building2, MapPin, Tag, Euro, Check, Minus } from 'lucide-react'
+import { format, parseISO, isValid } from 'date-fns'
+import { fr } from 'date-fns/locale'
 import ChannelIcon from '@/components/common/ChannelIcon'
-import type { Prospect, SectionPrefs } from '@/types'
+import { useTheme } from '@/context/ThemeContext'
+import type { Prospect, SectionPrefs, CustomField } from '@/types'
 import { DEFAULT_SECTION_PREFS } from '@/types'
 
 interface Props {
@@ -27,9 +30,92 @@ function Row({ icon: Icon, label, value, href }: { icon: React.ElementType; labe
   )
 }
 
-export default function ProspectInfoCard({ prospect: p, sectionPrefs = DEFAULT_SECTION_PREFS }: Props) {
+function isEmpty(v: unknown): boolean {
+  if (v === null || v === undefined || v === '') return true
+  if (Array.isArray(v) && v.length === 0) return true
+  return false
+}
+
+function CustomFieldRow({ field, value, currency }: { field: CustomField; value: unknown; currency: string }) {
+  if (isEmpty(value) && field.type !== 'boolean') return null
+
   return (
-    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+    <div className="flex items-start gap-3">
+      <Tag size={14} className="text-muted-foreground mt-0.5 flex-shrink-0" />
+      <div className="min-w-0 flex-1">
+        <p className="text-[10px] uppercase tracking-wide text-muted-foreground">{field.label}</p>
+        <CustomFieldValueDisplay field={field} value={value} currency={currency} />
+      </div>
+    </div>
+  )
+}
+
+function CustomFieldValueDisplay({ field, value, currency }: { field: CustomField; value: unknown; currency: string }) {
+  switch (field.type) {
+    case 'boolean': {
+      const v = Boolean(value)
+      return (
+        <span className="inline-flex items-center gap-1 text-sm text-foreground">
+          {v ? <Check size={14} className="text-crm-green" /> : <Minus size={14} className="text-muted-foreground" />}
+          {v ? 'Oui' : 'Non'}
+        </span>
+      )
+    }
+    case 'date': {
+      if (typeof value !== 'string') return <p className="text-sm text-foreground">—</p>
+      const d = parseISO(value)
+      return (
+        <p className="text-sm text-foreground">
+          {isValid(d) ? format(d, 'dd MMM yyyy', { locale: fr }) : value}
+        </p>
+      )
+    }
+    case 'number': {
+      const n = Number(value)
+      if (Number.isNaN(n)) return <p className="text-sm text-foreground">—</p>
+      const formatted = n.toLocaleString('fr-FR')
+      return <p className="text-sm text-foreground">{field.isCurrency ? `${formatted} ${currency}` : formatted}</p>
+    }
+    case 'multiselect': {
+      const list = Array.isArray(value) ? (value as string[]) : []
+      if (list.length === 0) return null
+      return (
+        <div className="flex flex-wrap gap-1 mt-1">
+          {list.map(v => (
+            <span key={v} className="rounded-full border border-primary/30 bg-primary/10 px-2 py-0.5 text-xs text-primary">{v}</span>
+          ))}
+        </div>
+      )
+    }
+    case 'url': {
+      const s = String(value)
+      return (
+        <a href={s} target="_blank" rel="noreferrer" className="text-sm text-primary hover:underline break-all" onClick={e => e.stopPropagation()}>
+          {s}
+        </a>
+      )
+    }
+    case 'textarea': {
+      return <p className="text-sm text-foreground whitespace-pre-wrap">{String(value)}</p>
+    }
+    default: {
+      return <p className="text-sm text-foreground">{String(value)}</p>
+    }
+  }
+}
+
+export default function ProspectInfoCard({ prospect: p, sectionPrefs = DEFAULT_SECTION_PREFS }: Props) {
+  const { customFieldsSchema } = useTheme()
+  const customData = p.custom_data ?? {}
+  const customSections = customFieldsSchema.sections.filter(section =>
+    // Only show a section if at least one of its fields has a value
+    // (or contains a boolean field — booleans are always meaningful).
+    section.fields.some(f => f.type === 'boolean' || !isEmpty(customData[f.key]))
+  )
+
+  return (
+    <div className="flex flex-col gap-4">
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
       {/* Entreprise */}
       <div className="rounded-xl border border-border bg-card p-4 space-y-3">
         <p className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">Entreprise</p>
@@ -85,7 +171,28 @@ export default function ProspectInfoCard({ prospect: p, sectionPrefs = DEFAULT_S
             <p className="text-sm text-foreground whitespace-pre-wrap">{p.notes}</p>
           </div>
         )}
+        </div>
       </div>
+
+      {/* Custom sections — only rendered if the tenant defined at least one
+          section that has populated values on this prospect. */}
+      {customSections.length > 0 && (
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          {customSections.map(section => (
+            <div key={section.id} className="rounded-xl border border-border bg-card p-4 space-y-3">
+              <p className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">{section.label}</p>
+              {section.fields.map(field => (
+                <CustomFieldRow
+                  key={field.id}
+                  field={field}
+                  value={customData[field.key]}
+                  currency={p.currency ?? 'EUR'}
+                />
+              ))}
+            </div>
+          ))}
+        </div>
+      )}
     </div>
   )
 }

@@ -1,9 +1,11 @@
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useMemo } from 'react'
 import * as Dialog from '@radix-ui/react-dialog'
 import { X } from 'lucide-react'
 import { cn } from '@/lib/cn'
 import { PIPELINE_STAGES, PRIORITIES, CHANNELS, COMPANY_SIZES, SERVICES, CURRENCIES } from '@/lib/constants'
-import type { Prospect, ProspectFormData } from '@/types'
+import { useTheme } from '@/context/ThemeContext'
+import DynamicFieldInput from '@/components/forms/DynamicFieldInput'
+import type { Prospect, ProspectFormData, CustomFieldValue } from '@/types'
 
 interface Props {
   open: boolean
@@ -13,7 +15,9 @@ interface Props {
   onSubmit: (data: ProspectFormData) => Promise<void>
 }
 
-const TABS = ['Entreprise', 'Contact', 'CRM'] as const
+const BASE_TABS = ['Entreprise', 'Contact', 'CRM'] as const
+const PERSO_TAB = 'Personnalisé'
+type TabName = typeof BASE_TABS[number] | typeof PERSO_TAB
 
 function Field({ label, required, error, children }: { label: string; required?: boolean; error?: string; children: React.ReactNode }) {
   return (
@@ -52,6 +56,7 @@ type FormState = {
   currency: string
   next_followup_date: string
   notes: string
+  custom_data: Record<string, CustomFieldValue>
 }
 
 const emptyForm = (defaultStage = 'Identifié'): FormState => ({
@@ -77,10 +82,18 @@ const emptyForm = (defaultStage = 'Identifié'): FormState => ({
   currency: 'EUR',
   next_followup_date: '',
   notes: '',
+  custom_data: {},
 })
 
 export default function ProspectForm({ open, onOpenChange, prospect, defaultStage, onSubmit }: Props) {
-  const [tab, setTab] = useState<typeof TABS[number]>('Entreprise')
+  const { customFieldsSchema } = useTheme()
+  const hasCustomSections = customFieldsSchema.sections.length > 0
+  const tabs = useMemo<TabName[]>(
+    () => (hasCustomSections ? [...BASE_TABS, PERSO_TAB] : [...BASE_TABS]),
+    [hasCustomSections]
+  )
+
+  const [tab, setTab] = useState<TabName>('Entreprise')
   const [form, setForm] = useState<FormState>(emptyForm(defaultStage))
   const [errors, setErrors] = useState<Partial<Record<keyof FormState, string>>>({})
   const [submitError, setSubmitError] = useState('')
@@ -112,6 +125,7 @@ export default function ProspectForm({ open, onOpenChange, prospect, defaultStag
         currency: prospect.currency ?? 'EUR',
         next_followup_date: prospect.next_followup_date ?? '',
         notes: prospect.notes ?? '',
+        custom_data: prospect.custom_data ?? {},
       })
     } else {
       setForm(emptyForm(defaultStage))
@@ -120,6 +134,18 @@ export default function ProspectForm({ open, onOpenChange, prospect, defaultStag
     setSubmitError('')
     setTab('Entreprise')
   }, [open, prospect, defaultStage])
+
+  const setCustomField = (key: string, value: CustomFieldValue) => {
+    setForm(f => {
+      const next = { ...f.custom_data }
+      if (value === null || value === '' || (Array.isArray(value) && value.length === 0)) {
+        delete next[key]
+      } else {
+        next[key] = value
+      }
+      return { ...f, custom_data: next }
+    })
+  }
 
   const set = (key: keyof FormState, value: string | string[]) => {
     setForm(f => ({ ...f, [key]: value }))
@@ -172,6 +198,7 @@ export default function ProspectForm({ open, onOpenChange, prospect, defaultStag
         currency: form.currency || 'EUR',
         next_followup_date: form.next_followup_date || null,
         notes: form.notes.trim() || null,
+        custom_data: form.custom_data,
       })
       onOpenChange(false)
     } catch (err: any) {
@@ -198,10 +225,10 @@ export default function ProspectForm({ open, onOpenChange, prospect, defaultStag
           </div>
 
           {/* Tabs */}
-          <div className="flex border-b border-border px-6">
-            {TABS.map((t) => (
+          <div className="flex border-b border-border px-6 overflow-x-auto">
+            {tabs.map((t) => (
               <button key={t} type="button" onClick={() => setTab(t)}
-                className={cn('px-4 py-3 text-sm font-medium border-b-2 -mb-px transition-colors',
+                className={cn('flex-shrink-0 px-4 py-3 text-sm font-medium border-b-2 -mb-px transition-colors',
                   tab === t ? 'border-primary text-primary' : 'border-transparent text-muted-foreground hover:text-foreground'
                 )}
               >{t}</button>
@@ -322,6 +349,39 @@ export default function ProspectForm({ open, onOpenChange, prospect, defaultStag
                   </Field>
                 </div>
               </div>
+
+              {/* PERSONNALISÉ — tenant-defined custom sections */}
+              {hasCustomSections && (
+                <div className={cn('flex flex-col gap-6', tab !== PERSO_TAB && 'hidden')}>
+                  {customFieldsSchema.sections.map(section => (
+                    <div key={section.id} className="flex flex-col gap-3">
+                      <h3 className="text-xs font-bold uppercase tracking-wider text-muted-foreground">
+                        {section.label}
+                      </h3>
+                      {section.fields.length === 0 ? (
+                        <p className="text-xs italic text-muted-foreground">Aucun champ dans cette rubrique.</p>
+                      ) : (
+                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                          {section.fields.map(field => {
+                            const fullWidth = field.type === 'textarea' || field.type === 'multiselect'
+                            return (
+                              <div key={field.id} className={cn(fullWidth && 'col-span-full')}>
+                                <Field label={field.label} required={field.required}>
+                                  <DynamicFieldInput
+                                    field={field}
+                                    value={form.custom_data[field.key]}
+                                    onChange={val => setCustomField(field.key, val)}
+                                  />
+                                </Field>
+                              </div>
+                            )
+                          })}
+                        </div>
+                      )}
+                    </div>
+                  ))}
+                </div>
+              )}
             </div>
 
             {/* Error */}
@@ -334,7 +394,7 @@ export default function ProspectForm({ open, onOpenChange, prospect, defaultStag
             {/* Footer */}
             <div className="flex justify-between items-center border-t border-border px-6 py-4">
               <div className="flex gap-2">
-                {TABS.map(t => (
+                {tabs.map(t => (
                   <button key={t} type="button" onClick={() => setTab(t)}
                     className={cn('h-1.5 w-6 rounded-full transition-colors', tab === t ? 'bg-primary' : 'bg-muted')}
                   />
