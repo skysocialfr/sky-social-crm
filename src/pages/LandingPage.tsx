@@ -125,7 +125,7 @@ export default function LandingPage() {
               <div className="h-3 w-3 rounded-full bg-yellow-400" />
               <div className="h-3 w-3 rounded-full bg-green-400" />
               <div className="mx-auto flex items-center rounded-md border border-[#e8eaf8] bg-white px-3 py-1 text-xs text-gray-400">
-                app.skysocial.fr
+                app.velmiocrm.com
               </div>
             </div>
             <div className="p-5">
@@ -289,7 +289,7 @@ export default function LandingPage() {
                 ))}
               </ul>
               <a
-                href="mailto:contact@skysocial.fr"
+                href="mailto:contact@velmiocrm.com"
                 className="block w-full rounded-xl border border-[#e8eaf8] py-2.5 text-center text-sm font-semibold text-gray-700 hover:border-indigo-200 hover:text-indigo-600 transition-colors"
               >
                 Nous contacter

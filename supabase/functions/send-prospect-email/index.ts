@@ -35,7 +35,7 @@ serve(async (req) => {
     }
 
     const resendKey = Deno.env.get('RESEND_API_KEY')
-    const fromEmail = Deno.env.get('RESEND_FROM_EMAIL') ?? 'noreply@skysocial.fr'
+    const fromEmail = Deno.env.get('RESEND_FROM_EMAIL') ?? 'noreply@velmiocrm.com'
 
     if (!resendKey) {
       return new Response(JSON.stringify({ error: 'RESEND_API_KEY non configur\u00e9' }), { status: 500, headers: CORS })
