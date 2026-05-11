@@ -3,7 +3,8 @@ import { format, parseISO, isValid } from 'date-fns'
 import { fr } from 'date-fns/locale'
 import ChannelIcon from '@/components/common/ChannelIcon'
 import { useTheme } from '@/context/ThemeContext'
-import type { Prospect, SectionPrefs, CustomField } from '@/types'
+import { BUILTIN_TAB_DEFAULT_LABELS } from '@/types'
+import type { BuiltInTab, Prospect, SectionPrefs, CustomField, CustomSection } from '@/types'
 import { DEFAULT_SECTION_PREFS } from '@/types'
 
 interface Props {
@@ -104,34 +105,89 @@ function CustomFieldValueDisplay({ field, value, currency }: { field: CustomFiel
   }
 }
 
+function renderCustomSections(sections: CustomSection[], customData: Record<string, unknown>, currency: string) {
+  // Filter out sections with no displayable values (all empty + no boolean).
+  const visible = sections.filter(section =>
+    section.fields.some(f => f.type === 'boolean' || !isEmpty(customData[f.key]))
+  )
+  return visible.map(section => (
+    <div key={section.id} className="space-y-3 pt-3 border-t border-border">
+      <p className="text-[11px] font-semibold uppercase tracking-wide text-muted-foreground">{section.label}</p>
+      {section.fields.map(field => (
+        <CustomFieldRow
+          key={field.id}
+          field={field}
+          value={customData[field.key]}
+          currency={currency}
+        />
+      ))}
+    </div>
+  ))
+}
+
 export default function ProspectInfoCard({ prospect: p, sectionPrefs = DEFAULT_SECTION_PREFS }: Props) {
   const { customFieldsSchema } = useTheme()
   const customData = p.custom_data ?? {}
-  const customSections = customFieldsSchema.sections.filter(section =>
-    // Only show a section if at least one of its fields has a value
-    // (or contains a boolean field — booleans are always meaningful).
-    section.fields.some(f => f.type === 'boolean' || !isEmpty(customData[f.key]))
-  )
+  const currency = p.currency ?? 'EUR'
+
+  const tabLabel = (t: BuiltInTab): string =>
+    customFieldsSchema.tabs[t].label?.trim() || BUILTIN_TAB_DEFAULT_LABELS[t]
+  const isHidden = (t: BuiltInTab, key: string): boolean =>
+    customFieldsSchema.tabs[t].hidden_fields.includes(key)
+  const sectionsFor = (t: BuiltInTab): CustomSection[] =>
+    customFieldsSchema.sections
+      .filter(s => s.tab === t)
+      .sort((a, b) => a.position - b.position)
 
   return (
-    <div className="flex flex-col gap-4">
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-      {/* Entreprise */}
+    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+      {/* Company tab card */}
       <div className="rounded-xl border border-border bg-card p-4 space-y-3">
-        <p className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">Entreprise</p>
+        <p className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">{tabLabel('company')}</p>
         <Row icon={Building2} label="Entreprise" value={p.company_name} />
-        <Row icon={Tag} label="Secteur" value={p.sector} />
-        <Row icon={Building2} label="Taille" value={p.company_size} />
-        <Row icon={Globe} label="Site web" value={p.website} href={p.website ?? undefined} />
+        {!isHidden('company', 'sector') && <Row icon={Tag} label="Secteur" value={p.sector} />}
+        {!isHidden('company', 'company_size') && <Row icon={Building2} label="Taille" value={p.company_size} />}
+        {!isHidden('company', 'website') && <Row icon={Globe} label="Site web" value={p.website} href={p.website ?? undefined} />}
         {sectionPrefs.show_social && (
           <>
-            <Row icon={Linkedin} label="LinkedIn" value={p.linkedin_url ? 'Voir profil' : null} href={p.linkedin_url ?? undefined} />
-            <Row icon={Instagram} label="Instagram" value={p.instagram_url ? 'Voir profil' : null} href={p.instagram_url ?? undefined} />
-            <Row icon={MapPin} label="Fiche Google Maps" value={p.google_maps_url ? 'Voir sur Google Maps' : null} href={p.google_maps_url ?? undefined} />
+            {!isHidden('company', 'linkedin_url') && <Row icon={Linkedin} label="LinkedIn" value={p.linkedin_url ? 'Voir profil' : null} href={p.linkedin_url ?? undefined} />}
+            {!isHidden('company', 'instagram_url') && <Row icon={Instagram} label="Instagram" value={p.instagram_url ? 'Voir profil' : null} href={p.instagram_url ?? undefined} />}
+            {!isHidden('company', 'google_maps_url') && <Row icon={MapPin} label="Fiche Google Maps" value={p.google_maps_url ? 'Voir sur Google Maps' : null} href={p.google_maps_url ?? undefined} />}
           </>
         )}
-        <Row icon={MapPin} label="Localisation" value={[p.city, p.country].filter(Boolean).join(', ')} />
-        {sectionPrefs.show_services && p.services_interested.length > 0 && (
+        {(!isHidden('company', 'city') || !isHidden('company', 'country')) && (
+          <Row
+            icon={MapPin}
+            label="Localisation"
+            value={[isHidden('company', 'city') ? null : p.city, isHidden('company', 'country') ? null : p.country].filter(Boolean).join(', ')}
+          />
+        )}
+        {renderCustomSections(sectionsFor('company'), customData, currency)}
+      </div>
+
+      {/* Contact tab card */}
+      <div className="rounded-xl border border-border bg-card p-4 space-y-3">
+        <p className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">{tabLabel('contact')}</p>
+        <Row icon={Building2} label="Nom complet" value={`${p.first_name} ${p.last_name}`} />
+        {!isHidden('contact', 'title') && <Row icon={Tag} label="Poste" value={p.title} />}
+        {!isHidden('contact', 'email') && <Row icon={Mail} label="Email" value={p.email} href={p.email ? `mailto:${p.email}` : undefined} />}
+        {!isHidden('contact', 'phone') && <Row icon={Phone} label="Téléphone" value={p.phone} href={p.phone ? `tel:${p.phone}` : undefined} />}
+        {renderCustomSections(sectionsFor('contact'), customData, currency)}
+      </div>
+
+      {/* CRM tab card — spans both columns since it carries pipeline + custom sections */}
+      <div className="rounded-xl border border-border bg-card p-4 space-y-3 md:col-span-2">
+        <p className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">{tabLabel('crm')}</p>
+        <div className="flex items-start gap-3">
+          <div className="mt-0.5 flex-shrink-0">
+            <ChannelIcon channel={p.channel} />
+          </div>
+          <div>
+            <p className="text-[10px] uppercase tracking-wide text-muted-foreground">Canal principal</p>
+            <p className="text-sm text-foreground">{p.channel}</p>
+          </div>
+        </div>
+        {sectionPrefs.show_services && !isHidden('crm', 'services_interested') && p.services_interested.length > 0 && (
           <div className="flex items-start gap-3">
             <Tag size={14} className="text-muted-foreground mt-0.5 flex-shrink-0" />
             <div>
@@ -144,55 +200,17 @@ export default function ProspectInfoCard({ prospect: p, sectionPrefs = DEFAULT_S
             </div>
           </div>
         )}
-        {sectionPrefs.show_deal && p.deal_value && (
-          <Row icon={Euro} label={`Valeur estimée (${p.currency})`} value={p.deal_value.toLocaleString('fr-FR')} />
+        {sectionPrefs.show_deal && !isHidden('crm', 'deal_value') && p.deal_value != null && (
+          <Row icon={Euro} label={`Valeur estimée (${currency})`} value={p.deal_value.toLocaleString('fr-FR')} />
         )}
-      </div>
-
-      {/* Contact */}
-      <div className="rounded-xl border border-border bg-card p-4 space-y-3">
-        <p className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">Contact</p>
-        <Row icon={Building2} label="Nom complet" value={`${p.first_name} ${p.last_name}`} />
-        <Row icon={Tag} label="Poste" value={p.title} />
-        <Row icon={Mail} label="Email" value={p.email} href={p.email ? `mailto:${p.email}` : undefined} />
-        <Row icon={Phone} label="Téléphone" value={p.phone} href={p.phone ? `tel:${p.phone}` : undefined} />
-        <div className="flex items-start gap-3">
-          <div className="mt-0.5 flex-shrink-0">
-            <ChannelIcon channel={p.channel} />
-          </div>
-          <div>
-            <p className="text-[10px] uppercase tracking-wide text-muted-foreground">Canal principal</p>
-            <p className="text-sm text-foreground">{p.channel}</p>
-          </div>
-        </div>
-        {p.notes && (
+        {!isHidden('crm', 'notes') && p.notes && (
           <div>
             <p className="text-[10px] uppercase tracking-wide text-muted-foreground mb-1">Notes</p>
             <p className="text-sm text-foreground whitespace-pre-wrap">{p.notes}</p>
           </div>
         )}
-        </div>
+        {renderCustomSections(sectionsFor('crm'), customData, currency)}
       </div>
-
-      {/* Custom sections — only rendered if the tenant defined at least one
-          section that has populated values on this prospect. */}
-      {customSections.length > 0 && (
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-          {customSections.map(section => (
-            <div key={section.id} className="rounded-xl border border-border bg-card p-4 space-y-3">
-              <p className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">{section.label}</p>
-              {section.fields.map(field => (
-                <CustomFieldRow
-                  key={field.id}
-                  field={field}
-                  value={customData[field.key]}
-                  currency={p.currency ?? 'EUR'}
-                />
-              ))}
-            </div>
-          ))}
-        </div>
-      )}
     </div>
   )
 }

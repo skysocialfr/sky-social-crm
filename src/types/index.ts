@@ -176,15 +176,59 @@ export interface CustomField {
 export interface CustomSection {
   id: string
   label: string
-  position: number
+  tab: BuiltInTab               // which built-in tab this section is pinned to
+  position: number              // order within its tab
   fields: CustomField[]
 }
 
+export type BuiltInTab = 'company' | 'contact' | 'crm'
+
+export const BUILTIN_TAB_ORDER: BuiltInTab[] = ['company', 'contact', 'crm']
+
+export const BUILTIN_TAB_DEFAULT_LABELS: Record<BuiltInTab, string> = {
+  company: 'Entreprise',
+  contact: 'Contact',
+  crm:     'CRM',
+}
+
+export interface TabConfig {
+  label?: string               // optional override of the default label
+  hidden_fields: string[]      // built-in field keys hidden by the tenant
+}
+
 export interface CustomFieldsSchema {
+  tabs: Record<BuiltInTab, TabConfig>
   sections: CustomSection[]
 }
 
-export const DEFAULT_CUSTOM_FIELDS_SCHEMA: CustomFieldsSchema = { sections: [] }
+export const DEFAULT_CUSTOM_FIELDS_SCHEMA: CustomFieldsSchema = {
+  tabs: {
+    company: { hidden_fields: [] },
+    contact: { hidden_fields: [] },
+    crm:     { hidden_fields: [] },
+  },
+  sections: [],
+}
+
+// Normalize a schema coming from the DB: old rows may be just
+// {"sections": []} (pre-tabs migration) and individual sections may
+// lack `tab`. Defaults everything to a safe baseline.
+export function normalizeSchema(raw: unknown): CustomFieldsSchema {
+  const obj = (raw && typeof raw === 'object') ? raw as Partial<CustomFieldsSchema> : {}
+  const tabs = {
+    company: { hidden_fields: [] as string[], ...(obj.tabs?.company ?? {}) },
+    contact: { hidden_fields: [] as string[], ...(obj.tabs?.contact ?? {}) },
+    crm:     { hidden_fields: [] as string[], ...(obj.tabs?.crm     ?? {}) },
+  }
+  const sections = (obj.sections ?? []).map((s) => ({
+    id: s.id,
+    label: s.label,
+    tab: (s.tab && BUILTIN_TAB_ORDER.includes(s.tab)) ? s.tab : 'company',
+    position: typeof s.position === 'number' ? s.position : 0,
+    fields: s.fields ?? [],
+  })) as CustomSection[]
+  return { tabs, sections }
+}
 
 export interface AdminUserView {
   id: string

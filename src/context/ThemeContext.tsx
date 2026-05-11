@@ -2,7 +2,7 @@ import { createContext, useCallback, useContext, useEffect, useLayoutEffect, use
 import { supabase } from '@/lib/supabase'
 import { useAuth } from '@/hooks/useAuth'
 import type { UserProfile, SectionPrefs, NotificationPrefs, CustomFieldsSchema } from '@/types'
-import { DEFAULT_SECTION_PREFS, DEFAULT_NOTIFICATION_PREFS, DEFAULT_CUSTOM_FIELDS_SCHEMA } from '@/types'
+import { DEFAULT_SECTION_PREFS, DEFAULT_NOTIFICATION_PREFS, DEFAULT_CUSTOM_FIELDS_SCHEMA, normalizeSchema } from '@/types'
 
 interface ThemeContextValue {
   profile: UserProfile | null
@@ -142,7 +142,9 @@ export function ThemeProvider({ children }: { children: React.ReactNode }) {
 
   const sectionPrefs: SectionPrefs = profile?.section_prefs ?? DEFAULT_SECTION_PREFS
   const notificationPrefs: NotificationPrefs = profile?.notification_prefs ?? DEFAULT_NOTIFICATION_PREFS
-  const customFieldsSchema: CustomFieldsSchema = profile?.custom_fields_schema ?? DEFAULT_CUSTOM_FIELDS_SCHEMA
+  const customFieldsSchema: CustomFieldsSchema = profile?.custom_fields_schema
+    ? normalizeSchema(profile.custom_fields_schema)
+    : DEFAULT_CUSTOM_FIELDS_SCHEMA
 
   return (
     <ThemeContext.Provider value={{ profile, isLoading, sectionPrefs, notificationPrefs, customFieldsSchema, isDark, applyTheme, toggleDark, refreshProfile, updateSectionPrefs, updateNotificationPrefs, updateCustomFieldsSchema }}>
