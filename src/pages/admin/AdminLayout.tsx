@@ -25,7 +25,7 @@ export default function AdminLayout() {
             <Shield size={15} className="text-white" />
           </div>
           <div>
-            <p className="text-sm font-bold leading-tight">Sky Social</p>
+            <p className="text-sm font-bold leading-tight">Velmio</p>
             <p className="text-[10px] text-gray-400 leading-tight">Console Admin</p>
           </div>
         </div>

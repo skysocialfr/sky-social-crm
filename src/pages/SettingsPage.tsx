@@ -373,7 +373,7 @@ export default function SettingsPage() {
       <div className="flex flex-col gap-5">
         <div>
           <h2 className="text-base font-bold text-text">Abonnement</h2>
-          <p className="text-[13px] text-muted mt-0.5">Gérez votre plan Sky Social CRM.</p>
+          <p className="text-[13px] text-muted mt-0.5">Gérez votre plan Velmio CRM.</p>
         </div>
 
         {/* Current status */}

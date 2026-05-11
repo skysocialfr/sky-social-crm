@@ -23,7 +23,7 @@ export default function TopBar({ onSearchOpen }: Props) {
   const { logout } = useAuth()
   const overdueCount = relances?.length ?? 0
 
-  const title = PAGE_TITLES[location.pathname] ?? 'Sky Social CRM'
+  const title = PAGE_TITLES[location.pathname] ?? 'Velmio CRM'
 
   return (
     <header
@@ -31,7 +31,7 @@ export default function TopBar({ onSearchOpen }: Props) {
       style={{ zIndex: 10 }}
     >
       {/* Breadcrumb — hidden on mobile */}
-      <span className="hidden md:inline text-[12px] text-[#9ca3af]">Sky Social</span>
+      <span className="hidden md:inline text-[12px] text-[#9ca3af]">Velmio</span>
       <span className="hidden md:inline text-[12px] text-[#9ca3af]">›</span>
       <span className="text-[13px] font-bold text-[#1a1c2e]">{title}</span>
 

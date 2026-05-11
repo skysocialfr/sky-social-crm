@@ -43,7 +43,7 @@ export default function LoginPage() {
           <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-white/20">
             <Zap size={18} className="text-white" fill="currentColor" />
           </div>
-          <span className="text-lg font-bold">Sky Social CRM</span>
+          <span className="text-lg font-bold">Velmio CRM</span>
         </div>
         <div>
           <h2 className="text-3xl font-black leading-tight mb-4">
@@ -66,7 +66,7 @@ export default function LoginPage() {
             ))}
           </ul>
         </div>
-        <p className="text-xs text-indigo-300">Sky Social Agency © {new Date().getFullYear()}</p>
+        <p className="text-xs text-indigo-300">Velmio © {new Date().getFullYear()}</p>
       </div>
 
       {/* Right panel — form */}

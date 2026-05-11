@@ -18,7 +18,7 @@ export default function Sidebar() {
   const { profile } = useTheme()
   const { data: relances } = useRelances()
   const overdueCount = relances?.length ?? 0
-  const companyName = profile?.company_name || 'Sky Social'
+  const companyName = profile?.company_name || 'Velmio'
 
   return (
     <aside className="hidden md:flex h-screen w-[220px] flex-col flex-shrink-0 bg-white border-r border-[#e4e7f8]">

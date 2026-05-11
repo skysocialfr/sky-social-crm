@@ -196,7 +196,7 @@ export default function DashboardPage() {
       {/* Empty state */}
       {stats.totalProspects === 0 && (
         <div className="rounded-card border-2 border-dashed border-border p-10 text-center">
-          <p className="text-lg font-bold text-text mb-2">Bienvenue sur Sky Social CRM !</p>
+          <p className="text-lg font-bold text-text mb-2">Bienvenue sur Velmio CRM !</p>
           <p className="text-sm text-muted mb-5">Commencez par ajouter votre premier prospect.</p>
           <button
             onClick={() => navigate('/app/prospects')}
