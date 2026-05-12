@@ -7,7 +7,10 @@ import { queryClient } from './lib/queryClient'
 import { ThemeProvider } from './context/ThemeContext'
 import ErrorBoundary from './components/common/ErrorBoundary'
 import CookieBanner from './components/legal/CookieBanner'
+import { initSentry } from './lib/sentry'
 import './index.css'
+
+initSentry()
 
 ReactDOM.createRoot(document.getElementById('root')!).render(
   <React.StrictMode>

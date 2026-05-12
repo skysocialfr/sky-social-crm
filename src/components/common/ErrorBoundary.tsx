@@ -1,5 +1,6 @@
 import { Component } from 'react'
 import type { ErrorInfo, ReactNode } from 'react'
+import { captureError } from '@/lib/sentry'
 
 interface Props {
   children: ReactNode
@@ -17,10 +18,11 @@ export default class ErrorBoundary extends Component<Props, State> {
   }
 
   componentDidCatch(error: Error, info: ErrorInfo) {
-    // Surfaced to the user via the fallback UI below; logged here so it
-    // shows up in the browser console for debugging until we wire a
-    // proper error tracker (Sentry/LogRocket, P1 audit follow-up).
+    // Local console for browser-side debugging during development,
+    // remote Sentry capture for production triage. Sentry init is a
+    // no-op when VITE_SENTRY_DSN isn't set, so this stays cheap.
     console.error('[ErrorBoundary]', error, info.componentStack)
+    captureError(error, { componentStack: info.componentStack })
   }
 
   handleReload = () => {

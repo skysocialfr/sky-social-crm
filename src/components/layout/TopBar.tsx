@@ -1,6 +1,7 @@
 import { useLocation, useNavigate } from 'react-router-dom'
 import { useRelances } from '@/hooks/useRelances'
 import { useAuth } from '@/hooks/useAuth'
+import MobileMenu from './MobileMenu'
 
 const PAGE_TITLES: Record<string, string> = {
   '/app':             'Tableau de bord',
@@ -30,6 +31,9 @@ export default function TopBar({ onSearchOpen }: Props) {
       className="flex h-[52px] items-center gap-[10px] px-4 md:px-5 flex-shrink-0 bg-white border-b border-[#e4e7f8]"
       style={{ zIndex: 10 }}
     >
+      {/* Mobile hamburger → MobileMenu drawer (Settings / Admin / Logout) */}
+      <MobileMenu />
+
       {/* Breadcrumb — hidden on mobile */}
       <span className="hidden md:inline text-[12px] text-[#9ca3af]">Velmio</span>
       <span className="hidden md:inline text-[12px] text-[#9ca3af]">›</span>
