@@ -1,8 +1,8 @@
 import LegalLayout, { LegalSection, Placeholder } from './LegalLayout'
 
 // Mentions légales — obligatoires pour tout site édité depuis la France
-// (art. 6 LCEN). Les éléments encadrés en jaune sont à compléter par
-// le propriétaire du site avant publication officielle.
+// (art. 6 LCEN). Le seul champ qui reste à compléter avant publication
+// est l'adresse du siège (obligatoire).
 
 export default function MentionsLegales() {
   return (
@@ -15,16 +15,15 @@ export default function MentionsLegales() {
 
       <LegalSection title="Éditeur du site">
         <ul className="list-disc list-inside space-y-1">
-          <li>Raison sociale : <Placeholder>[À COMPLÉTER — ex. Sky Social Agency SAS]</Placeholder></li>
-          <li>Forme juridique : <Placeholder>[À COMPLÉTER — SAS / SARL / Auto-entrepreneur…]</Placeholder></li>
-          <li>Capital social : <Placeholder>[À COMPLÉTER — ex. 1 000 €]</Placeholder></li>
+          <li>Raison sociale : <strong>Sky Social Agency</strong></li>
+          <li>Forme juridique : Entreprise individuelle (micro-entreprise)</li>
+          <li>Activité exercée à titre individuel par : <strong>Meryne Ndjeyi</strong></li>
+          <li>SIRET : 901 055 905 00011</li>
+          <li>TVA non applicable, art. 293 B du CGI (franchise en base de TVA)</li>
           <li>Adresse du siège social : <Placeholder>[À COMPLÉTER — rue, code postal, ville]</Placeholder></li>
-          <li>SIRET : <Placeholder>[À COMPLÉTER]</Placeholder></li>
-          <li>RCS : <Placeholder>[À COMPLÉTER — ville d'immatriculation + n°]</Placeholder></li>
-          <li>TVA intracommunautaire : <Placeholder>[À COMPLÉTER si applicable]</Placeholder></li>
-          <li>Email : contact@velmiocrm.com</li>
-          <li>Téléphone : <Placeholder>[À COMPLÉTER si vous souhaitez en publier un]</Placeholder></li>
-          <li>Directeur de la publication : <Placeholder>[À COMPLÉTER — nom du représentant légal]</Placeholder></li>
+          <li>Email : <a href="mailto:skysocialfr@gmail.com" className="text-indigo-600 hover:underline">skysocialfr@gmail.com</a></li>
+          <li>Téléphone : +33 6 69 70 80 46</li>
+          <li>Directeur de la publication : Meryne Ndjeyi</li>
         </ul>
       </LegalSection>
 
@@ -54,10 +53,10 @@ export default function MentionsLegales() {
       <LegalSection title="Propriété intellectuelle">
         <p>
           L'ensemble du contenu présent sur le site Velmio CRM (textes, graphismes, logos,
-          icônes, images, code source) est la propriété exclusive de
-          <Placeholder>[À COMPLÉTER — Éditeur]</Placeholder> ou de ses partenaires, et est protégé
-          par le droit d'auteur. Toute reproduction, représentation, modification ou exploitation
-          totale ou partielle, sans autorisation écrite préalable, est interdite.
+          icônes, images, code source) est la propriété exclusive de Sky Social Agency
+          ou de ses partenaires, et est protégé par le droit d'auteur. Toute reproduction,
+          représentation, modification ou exploitation totale ou partielle, sans autorisation
+          écrite préalable, est interdite.
         </p>
       </LegalSection>
 
@@ -71,7 +70,7 @@ export default function MentionsLegales() {
       <LegalSection title="Contact">
         <p>
           Pour toute question relative à ces mentions légales, vous pouvez nous écrire à
-          <a href="mailto:contact@velmiocrm.com" className="text-indigo-600 hover:underline"> contact@velmiocrm.com</a>.
+          <a href="mailto:skysocialfr@gmail.com" className="text-indigo-600 hover:underline"> skysocialfr@gmail.com</a>.
         </p>
       </LegalSection>
     </LegalLayout>

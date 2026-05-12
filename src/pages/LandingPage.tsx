@@ -289,7 +289,7 @@ export default function LandingPage() {
                 ))}
               </ul>
               <a
-                href="mailto:contact@velmiocrm.com"
+                href="mailto:skysocialfr@gmail.com"
                 className="block w-full rounded-xl border border-[#e8eaf8] py-2.5 text-center text-sm font-semibold text-gray-700 hover:border-indigo-200 hover:text-indigo-600 transition-colors"
               >
                 Nous contacter

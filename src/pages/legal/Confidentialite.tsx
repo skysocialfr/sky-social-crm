@@ -1,4 +1,4 @@
-import LegalLayout, { LegalSection, Placeholder } from './LegalLayout'
+import LegalLayout, { LegalSection } from './LegalLayout'
 
 // Politique de confidentialité — base conforme RGPD à faire valider
 // par un juriste pour un usage commercial. Couvre les éléments
@@ -16,11 +16,12 @@ export default function Confidentialite() {
 
       <LegalSection title="1. Responsable du traitement">
         <p>
-          Le responsable du traitement des données personnelles est
-          <Placeholder>[À COMPLÉTER — Éditeur]</Placeholder>, dont les coordonnées figurent dans
-          les <a href="#/legal/mentions" className="text-indigo-600 hover:underline">Mentions légales</a>.
+          Le responsable du traitement des données personnelles est <strong>Sky Social Agency</strong>,
+          entreprise individuelle exploitée par Meryne Ndjeyi (SIRET 901 055 905 00011), dont les
+          coordonnées complètes figurent dans les
+          <a href="#/legal/mentions" className="text-indigo-600 hover:underline"> Mentions légales</a>.
         </p>
-        <p>Contact RGPD : <a href="mailto:contact@velmiocrm.com" className="text-indigo-600 hover:underline">contact@velmiocrm.com</a></p>
+        <p>Contact RGPD : <a href="mailto:skysocialfr@gmail.com" className="text-indigo-600 hover:underline">skysocialfr@gmail.com</a></p>
       </LegalSection>
 
       <LegalSection title="2. Données collectées">
@@ -95,7 +96,7 @@ export default function Confidentialite() {
         </ul>
         <p>
           Pour exercer ces droits, écrivez-nous à
-          <a href="mailto:contact@velmiocrm.com" className="text-indigo-600 hover:underline"> contact@velmiocrm.com</a>.
+          <a href="mailto:skysocialfr@gmail.com" className="text-indigo-600 hover:underline"> skysocialfr@gmail.com</a>.
           Nous répondons dans un délai d'un mois maximum.
         </p>
         <p>
