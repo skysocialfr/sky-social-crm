@@ -1,3 +1,4 @@
+import { Link } from 'react-router-dom'
 import LegalLayout, { LegalSection, Placeholder } from './LegalLayout'
 
 // Mentions légales — obligatoires pour tout site édité depuis la France
@@ -63,7 +64,7 @@ export default function MentionsLegales() {
       <LegalSection title="Données personnelles">
         <p>
           Le traitement des données personnelles fait l'objet d'une politique de confidentialité
-          dédiée, accessible <a href="#/legal/confidentialite" className="text-indigo-600 hover:underline">ici</a>.
+          dédiée, accessible <Link to="/legal/confidentialite" className="text-indigo-600 hover:underline">ici</Link>.
         </p>
       </LegalSection>
 

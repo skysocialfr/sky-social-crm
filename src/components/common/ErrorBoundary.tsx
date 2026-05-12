@@ -34,7 +34,10 @@ export default class ErrorBoundary extends Component<Props, State> {
 
   handleGoHome = () => {
     this.setState({ error: null })
-    window.location.hash = '#/'
+    // Hard-navigates rather than using react-router because the error
+    // boundary itself sits above the RouterProvider — we can't call
+    // useNavigate() from here.
+    window.location.href = '/'
   }
 
   render() {

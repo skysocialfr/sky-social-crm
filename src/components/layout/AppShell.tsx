@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react'
-import { Outlet } from 'react-router-dom'
+import { Link, Outlet } from 'react-router-dom'
 import Sidebar from './Sidebar'
 import TopBar from './TopBar'
 import BottomNav from './BottomNav'
@@ -44,11 +44,11 @@ export default function AppShell() {
           >
             <Outlet />
             <footer className="mt-8 hidden md:flex flex-wrap items-center justify-center gap-x-3 gap-y-1 text-[11px] text-[#9ca3af]">
-              <a href="#/legal/mentions" className="hover:text-indigo-600 transition-colors">Mentions légales</a>
+              <Link to="/legal/mentions" className="hover:text-indigo-600 transition-colors">Mentions légales</Link>
               <span>·</span>
-              <a href="#/legal/cgu" className="hover:text-indigo-600 transition-colors">CGU</a>
+              <Link to="/legal/cgu" className="hover:text-indigo-600 transition-colors">CGU</Link>
               <span>·</span>
-              <a href="#/legal/confidentialite" className="hover:text-indigo-600 transition-colors">Confidentialité</a>
+              <Link to="/legal/confidentialite" className="hover:text-indigo-600 transition-colors">Confidentialité</Link>
             </footer>
           </main>
         </div>

@@ -1,3 +1,4 @@
+import { Link } from 'react-router-dom'
 import LegalLayout, { LegalSection } from './LegalLayout'
 
 // Politique de confidentialité — base conforme RGPD à faire valider
@@ -19,7 +20,7 @@ export default function Confidentialite() {
           Le responsable du traitement des données personnelles est <strong>Sky Social Agency</strong>,
           entreprise individuelle exploitée par Meryne Ndjeyi (SIRET 901 055 905 00011), dont les
           coordonnées complètes figurent dans les
-          <a href="#/legal/mentions" className="text-indigo-600 hover:underline"> Mentions légales</a>.
+          <Link to="/legal/mentions" className="text-indigo-600 hover:underline"> Mentions légales</Link>.
         </p>
         <p>Contact RGPD : <a href="mailto:skysocialfr@gmail.com" className="text-indigo-600 hover:underline">skysocialfr@gmail.com</a></p>
       </LegalSection>

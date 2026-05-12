@@ -1,3 +1,4 @@
+import { Link } from 'react-router-dom'
 import LegalLayout, { LegalSection } from './LegalLayout'
 
 // Conditions générales d'utilisation — base à adapter par un juriste
@@ -97,7 +98,7 @@ export default function CGU() {
       <LegalSection title="9. Données personnelles">
         <p>
           Le traitement des données personnelles est détaillé dans la
-          <a href="#/legal/confidentialite" className="text-indigo-600 hover:underline"> Politique de confidentialité</a>.
+          <Link to="/legal/confidentialite" className="text-indigo-600 hover:underline"> Politique de confidentialité</Link>.
         </p>
       </LegalSection>
 
