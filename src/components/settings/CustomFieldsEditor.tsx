@@ -4,6 +4,7 @@ import { useTheme } from '@/context/ThemeContext'
 import Toggle from '@/components/common/Toggle'
 import { cn } from '@/lib/cn'
 import { BUILTIN_FIELDS } from '@/lib/builtinFields'
+import { slugify } from '@/lib/slugify'
 import {
   BUILTIN_TAB_ORDER,
   BUILTIN_TAB_DEFAULT_LABELS,
@@ -37,22 +38,6 @@ function uid(): string {
     return crypto.randomUUID()
   }
   return Math.random().toString(36).slice(2) + Date.now().toString(36)
-}
-
-function slugify(label: string, existing: Set<string>): string {
-  const base = label
-    .toLowerCase()
-    .normalize('NFD')
-    .replace(/[̀-ͯ]/g, '')
-    .replace(/[^a-z0-9]+/g, '_')
-    .replace(/^_+|_+$/g, '')
-    || 'champ'
-  let key = base
-  let i = 2
-  while (existing.has(key)) {
-    key = `${base}_${i++}`
-  }
-  return key
 }
 
 function collectKeys(schema: CustomFieldsSchema, excludeId?: string): Set<string> {
