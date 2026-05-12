@@ -1,36 +1,45 @@
 -- ============================================================
--- Seed: Photopya (Michaël) custom fields schema
+-- Seed: Photopya (Michaël) custom fields schema — tab-aware
 -- ============================================================
--- One-shot UPDATE to install the 5 rubriques requested by Michaël
--- for his photographer/videographer marketplace CRM.
+-- Sets up Michaël's 5 rubriques, attaches each to the right built-in
+-- tab so they show up inline next to the existing fields (no more
+-- standalone "Personnalisé" tab). Also relabels the built-in tabs to
+-- match his marketplace vocabulary and hides the few native fields
+-- that don't apply to photographers (LinkedIn pro, Instagram, taille,
+-- services intéressés…).
 --
--- How to run:
---   1. Open Supabase Dashboard → SQL Editor for the Velmio project.
---   2. Verify the email in the WHERE clause matches Michaël's account
---      (currently michaelmitwari@gmail.com).
---   3. Paste the whole script and click "Run".
---   4. The script is idempotent — running it twice just rewrites the
---      same schema, no duplication. Existing prospects keep their
---      already-filled custom_data values.
---
--- The IDs below are generated at runtime via gen_random_uuid() so the
--- script can be re-run on different environments (staging, prod)
--- without UUID collisions, but each run will produce DIFFERENT ids.
--- The field "key" values are stable — they're what's used to look up
--- prospect.custom_data, so those MUST NOT change once prospects start
--- filling them in.
+-- How to run: paste in Supabase Dashboard → SQL Editor, click Run.
+-- Idempotent — re-runnable any time, no duplication.
 
 with target_user as (
   select id from auth.users where email = 'michaelmitwari@gmail.com' limit 1
 )
 update public.user_profiles up
 set custom_fields_schema = jsonb_build_object(
+
+  -- Per-tab config: label override + hidden native fields
+  'tabs', jsonb_build_object(
+    'company', jsonb_build_object(
+      'label', 'Prestataire',
+      'hidden_fields', jsonb_build_array('company_size', 'linkedin_url', 'instagram_url', 'google_maps_url')
+    ),
+    'contact', jsonb_build_object(
+      'hidden_fields', jsonb_build_array()
+    ),
+    'crm', jsonb_build_object(
+      'label', 'Suivi & abonnement',
+      'hidden_fields', jsonb_build_array('services_interested')
+    )
+  ),
+
+  -- 5 sections, attached to the relevant tab
   'sections', jsonb_build_array(
 
-    -- 1) Informations principales --------------------------------------
+    -- 1) "Informations principales" → onglet Prestataire (company)
     jsonb_build_object(
       'id', gen_random_uuid()::text,
       'label', 'Informations principales',
+      'tab', 'company',
       'position', 0,
       'fields', jsonb_build_array(
         jsonb_build_object('id', gen_random_uuid()::text, 'key', 'specialty',         'label', 'Spécialité principale',  'type', 'select',
@@ -44,10 +53,11 @@ set custom_fields_schema = jsonb_build_object(
       )
     ),
 
-    -- 2) Portfolio et visibilité ---------------------------------------
+    -- 2) "Portfolio et visibilité" → onglet Prestataire (company)
     jsonb_build_object(
       'id', gen_random_uuid()::text,
       'label', 'Portfolio et visibilité',
+      'tab', 'company',
       'position', 1,
       'fields', jsonb_build_array(
         jsonb_build_object('id', gen_random_uuid()::text, 'key', 'portfolio_photos',  'label', 'Photos portfolio (nombre)', 'type', 'number', 'min', 0),
@@ -59,11 +69,12 @@ set custom_fields_schema = jsonb_build_object(
       )
     ),
 
-    -- 3) Performance commerciale ---------------------------------------
+    -- 3) "Performance commerciale" → onglet Suivi (crm)
     jsonb_build_object(
       'id', gen_random_uuid()::text,
       'label', 'Performance commerciale',
-      'position', 2,
+      'tab', 'crm',
+      'position', 0,
       'fields', jsonb_build_array(
         jsonb_build_object('id', gen_random_uuid()::text, 'key', 'rating_avg',        'label', 'Note moyenne (1-5)',     'type', 'number', 'min', 1, 'max', 5),
         jsonb_build_object('id', gen_random_uuid()::text, 'key', 'review_count',      'label', 'Nombre d''avis',         'type', 'number', 'min', 0),
@@ -76,11 +87,12 @@ set custom_fields_schema = jsonb_build_object(
       )
     ),
 
-    -- 4) Abonnement ----------------------------------------------------
+    -- 4) "Abonnement" → onglet Suivi (crm)
     jsonb_build_object(
       'id', gen_random_uuid()::text,
       'label', 'Abonnement',
-      'position', 3,
+      'tab', 'crm',
+      'position', 1,
       'fields', jsonb_build_array(
         jsonb_build_object('id', gen_random_uuid()::text, 'key', 'subscription_type', 'label', 'Type d''abonnement',     'type', 'select',
           'options', jsonb_build_array('Gratuit', 'Premium', 'Premium+')),
@@ -92,11 +104,12 @@ set custom_fields_schema = jsonb_build_object(
       )
     ),
 
-    -- 5) Badges et statuts ---------------------------------------------
+    -- 5) "Badges et statuts" → onglet Suivi (crm)
     jsonb_build_object(
       'id', gen_random_uuid()::text,
       'label', 'Badges et statuts',
-      'position', 4,
+      'tab', 'crm',
+      'position', 2,
       'fields', jsonb_build_array(
         jsonb_build_object('id', gen_random_uuid()::text, 'key', 'badge',             'label', 'Badge',                  'type', 'select',
           'options', jsonb_build_array('Nouveau', 'Vérifié', 'Top Pro', 'Super Pro')),
@@ -112,6 +125,3 @@ set custom_fields_schema = jsonb_build_object(
 from target_user
 where up.id = target_user.id
 returning up.id, jsonb_array_length(up.custom_fields_schema->'sections') as section_count;
-
--- Expected output: 1 row with section_count = 5.
--- If 0 rows: Michaël hasn't signed up yet OR the email doesn't match.
