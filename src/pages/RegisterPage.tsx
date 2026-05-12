@@ -192,9 +192,13 @@ export default function RegisterPage() {
                 <p className="text-xs text-gray-500 mt-0.5">Ces identifiants vous serviront à vous connecter.</p>
               </div>
               <div>
-                <label className="mb-1.5 block text-sm font-medium text-gray-700">Email *</label>
+                <label htmlFor="register-email" className="mb-1.5 block text-sm font-medium text-gray-700">Email *</label>
                 <input
+                  id="register-email"
                   type="email"
+                  autoComplete="email"
+                  required
+                  aria-required="true"
                   value={email}
                   onChange={(e) => setEmail(e.target.value)}
                   placeholder="vous@votresociete.com"
@@ -202,11 +206,16 @@ export default function RegisterPage() {
                 />
               </div>
               <div>
-                <label className="mb-1.5 block text-sm font-medium text-gray-700">
+                <label htmlFor="register-password" className="mb-1.5 block text-sm font-medium text-gray-700">
                   Mot de passe * <span className="font-normal text-gray-400">(min. 8 caractères)</span>
                 </label>
                 <input
+                  id="register-password"
                   type="password"
+                  autoComplete="new-password"
+                  required
+                  aria-required="true"
+                  minLength={8}
                   value={password}
                   onChange={(e) => setPassword(e.target.value)}
                   placeholder="••••••••"
@@ -214,9 +223,13 @@ export default function RegisterPage() {
                 />
               </div>
               <div>
-                <label className="mb-1.5 block text-sm font-medium text-gray-700">Confirmer le mot de passe *</label>
+                <label htmlFor="register-confirm" className="mb-1.5 block text-sm font-medium text-gray-700">Confirmer le mot de passe *</label>
                 <input
+                  id="register-confirm"
                   type="password"
+                  autoComplete="new-password"
+                  required
+                  aria-required="true"
                   value={confirm}
                   onChange={(e) => setConfirm(e.target.value)}
                   placeholder="••••••••"
@@ -225,7 +238,7 @@ export default function RegisterPage() {
               </div>
 
               {error && (
-                <p className="rounded-xl border border-red-100 bg-red-50 px-4 py-2.5 text-xs text-red-600">
+                <p role="alert" className="rounded-xl border border-red-100 bg-red-50 px-4 py-2.5 text-xs text-red-600">
                   {error}
                 </p>
               )}
@@ -250,9 +263,13 @@ export default function RegisterPage() {
                 <p className="text-xs text-gray-500 mt-0.5">Personnalisez votre espace CRM.</p>
               </div>
               <div>
-                <label className="mb-1.5 block text-sm font-medium text-gray-700">Nom de la société *</label>
+                <label htmlFor="register-company" className="mb-1.5 block text-sm font-medium text-gray-700">Nom de la société *</label>
                 <input
+                  id="register-company"
                   type="text"
+                  autoComplete="organization"
+                  required
+                  aria-required="true"
                   value={companyName}
                   onChange={(e) => setCompanyName(e.target.value)}
                   placeholder="Photopya, Ma Boîte, …"
@@ -271,7 +288,7 @@ export default function RegisterPage() {
               </div>
 
               {error && (
-                <p className="rounded-xl border border-red-100 bg-red-50 px-4 py-2.5 text-xs text-red-600">
+                <p role="alert" className="rounded-xl border border-red-100 bg-red-50 px-4 py-2.5 text-xs text-red-600">
                   {error}
                 </p>
               )}

@@ -1,4 +1,5 @@
-import { useState, useEffect } from 'react'
+import { cloneElement, isValidElement, useEffect, useId, useState } from 'react'
+import type { ReactElement, ReactNode } from 'react'
 import * as Dialog from '@radix-ui/react-dialog'
 import { X } from 'lucide-react'
 import { cn } from '@/lib/cn'
@@ -16,14 +17,34 @@ interface Props {
   onSubmit: (data: ProspectFormData) => Promise<void>
 }
 
-function Field({ label, required, error, children }: { label: string; required?: boolean; error?: string; children: React.ReactNode }) {
+function Field({ label, required, error, children }: { label: string; required?: boolean; error?: string; children: ReactNode }) {
+  // Wire up htmlFor ↔ id and aria-* without forcing every call site to
+  // hand-roll matching ids. React.useId() gives us a stable unique id
+  // per Field instance; we clone the (single) input/select/textarea
+  // child to inject id + aria-invalid + aria-describedby + aria-required.
+  const id = useId()
+  const errorId = useId()
+
+  const child = isValidElement(children)
+    ? cloneElement(children as ReactElement<Record<string, unknown>>, {
+        id,
+        'aria-invalid': error ? true : undefined,
+        'aria-describedby': error ? errorId : undefined,
+        'aria-required': required || undefined,
+      })
+    : children
+
   return (
     <div>
-      <label className="mb-1 block text-xs font-medium text-muted-foreground">
-        {label}{required && <span className="text-red-400 ml-0.5">*</span>}
+      <label htmlFor={id} className="mb-1 block text-xs font-medium text-muted-foreground">
+        {label}{required && <span className="text-red-400 ml-0.5" aria-hidden="true">*</span>}
       </label>
-      {children}
-      {error && <p className="mt-1 text-xs text-red-400">{error}</p>}
+      {child}
+      {error && (
+        <p id={errorId} role="alert" className="mt-1 text-xs text-red-400">
+          {error}
+        </p>
+      )}
     </div>
   )
 }

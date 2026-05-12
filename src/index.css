@@ -75,4 +75,26 @@
   /* ── Typography scale helpers ── */
   .text-label { font-size: 11px; font-weight: 600; letter-spacing: 0.04em; text-transform: uppercase; }
   .text-kpi   { font-size: 28px; font-weight: 800; line-height: 1.05; letter-spacing: -0.01em; }
+
+  /* ── A11y: keyboard focus rings ──
+     Tailwind doesn't ship visible focus rings by default. We rely on
+     :focus-visible so mouse users don't see rings on every click,
+     but keyboard users get a clear indicator wherever they tab.
+     The 2px offset keeps it visible against any background. */
+  :focus { outline: none; }
+  :focus-visible {
+    outline: 2px solid hsl(var(--primary));
+    outline-offset: 2px;
+    border-radius: 4px;
+  }
+  /* Native form controls already paint their own focus ring inside
+     their border, which double-rings with the global rule above. Tone
+     it down by replacing it with a slightly thicker ring on the input
+     border itself. */
+  input:focus-visible,
+  textarea:focus-visible,
+  select:focus-visible {
+    outline: 2px solid hsl(var(--primary));
+    outline-offset: 0;
+  }
 }
