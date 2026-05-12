@@ -3,6 +3,7 @@ import { supabase } from '@/lib/supabase'
 import { useAuth } from '@/hooks/useAuth'
 import type { UserProfile, SectionPrefs, NotificationPrefs, CustomFieldsSchema } from '@/types'
 import { DEFAULT_SECTION_PREFS, DEFAULT_NOTIFICATION_PREFS, DEFAULT_CUSTOM_FIELDS_SCHEMA, normalizeSchema } from '@/types'
+import { setSentryUser } from '@/lib/sentry'
 
 interface ThemeContextValue {
   profile: UserProfile | null
@@ -79,8 +80,13 @@ export function ThemeProvider({ children }: { children: React.ReactNode }) {
       document.documentElement.style.removeProperty('--primary')
       document.documentElement.style.removeProperty('--ring')
       localStorage.removeItem(STORAGE_KEY)
+      setSentryUser(null)
       return
     }
+
+    // Pin the current user to every future Sentry event so errors
+    // arrive with enough context to identify the customer.
+    setSentryUser({ id: user.id, email: user.email })
 
     setIsLoading(true)
     supabase
@@ -95,7 +101,7 @@ export function ThemeProvider({ children }: { children: React.ReactNode }) {
         }
         setIsLoading(false)
       })
-  }, [user?.id, applyTheme])
+  }, [user?.id, user?.email, applyTheme])
 
   const refreshProfile = useCallback(async () => {
     if (!user) return

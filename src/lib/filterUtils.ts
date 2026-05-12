@@ -41,7 +41,7 @@ export function evaluateConditions(prospect: Prospect, conditions: FilterConditi
 }
 
 function evaluateCondition(prospect: Prospect, cond: FilterCondition): boolean {
-  const raw = (prospect as Record<string, unknown>)[cond.field]
+  const raw = (prospect as unknown as Record<string, unknown>)[cond.field]
   const val = raw == null ? '' : String(raw).toLowerCase()
   const target = cond.value.toLowerCase()
 
