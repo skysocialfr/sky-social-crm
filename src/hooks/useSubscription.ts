@@ -86,3 +86,31 @@ export async function createCheckoutSession(returnUrl: string, plan: 'pro' | 'te
   if (!data.url) throw new Error('Réponse invalide : URL Stripe manquante')
   return data.url as string
 }
+
+// Opens Stripe's hosted Billing Portal so the customer can update their
+// card, cancel, switch plans, or download invoices on their own. Used
+// by the "Gérer mon abonnement" button in Settings and by the past_due
+// banner that prompts a card update.
+export async function createPortalSession(returnUrl: string): Promise<string> {
+  const { data: { session } } = await supabase.auth.getSession()
+  const res = await fetch(
+    `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/create-portal-session`,
+    {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        Authorization: `Bearer ${session?.access_token}`,
+      },
+      body: JSON.stringify({ return_url: returnUrl }),
+    }
+  )
+  if (!res.ok) {
+    const text = await res.text()
+    let detail = text
+    try { detail = JSON.parse(text).error ?? text } catch { /* keep raw text */ }
+    throw new Error(`HTTP ${res.status} — ${detail || 'Erreur lors de l\'ouverture du portail Stripe'}`)
+  }
+  const data = await res.json()
+  if (!data.url) throw new Error('Réponse invalide : URL Stripe manquante')
+  return data.url as string
+}

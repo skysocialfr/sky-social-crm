@@ -5,7 +5,7 @@ import { Zap, Check } from 'lucide-react'
 import { supabase } from '@/lib/supabase'
 import { useTheme } from '@/context/ThemeContext'
 import { useUpdateProfile } from '@/hooks/useUserProfile'
-import { useSubscription, createCheckoutSession, FREE_PLAN, PLAN_DETAILS, type SubscriptionPlan } from '@/hooks/useSubscription'
+import { useSubscription, createCheckoutSession, createPortalSession, FREE_PLAN, PLAN_DETAILS, type SubscriptionPlan } from '@/hooks/useSubscription'
 import { useAuth } from '@/hooks/useAuth'
 import { useProspects } from '@/hooks/useProspects'
 import { exportProspectsToCsv } from '@/lib/csvUtils'
@@ -84,6 +84,8 @@ export default function SettingsPage() {
   // Abonnement
   const [upgrading, setUpgrading] = useState<SubscriptionPlan | null>(null)
   const [upgradeError, setUpgradeError] = useState('')
+  const [portalLoading, setPortalLoading] = useState(false)
+  const [portalError, setPortalError] = useState('')
 
   // Sécurité
   const [newPassword, setNewPassword] = useState('')
@@ -176,6 +178,18 @@ export default function SettingsPage() {
     } catch (err) {
       setUpgradeError(err instanceof Error ? err.message : 'Une erreur est survenue.')
       setUpgrading(null)
+    }
+  }
+
+  const handleOpenPortal = async () => {
+    setPortalError('')
+    setPortalLoading(true)
+    try {
+      const url = await createPortalSession(window.location.href)
+      window.location.href = url
+    } catch (err) {
+      setPortalError(err instanceof Error ? err.message : 'Une erreur est survenue.')
+      setPortalLoading(false)
     }
   }
 
@@ -454,10 +468,27 @@ export default function SettingsPage() {
           })}
         </div>
 
-        {subscription.status === 'active' && (
-          <p className="text-[11px] text-muted">
-            Pour annuler ou modifier votre moyen de paiement, contactez le support.
-          </p>
+        {subscription.stripe_customer_id && (
+          <div className="rounded-card border border-border bg-card p-5 flex flex-col gap-3">
+            <div>
+              <p className="text-[11px] font-semibold uppercase tracking-wider text-muted">Facturation Stripe</p>
+              <p className="text-[12px] text-muted mt-1">
+                Mettez à jour votre carte, téléchargez vos factures ou annulez votre abonnement
+                depuis le portail sécurisé Stripe.
+              </p>
+            </div>
+            <div>
+              <button
+                type="button"
+                onClick={handleOpenPortal}
+                disabled={portalLoading}
+                className="inline-flex items-center gap-2 rounded-btn border border-border bg-card px-4 py-2 text-xs font-semibold text-text hover:border-primary hover:text-primary transition-colors disabled:opacity-50"
+              >
+                {portalLoading ? 'Redirection…' : 'Gérer mon abonnement'}
+              </button>
+            </div>
+            {portalError && <p className="text-xs text-crm-red">{portalError}</p>}
+          </div>
         )}
       </div>
     ),

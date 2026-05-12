@@ -6,6 +6,7 @@ import { router } from './router'
 import { queryClient } from './lib/queryClient'
 import { ThemeProvider } from './context/ThemeContext'
 import ErrorBoundary from './components/common/ErrorBoundary'
+import CookieBanner from './components/legal/CookieBanner'
 import './index.css'
 
 ReactDOM.createRoot(document.getElementById('root')!).render(
@@ -14,6 +15,7 @@ ReactDOM.createRoot(document.getElementById('root')!).render(
       <QueryClientProvider client={queryClient}>
         <ThemeProvider>
           <RouterProvider router={router} />
+          <CookieBanner />
         </ThemeProvider>
       </QueryClientProvider>
     </ErrorBoundary>
