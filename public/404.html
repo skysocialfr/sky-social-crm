@@ -1,0 +1,29 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="utf-8" />
+  <title>Velmio CRM</title>
+  <script type="text/javascript">
+    // SPA fallback for GitHub Pages (spa-github-pages technique by rafgraph,
+    // MIT). When a visitor hits a deep URL like /legal/mentions, GitHub
+    // returns this file because no static asset exists at that path. The
+    // script below encodes the path into a query string and bounces the
+    // browser to "/", where the matching script in index.html restores the
+    // path via history.replaceState so React Router can render the right
+    // page without a real 404.
+    //
+    // pathSegmentsToKeep stays at 0 because we're served from the apex
+    // (app.velmiocrm.com) — no GitHub Pages project-subpath to preserve.
+    var pathSegmentsToKeep = 0;
+    var l = window.location;
+    l.replace(
+      l.protocol + '//' + l.hostname + (l.port ? ':' + l.port : '') +
+      l.pathname.split('/').slice(0, 1 + pathSegmentsToKeep).join('/') + '/?/' +
+      l.pathname.slice(1).split('/').slice(pathSegmentsToKeep).join('/').replace(/&/g, '~and~') +
+      (l.search ? '&' + l.search.slice(1).replace(/&/g, '~and~') : '') +
+      l.hash
+    );
+  </script>
+</head>
+<body></body>
+</html>

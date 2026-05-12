@@ -108,14 +108,21 @@ export default function MobileMenu() {
               </NavLink>
             ))}
             {isAdmin && (
-              <a
-                href="#/admin"
+              <NavLink
+                to="/admin"
                 onClick={close}
-                className="mt-2 flex items-center gap-[9px] px-[10px] py-2.5 rounded-[9px] text-[14px] font-medium text-[#374151] border border-transparent hover:bg-[rgba(99,102,241,0.05)] transition-all"
+                className={({ isActive }) =>
+                  cn(
+                    'mt-2 flex items-center gap-[9px] px-[10px] py-2.5 rounded-[9px] text-[14px] transition-all duration-[130ms] border',
+                    isActive
+                      ? 'bg-[rgba(99,102,241,0.08)] text-[#6366f1] font-bold border-[rgba(99,102,241,0.2)]'
+                      : 'text-[#374151] font-medium border-transparent hover:bg-[rgba(99,102,241,0.05)]'
+                  )
+                }
               >
                 <span className="text-[15px] leading-none flex-shrink-0">🛡️</span>
                 <span className="flex-1">Console super-admin</span>
-              </a>
+              </NavLink>
             )}
           </nav>
 

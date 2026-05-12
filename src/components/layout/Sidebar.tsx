@@ -79,14 +79,20 @@ export default function Sidebar() {
           </NavLink>
         ))}
         {isAdmin && (
-          <a
-            href="#/admin"
-            className="mt-3 flex items-center gap-[9px] px-[10px] py-2 rounded-[9px] text-[12px] font-bold text-[#6b7280] border border-transparent hover:bg-[rgba(99,102,241,0.05)] hover:text-[#374151] transition-all"
+          <NavLink
+            to="/admin"
+            className={({ isActive }) =>
+              `mt-3 flex items-center gap-[9px] px-[10px] py-2 rounded-[9px] text-[12px] font-bold transition-all border ${
+                isActive
+                  ? 'bg-[rgba(99,102,241,0.08)] text-[#6366f1] border-[rgba(99,102,241,0.2)]'
+                  : 'text-[#6b7280] border-transparent hover:bg-[rgba(99,102,241,0.05)] hover:text-[#374151]'
+              }`
+            }
             title="Console super-admin"
           >
             <span className="text-[14px] leading-none flex-shrink-0">🛡️</span>
             <span className="flex-1">Console super-admin</span>
-          </a>
+          </NavLink>
         )}
       </nav>
 

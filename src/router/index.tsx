@@ -1,4 +1,4 @@
-import { createHashRouter, Navigate } from 'react-router-dom'
+import { createBrowserRouter, Navigate } from 'react-router-dom'
 import { useAuth } from '@/hooks/useAuth'
 import { useIsAdmin } from '@/hooks/useIsAdmin'
 import { useIsSuperAdmin } from '@/hooks/useIsSuperAdmin'
@@ -68,7 +68,7 @@ function SuperAdminRoute({ children }: { children: React.ReactNode }) {
   return <>{children}</>
 }
 
-export const router = createHashRouter([
+export const router = createBrowserRouter([
   { path: '/', element: <LandingPage /> },
   { path: '/login', element: <LoginPage /> },
   { path: '/register', element: <RegisterPage /> },

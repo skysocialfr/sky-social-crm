@@ -49,7 +49,7 @@ export default function CookieBanner() {
               Velmio CRM utilise uniquement des cookies strictement nécessaires au fonctionnement
               (session de connexion, préférence d'affichage). Aucun cookie de tracking ou
               publicitaire n'est utilisé.{' '}
-              <a href="#/legal/confidentialite" className="text-indigo-600 hover:underline">
+              <a href="/legal/confidentialite" className="text-indigo-600 hover:underline">
                 En savoir plus
               </a>.
             </p>

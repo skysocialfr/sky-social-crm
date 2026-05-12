@@ -4,18 +4,55 @@
     <meta charset="UTF-8" />
     <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Velmio CRM</title>
+    <meta name="theme-color" content="#6366f1" />
+
+    <title>Velmio CRM — Le CRM des agences de prospection</title>
+    <meta name="description" content="Velmio CRM : gérez vos prospects, vos relances et votre pipeline commercial depuis un seul espace. Pipeline visuel, import CSV, statistiques avancées. Gratuit jusqu'à 25 prospects." />
+
+    <!-- Open Graph — link previews on LinkedIn, WhatsApp, Slack, etc. -->
+    <meta property="og:type" content="website" />
+    <meta property="og:site_name" content="Velmio CRM" />
+    <meta property="og:title" content="Velmio CRM — Le CRM des agences de prospection" />
+    <meta property="og:description" content="Pipeline visuel, relances automatiques, emails directs et import CSV. Tout ce dont vous avez besoin pour convertir vos prospects en clients." />
+    <meta property="og:url" content="https://app.velmiocrm.com/" />
+    <meta property="og:image" content="https://app.velmiocrm.com/favicon.svg" />
+    <meta property="og:locale" content="fr_FR" />
+
+    <!-- Twitter card -->
+    <meta name="twitter:card" content="summary" />
+    <meta name="twitter:title" content="Velmio CRM — Le CRM des agences de prospection" />
+    <meta name="twitter:description" content="Pipeline visuel, relances automatiques, emails directs et import CSV." />
+    <meta name="twitter:image" content="https://app.velmiocrm.com/favicon.svg" />
+
+    <link rel="canonical" href="https://app.velmiocrm.com/" />
+
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
     <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800;900&display=swap" rel="stylesheet" />
+
     <script>
+      // Restore the path captured by 404.html (spa-github-pages). When a
+      // visitor hits a deep URL on GitHub Pages, 404.html bounces them
+      // to "/?/the/path", and this script rewrites that back to the real
+      // path so React Router renders the right page on first load.
+      (function (l) {
+        if (l.search[1] === '/') {
+          var decoded = l.search.slice(1).split('&').map(function (s) {
+            return s.replace(/~and~/g, '&')
+          }).join('?');
+          window.history.replaceState(null, null, l.pathname.slice(0, -1) + decoded + l.hash);
+        }
+      }(window.location));
+
+      // Dark-mode bootstrap (legacy storage key, kept until we ship a
+      // proper theme switcher).
       (function () {
         try {
           if (localStorage.getItem('sky-crm-dark') === 'true') {
             document.documentElement.classList.add('dark')
           }
         } catch (e) {}
-      })()
+      })();
     </script>
   </head>
   <body>

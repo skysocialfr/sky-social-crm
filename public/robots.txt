@@ -1,0 +1,8 @@
+User-agent: *
+Allow: /
+# The authenticated app behind /app/* doesn't render meaningful content
+# until the user is signed in, so there's nothing useful to index there.
+Disallow: /app/
+Disallow: /admin/
+
+Sitemap: https://app.velmiocrm.com/sitemap.xml
