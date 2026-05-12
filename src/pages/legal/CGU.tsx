@@ -1,4 +1,4 @@
-import LegalLayout, { LegalSection, Placeholder } from './LegalLayout'
+import LegalLayout, { LegalSection } from './LegalLayout'
 
 // Conditions générales d'utilisation — base à adapter par un juriste
 // avant utilisation commerciale réelle. Les zones jaunes signalent
@@ -10,7 +10,8 @@ export default function CGU() {
       <p>
         Les présentes Conditions Générales d'Utilisation (ci-après « CGU ») régissent l'accès et
         l'utilisation du service Velmio CRM (ci-après le « Service ») édité par
-        <Placeholder>[À COMPLÉTER — Éditeur]</Placeholder>.
+        <strong> Sky Social Agency</strong>, entreprise individuelle exploitée par
+        Meryne Ndjeyi, immatriculée sous le SIRET 901 055 905 00011 (ci-après l' « Éditeur »).
       </p>
 
       <LegalSection title="1. Objet">
