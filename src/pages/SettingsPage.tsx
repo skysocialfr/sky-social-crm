@@ -506,10 +506,12 @@ export default function SettingsPage() {
         <div className="rounded-card border border-border bg-card p-5 flex flex-col gap-4">
           <p className="text-[11px] font-semibold uppercase tracking-wider text-muted">Changer le mot de passe</p>
           <div>
-            <label className="mb-1.5 block text-sm font-semibold text-text">Nouveau mot de passe</label>
+            <label htmlFor="settings-new-password" className="mb-1.5 block text-sm font-semibold text-text">Nouveau mot de passe</label>
             <input
+              id="settings-new-password"
               type="password"
               autoComplete="new-password"
+              minLength={8}
               value={newPassword}
               onChange={(e) => setNewPassword(e.target.value)}
               className="w-full rounded-btn border border-border bg-card px-3 py-2.5 text-sm text-text focus:border-primary focus:outline-none"
@@ -517,8 +519,9 @@ export default function SettingsPage() {
             />
           </div>
           <div>
-            <label className="mb-1.5 block text-sm font-semibold text-text">Confirmer le nouveau mot de passe</label>
+            <label htmlFor="settings-confirm-password" className="mb-1.5 block text-sm font-semibold text-text">Confirmer le nouveau mot de passe</label>
             <input
+              id="settings-confirm-password"
               type="password"
               autoComplete="new-password"
               value={confirmPassword}
@@ -528,10 +531,10 @@ export default function SettingsPage() {
           </div>
         </div>
         {pwError && (
-          <p className="rounded-btn border border-crm-red bg-crm-red-light px-3 py-2 text-xs text-crm-red">{pwError}</p>
+          <p role="alert" className="rounded-btn border border-crm-red bg-crm-red-light px-3 py-2 text-xs text-crm-red">{pwError}</p>
         )}
         {pwSuccess && (
-          <p className="rounded-btn border border-crm-green bg-crm-green-light px-3 py-2 text-xs text-crm-green">
+          <p role="status" className="rounded-btn border border-crm-green bg-crm-green-light px-3 py-2 text-xs text-crm-green">
             Mot de passe mis à jour. Tu pourras te reconnecter avec le nouveau.
           </p>
         )}
