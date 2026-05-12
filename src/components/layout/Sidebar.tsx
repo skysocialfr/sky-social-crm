@@ -2,6 +2,7 @@ import { NavLink } from 'react-router-dom'
 import { useAuth } from '@/hooks/useAuth'
 import { useTheme } from '@/context/ThemeContext'
 import { useRelances } from '@/hooks/useRelances'
+import { useIsAdmin } from '@/hooks/useIsAdmin'
 import { dicebearAvatar } from '@/lib/avatar'
 
 const NAV = [
@@ -17,6 +18,7 @@ export default function Sidebar() {
   const { user, logout } = useAuth()
   const { profile } = useTheme()
   const { data: relances } = useRelances()
+  const { isAdmin } = useIsAdmin()
   const overdueCount = relances?.length ?? 0
   const companyName = profile?.company_name || 'Velmio'
 
@@ -76,6 +78,16 @@ export default function Sidebar() {
             )}
           </NavLink>
         ))}
+        {isAdmin && (
+          <a
+            href="#/admin"
+            className="mt-3 flex items-center gap-[9px] px-[10px] py-2 rounded-[9px] text-[12px] font-bold text-[#6b7280] border border-transparent hover:bg-[rgba(99,102,241,0.05)] hover:text-[#374151] transition-all"
+            title="Console super-admin"
+          >
+            <span className="text-[14px] leading-none flex-shrink-0">🛡️</span>
+            <span className="flex-1">Console super-admin</span>
+          </a>
+        )}
       </nav>
 
       {/* Footer — user */}
