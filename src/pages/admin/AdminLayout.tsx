@@ -1,5 +1,5 @@
 import { NavLink, Outlet, useNavigate } from 'react-router-dom'
-import { LayoutDashboard, Building2, Users, CreditCard, Settings, Mail, Megaphone, ArrowLeft, Shield } from 'lucide-react'
+import { LayoutDashboard, Building2, Users, CreditCard, Settings, Megaphone, ArrowLeft, Shield } from 'lucide-react'
 import { cn } from '@/lib/cn'
 
 const NAV = [
@@ -8,7 +8,6 @@ const NAV = [
   { to: '/admin/users',     label: 'Utilisateurs',   icon: Users },
   { to: '/admin/billing',   label: 'Facturation',    icon: CreditCard },
   { to: '/admin/config',    label: 'Configuration',  icon: Settings },
-  { to: '/admin/emails',    label: 'Emails',         icon: Mail },
   { to: '/admin/changelog', label: 'Changelog',      icon: Megaphone },
 ]
 

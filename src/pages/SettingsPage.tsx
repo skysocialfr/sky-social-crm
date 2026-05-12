@@ -22,11 +22,8 @@ const NAV = [
   { id: 'notifications', label: 'Notifications', emoji: '🔔' },
   { id: 'apparence', label: 'Apparence', emoji: '🎨' },
   { id: 'custom_fields', label: 'Rubriques & champs', emoji: '🧩' },
-  { id: 'integrations', label: 'Intégrations', emoji: '🔗' },
   { id: 'abonnement', label: 'Abonnement', emoji: '💳' },
-  { id: 'equipe', label: 'Équipe', emoji: '👥' },
   { id: 'donnees', label: 'Données', emoji: '📦' },
-  { id: 'api', label: 'API & Webhooks', emoji: '⚡' },
 ]
 
 const SECTION_LABELS: { key: keyof SectionPrefs; label: string; description: string }[] = [
@@ -37,17 +34,6 @@ const SECTION_LABELS: { key: keyof SectionPrefs; label: string; description: str
   { key: 'show_social', label: 'Liens sociaux', description: 'LinkedIn, Instagram, Google Maps' },
 ]
 
-function ComingSoon({ label }: { label: string }) {
-  return (
-    <div className="rounded-card border border-dashed border-border p-10 text-center">
-      <p className="text-3xl mb-3">🚧</p>
-      <p className="text-sm font-bold text-text mb-1">{label}</p>
-      <span className="inline-flex items-center gap-1 rounded-pill bg-primary-light border border-primary-border px-3 py-1 text-[11px] font-semibold text-primary">
-        Bientôt disponible
-      </span>
-    </div>
-  )
-}
 
 const NOTIF_LABELS: { key: keyof NotificationPrefs; label: string; description: string }[] = [
   { key: 'email_relances_overdue', label: 'Relances en retard',     description: 'Email quotidien si des relances sont dues.' },
@@ -639,9 +625,6 @@ export default function SettingsPage() {
       </div>
     ),
 
-    integrations: <ComingSoon label="Intégrations" />,
-    equipe: <ComingSoon label="Équipe" />,
-    api: <ComingSoon label="API & Webhooks" />,
   }
 
   return (
