@@ -45,13 +45,12 @@ serve(async (req) => {
       if (session.mode !== 'subscription') break
       const customerId = session.customer as string
 
-      // Resolve plan: prefer the metadata we set ourselves, fall back
-      // to looking up the line item's price.
-      let plan: Plan = (session.metadata?.plan as Plan) || 'pro'
-      if (plan !== 'pro' && plan !== 'team') {
-        const sub = await stripe.subscriptions.retrieve(session.subscription as string)
-        plan = planForPriceId(sub.items.data[0]?.price?.id)
-      }
+      // Always derive the plan from the actual price ID the customer
+      // paid for. We don't trust session.metadata.plan because metadata
+      // is editable client-side via Stripe's API and would let a
+      // tampered checkout claim a higher plan than was paid for.
+      const sub = await stripe.subscriptions.retrieve(session.subscription as string)
+      const plan = planForPriceId(sub.items.data[0]?.price?.id)
 
       await supabase
         .from('subscriptions')
@@ -69,10 +68,9 @@ serve(async (req) => {
       const sub = event.data.object as Stripe.Subscription
       const customerId = sub.customer as string
 
-      // Plan can change here (e.g. user upgrades from Pro to Team).
-      const plan: Plan = (sub.metadata?.plan as Plan) && ['pro', 'team'].includes(sub.metadata.plan as string)
-        ? sub.metadata.plan as Plan
-        : planForPriceId(sub.items.data[0]?.price?.id)
+      // Same rule as checkout.session.completed: the price the user is
+      // currently subscribed to is the only source of truth for the plan.
+      const plan = planForPriceId(sub.items.data[0]?.price?.id)
 
       const status: 'active' | 'past_due' | 'cancelled' =
         sub.status === 'active' ? 'active'
