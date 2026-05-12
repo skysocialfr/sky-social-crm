@@ -90,7 +90,14 @@ export default function RegisterPage() {
       navigate('/app')
     } catch (err: unknown) {
       const msg = err instanceof Error ? err.message : 'Une erreur est survenue.'
-      setError(msg)
+      // Anti-enumeration: never reveal that an email already has an account.
+      // Show the same "check your inbox" confirmation as a successful signup
+      // so an attacker can't probe which addresses are registered.
+      if (/already|registered|exist/i.test(msg)) {
+        setEmailSent(true)
+      } else {
+        setError(msg)
+      }
     } finally {
       setLoading(false)
     }
