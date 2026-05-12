@@ -24,6 +24,9 @@ import AdminConfig from '@/pages/admin/AdminConfig'
 import AdminEmails from '@/pages/admin/AdminEmails'
 import AdminChangelog from '@/pages/admin/AdminChangelog'
 import NotFoundPage from '@/pages/NotFoundPage'
+import MentionsLegales from '@/pages/legal/MentionsLegales'
+import CGU from '@/pages/legal/CGU'
+import Confidentialite from '@/pages/legal/Confidentialite'
 
 function ProtectedRoute({ children }: { children: React.ReactNode }) {
   const { session, loading } = useAuth()
@@ -69,6 +72,9 @@ export const router = createHashRouter([
   { path: '/', element: <LandingPage /> },
   { path: '/login', element: <LoginPage /> },
   { path: '/register', element: <RegisterPage /> },
+  { path: '/legal/mentions', element: <MentionsLegales /> },
+  { path: '/legal/cgu', element: <CGU /> },
+  { path: '/legal/confidentialite', element: <Confidentialite /> },
   {
     path: '/app',
     element: (

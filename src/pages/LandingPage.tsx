@@ -334,7 +334,14 @@ export default function LandingPage() {
 
       {/* Footer */}
       <footer className="border-t border-[#e8eaf8] bg-white px-5 py-6 text-center text-xs text-gray-400">
-        Velmio © {new Date().getFullYear()} · CRM de prospection
+        <div className="flex flex-wrap items-center justify-center gap-x-3 gap-y-1 mb-2">
+          <Link to="/legal/mentions" className="hover:text-indigo-600 transition-colors">Mentions légales</Link>
+          <span>·</span>
+          <Link to="/legal/cgu" className="hover:text-indigo-600 transition-colors">CGU</Link>
+          <span>·</span>
+          <Link to="/legal/confidentialite" className="hover:text-indigo-600 transition-colors">Politique de confidentialité</Link>
+        </div>
+        <p>Velmio © {new Date().getFullYear()} · CRM de prospection</p>
       </footer>
     </div>
   )
