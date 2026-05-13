@@ -27,6 +27,7 @@ import NotFoundPage from '@/pages/NotFoundPage'
 import MentionsLegales from '@/pages/legal/MentionsLegales'
 import CGU from '@/pages/legal/CGU'
 import Confidentialite from '@/pages/legal/Confidentialite'
+import AcceptInvitePage from '@/pages/AcceptInvitePage'
 
 function ProtectedRoute({ children }: { children: React.ReactNode }) {
   const { session, loading } = useAuth()
@@ -75,6 +76,7 @@ export const router = createBrowserRouter([
   { path: '/legal/mentions', element: <MentionsLegales /> },
   { path: '/legal/cgu', element: <CGU /> },
   { path: '/legal/confidentialite', element: <Confidentialite /> },
+  { path: '/invite/:token', element: <AcceptInvitePage /> },
   {
     path: '/app',
     element: (

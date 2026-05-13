@@ -42,7 +42,7 @@ export const PLAN_DETAILS: Record<SubscriptionPlan, {
     label: 'Team',
     price: '29€/mois',
     prospectLimit: 9999,
-    features: ['Prospects illimités', 'Tout ce qui est Pro', 'Multi-utilisateurs (à venir)', 'Support prioritaire'],
+    features: ['Prospects illimités', 'Tout ce qui est Pro', 'Multi-utilisateurs (3 sièges inclus)', 'Délégation par périmètre', 'Support prioritaire'],
   },
 }
 

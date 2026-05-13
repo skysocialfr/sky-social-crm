@@ -5,6 +5,7 @@ import { X } from 'lucide-react'
 import { cn } from '@/lib/cn'
 import { PIPELINE_STAGES, PRIORITIES, CHANNELS, COMPANY_SIZES, SERVICES, CURRENCIES } from '@/lib/constants'
 import { useTheme } from '@/context/ThemeContext'
+import { useTeamMembers, useCurrentMember } from '@/hooks/useTeam'
 import DynamicFieldInput from '@/components/forms/DynamicFieldInput'
 import { BUILTIN_TAB_ORDER, BUILTIN_TAB_DEFAULT_LABELS } from '@/types'
 import type { BuiltInTab, Prospect, ProspectFormData, CustomFieldValue, CustomSection } from '@/types'
@@ -75,6 +76,7 @@ type FormState = {
   next_followup_date: string
   notes: string
   custom_data: Record<string, CustomFieldValue>
+  assigned_to: string | null
 }
 
 const emptyForm = (defaultStage = 'Identifié'): FormState => ({
@@ -101,10 +103,14 @@ const emptyForm = (defaultStage = 'Identifié'): FormState => ({
   next_followup_date: '',
   notes: '',
   custom_data: {},
+  assigned_to: null,
 })
 
 export default function ProspectForm({ open, onOpenChange, prospect, defaultStage, onSubmit }: Props) {
   const { customFieldsSchema } = useTheme()
+  const { data: teamMembers = [] } = useTeamMembers()
+  const { data: currentMember } = useCurrentMember()
+  const isOwner = currentMember?.role === 'owner'
 
   // Per-tenant label for a given built-in tab (falls back to default).
   const tabLabel = (t: BuiltInTab): string =>
@@ -153,6 +159,7 @@ export default function ProspectForm({ open, onOpenChange, prospect, defaultStag
         next_followup_date: prospect.next_followup_date ?? '',
         notes: prospect.notes ?? '',
         custom_data: prospect.custom_data ?? {},
+        assigned_to: prospect.assigned_to ?? null,
       })
     } else {
       setForm(emptyForm(defaultStage))
@@ -226,7 +233,10 @@ export default function ProspectForm({ open, onOpenChange, prospect, defaultStag
         next_followup_date: form.next_followup_date || null,
         notes: form.notes.trim() || null,
         custom_data: form.custom_data,
-      })
+        // Only the owner can change assigned_to; for everyone else we omit
+        // it on update so the BEFORE-UPDATE trigger doesn't reject.
+        ...(isOwner ? { assigned_to: form.assigned_to } : {}),
+      } as ProspectFormData)
       onOpenChange(false)
     } catch (err: any) {
       setSubmitError(err?.message ?? 'Erreur lors de la création. Vérifiez votre connexion Supabase.')
@@ -372,6 +382,26 @@ export default function ProspectForm({ open, onOpenChange, prospect, defaultStag
                       </select>
                     </Field>
                   </div>
+                  {teamMembers.length > 1 && (
+                    <div className="col-span-full">
+                      <Field label={isOwner ? 'Assigné à' : 'Assigné à (lecture seule)'}>
+                        <select
+                          className={cn(inputClass, !isOwner && 'opacity-60 cursor-not-allowed')}
+                          value={form.assigned_to ?? ''}
+                          onChange={e => setForm(f => ({ ...f, assigned_to: e.target.value || null }))}
+                          disabled={!isOwner}
+                        >
+                          <option value="">— Non assigné —</option>
+                          {teamMembers.map(m => (
+                            <option key={m.user_id} value={m.user_id}>
+                              {m.display_name?.trim() || m.email || m.user_id}
+                              {m.role === 'owner' ? ' (propriétaire)' : ''}
+                            </option>
+                          ))}
+                        </select>
+                      </Field>
+                    </div>
+                  )}
                   {!isHidden('crm', 'services_interested') && (
                     <div className="col-span-full">
                       <label className="mb-2 block text-xs font-medium text-muted-foreground">Services intéressés</label>
