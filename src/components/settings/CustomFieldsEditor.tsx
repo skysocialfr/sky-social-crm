@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react'
-import { ChevronDown, ChevronUp, Plus, Trash2, Pencil, EyeOff, Eye, GripVertical, Check, X } from 'lucide-react'
+import { ChevronDown, ChevronUp, Plus, Trash2, Pencil, EyeOff, Eye, GripVertical, Check, X, Users } from 'lucide-react'
 import { useTheme } from '@/context/ThemeContext'
 import Toggle from '@/components/common/Toggle'
 import { cn } from '@/lib/cn'
@@ -65,7 +65,7 @@ function sectionsForTab(schema: CustomFieldsSchema, tab: BuiltInTab): CustomSect
 }
 
 export default function CustomFieldsEditor() {
-  const { customFieldsSchema, updateCustomFieldsSchema } = useTheme()
+  const { customFieldsSchema, updateCustomFieldsSchema, isTeamOwner } = useTheme()
   const [schema, setSchema] = useState<CustomFieldsSchema>(customFieldsSchema)
   const [activeTab, setActiveTab] = useState<BuiltInTab>('company')
   const [saving, setSaving] = useState(false)
@@ -259,6 +259,11 @@ export default function CustomFieldsEditor() {
         <p className="text-[13px] text-muted mt-0.5">
           Renommez les onglets, masquez les champs qui ne vous servent pas, et ajoutez vos propres rubriques.
         </p>
+        {!isTeamOwner && (
+          <p className="mt-2 rounded-btn border border-border bg-bg px-3 py-2 text-[12px] text-muted">
+            Seul le propriétaire de l'équipe peut modifier les rubriques. Vous pouvez les consulter ci-dessous.
+          </p>
+        )}
       </div>
 
       {/* Tab switcher with inline rename */}
@@ -511,28 +516,30 @@ export default function CustomFieldsEditor() {
         </p>
       )}
 
-      <div className="flex items-center gap-3">
-        <button
-          type="button"
-          onClick={handleSave}
-          disabled={!dirty || saving}
-          className={cn(
-            'rounded-btn bg-primary px-5 py-2.5 text-sm font-bold text-white hover:bg-primary-hover transition-colors shadow-primary',
-            (!dirty || saving) && 'opacity-50 cursor-not-allowed'
-          )}
-        >
-          {saving ? 'Sauvegarde…' : 'Sauvegarder'}
-        </button>
-        {dirty && !saving && (
+      {isTeamOwner && (
+        <div className="flex items-center gap-3">
           <button
             type="button"
-            onClick={() => setSchema(customFieldsSchema)}
-            className="rounded-btn border border-border px-4 py-2 text-xs font-semibold text-muted hover:text-text hover:bg-bg transition-colors"
+            onClick={handleSave}
+            disabled={!dirty || saving}
+            className={cn(
+              'rounded-btn bg-primary px-5 py-2.5 text-sm font-bold text-white hover:bg-primary-hover transition-colors shadow-primary',
+              (!dirty || saving) && 'opacity-50 cursor-not-allowed'
+            )}
           >
-            Annuler les modifications
+            {saving ? 'Sauvegarde…' : 'Sauvegarder'}
           </button>
-        )}
-      </div>
+          {dirty && !saving && (
+            <button
+              type="button"
+              onClick={() => setSchema(customFieldsSchema)}
+              className="rounded-btn border border-border px-4 py-2 text-xs font-semibold text-muted hover:text-text hover:bg-bg transition-colors"
+            >
+              Annuler les modifications
+            </button>
+          )}
+        </div>
+      )}
     </div>
   )
 }
@@ -614,6 +621,23 @@ function FieldRow({
             onChange={opts => onUpdate({ options: opts })}
           />
         </div>
+      )}
+
+      {field.type === 'select' && (
+        <label
+          className="ml-7 flex cursor-pointer items-center gap-2 rounded-btn border border-dashed border-border bg-bg/50 px-3 py-2 text-[12px] text-muted hover:border-primary/50 hover:text-text transition-colors"
+          title="Permet d'utiliser ce champ comme territoire pour déléguer des prospects à chaque membre de l'équipe."
+        >
+          <Toggle
+            checked={!!field.delegable}
+            onChange={() => onUpdate({ delegable: !field.delegable })}
+          />
+          <Users size={13} className="text-muted" />
+          <span>
+            <span className="font-semibold text-text">Déléguable par membre</span>
+            <span className="ml-1.5 text-muted">— les options servent de territoires d'équipe</span>
+          </span>
+        </label>
       )}
     </div>
   )

@@ -9,6 +9,8 @@ function p(overrides: Partial<Prospect> = {}): Prospect {
   return {
     id: 'id',
     user_id: 'u',
+    team_id: 't',
+    assigned_to: 'u',
     company_name: '',
     sector: null,
     company_size: null,

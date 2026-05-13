@@ -21,3 +21,9 @@ verify_jwt = false
 
 [functions.send-prospect-email]
 verify_jwt = false
+
+[functions.invite-teammate]
+verify_jwt = false
+
+[functions.accept-team-invite]
+verify_jwt = false

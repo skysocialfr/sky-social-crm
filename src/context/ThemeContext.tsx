@@ -11,6 +11,8 @@ interface ThemeContextValue {
   sectionPrefs: SectionPrefs
   notificationPrefs: NotificationPrefs
   customFieldsSchema: CustomFieldsSchema
+  /** True if the current user is the owner of the active team — they alone can edit the team schema. */
+  isTeamOwner: boolean
   isDark: boolean
   applyTheme: (color: string) => void
   toggleDark: () => void
@@ -26,6 +28,7 @@ const ThemeContext = createContext<ThemeContextValue>({
   sectionPrefs: DEFAULT_SECTION_PREFS,
   notificationPrefs: DEFAULT_NOTIFICATION_PREFS,
   customFieldsSchema: DEFAULT_CUSTOM_FIELDS_SCHEMA,
+  isTeamOwner: false,
   isDark: false,
   applyTheme: () => {},
   toggleDark: () => {},
@@ -42,6 +45,8 @@ const DEFAULT_COLOR = '245 85% 60%'
 export function ThemeProvider({ children }: { children: React.ReactNode }) {
   const { user } = useAuth()
   const [profile, setProfile] = useState<UserProfile | null>(null)
+  const [teamSchema, setTeamSchema] = useState<CustomFieldsSchema>(DEFAULT_CUSTOM_FIELDS_SCHEMA)
+  const [isTeamOwner, setIsTeamOwner] = useState(false)
   const [isLoading, setIsLoading] = useState(true)
   const [isDark, setIsDark] = useState(() => {
     try { return localStorage.getItem(DARK_STORAGE_KEY) === 'true' } catch { return false }
@@ -62,20 +67,21 @@ export function ThemeProvider({ children }: { children: React.ReactNode }) {
     })
   }, [])
 
-  // Sync dark class on mount (in case state diverged from the inline script)
   useLayoutEffect(() => {
     document.documentElement.classList.toggle('dark', isDark)
   }, [isDark])
 
-  // Apply cached primary color before first paint
   useLayoutEffect(() => {
     const cached = localStorage.getItem(STORAGE_KEY) ?? DEFAULT_COLOR
     applyTheme(cached)
   }, []) // eslint-disable-line react-hooks/exhaustive-deps
 
+  // Load profile + team schema + owner status on auth change.
   useEffect(() => {
     if (!user) {
       setProfile(null)
+      setTeamSchema(DEFAULT_CUSTOM_FIELDS_SCHEMA)
+      setIsTeamOwner(false)
       setIsLoading(false)
       document.documentElement.style.removeProperty('--primary')
       document.documentElement.style.removeProperty('--ring')
@@ -84,23 +90,32 @@ export function ThemeProvider({ children }: { children: React.ReactNode }) {
       return
     }
 
-    // Pin the current user to every future Sentry event so errors
-    // arrive with enough context to identify the customer.
     setSentryUser({ id: user.id, email: user.email })
-
     setIsLoading(true)
-    supabase
-      .from('user_profiles')
-      .select('*')
-      .eq('id', user.id)
-      .single()
-      .then(({ data }) => {
-        if (data) {
-          setProfile(data as UserProfile)
-          applyTheme(data.primary_color)
+
+    ;(async () => {
+      const { data: profileRow } = await supabase
+        .from('user_profiles')
+        .select('*')
+        .eq('id', user.id)
+        .single()
+
+      if (profileRow) {
+        setProfile(profileRow as UserProfile)
+        applyTheme((profileRow as UserProfile).primary_color)
+
+        const teamId = (profileRow as UserProfile).team_id
+        if (teamId) {
+          const [teamRes, memberRes] = await Promise.all([
+            supabase.from('teams').select('custom_fields_schema').eq('id', teamId).single(),
+            supabase.from('team_members').select('role').eq('team_id', teamId).eq('user_id', user.id).maybeSingle(),
+          ])
+          setTeamSchema(normalizeSchema(teamRes.data?.custom_fields_schema))
+          setIsTeamOwner(memberRes.data?.role === 'owner')
         }
-        setIsLoading(false)
-      })
+      }
+      setIsLoading(false)
+    })()
   }, [user?.id, user?.email, applyTheme])
 
   const refreshProfile = useCallback(async () => {
@@ -112,7 +127,7 @@ export function ThemeProvider({ children }: { children: React.ReactNode }) {
       .single()
     if (data) {
       setProfile(data as UserProfile)
-      applyTheme(data.primary_color)
+      applyTheme((data as UserProfile).primary_color)
     }
   }, [user?.id, applyTheme])
 
@@ -137,23 +152,34 @@ export function ThemeProvider({ children }: { children: React.ReactNode }) {
   }, [user?.id])
 
   const updateCustomFieldsSchema = useCallback(async (schema: CustomFieldsSchema) => {
-    if (!user) return
+    if (!user || !profile?.team_id) return
     const { error } = await supabase
-      .from('user_profiles')
+      .from('teams')
       .update({ custom_fields_schema: schema })
-      .eq('id', user.id)
+      .eq('id', profile.team_id)
     if (error) throw error
-    setProfile(prev => prev ? { ...prev, custom_fields_schema: schema } : prev)
-  }, [user?.id])
+    setTeamSchema(schema)
+  }, [user?.id, profile?.team_id])
 
   const sectionPrefs: SectionPrefs = profile?.section_prefs ?? DEFAULT_SECTION_PREFS
   const notificationPrefs: NotificationPrefs = profile?.notification_prefs ?? DEFAULT_NOTIFICATION_PREFS
-  const customFieldsSchema: CustomFieldsSchema = profile?.custom_fields_schema
-    ? normalizeSchema(profile.custom_fields_schema)
-    : DEFAULT_CUSTOM_FIELDS_SCHEMA
 
   return (
-    <ThemeContext.Provider value={{ profile, isLoading, sectionPrefs, notificationPrefs, customFieldsSchema, isDark, applyTheme, toggleDark, refreshProfile, updateSectionPrefs, updateNotificationPrefs, updateCustomFieldsSchema }}>
+    <ThemeContext.Provider value={{
+      profile,
+      isLoading,
+      sectionPrefs,
+      notificationPrefs,
+      customFieldsSchema: teamSchema,
+      isTeamOwner,
+      isDark,
+      applyTheme,
+      toggleDark,
+      refreshProfile,
+      updateSectionPrefs,
+      updateNotificationPrefs,
+      updateCustomFieldsSchema,
+    }}>
       {children}
     </ThemeContext.Provider>
   )

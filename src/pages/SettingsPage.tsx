@@ -14,6 +14,7 @@ import ColorPicker from '@/components/common/ColorPicker'
 import LogoUpload from '@/components/common/LogoUpload'
 import Toggle from '@/components/common/Toggle'
 import CustomFieldsEditor from '@/components/settings/CustomFieldsEditor'
+import TeamSettings from '@/components/settings/TeamSettings'
 import type { SectionPrefs, NotificationPrefs } from '@/types'
 
 const NAV = [
@@ -22,6 +23,7 @@ const NAV = [
   { id: 'notifications', label: 'Notifications', emoji: '🔔' },
   { id: 'apparence', label: 'Apparence', emoji: '🎨' },
   { id: 'custom_fields', label: 'Rubriques & champs', emoji: '🧩' },
+  { id: 'equipe', label: 'Équipe', emoji: '👥' },
   { id: 'abonnement', label: 'Abonnement', emoji: '💳' },
   { id: 'donnees', label: 'Données', emoji: '📦' },
 ]
@@ -349,6 +351,8 @@ export default function SettingsPage() {
     ),
 
     custom_fields: <CustomFieldsEditor />,
+
+    equipe: <TeamSettings />,
 
     abonnement: (
       <div className="flex flex-col gap-5">

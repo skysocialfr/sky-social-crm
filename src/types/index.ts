@@ -34,6 +34,8 @@ export type InteractionType =
 export interface Prospect {
   id: string
   user_id: string
+  team_id: string
+  assigned_to: string | null
   company_name: string
   sector: string | null
   company_size: CompanySize | null
@@ -100,7 +102,7 @@ export interface DashboardStats {
   revenuePipeline: number[]
 }
 
-export type ProspectFormData = Omit<Prospect, 'id' | 'user_id' | 'created_at' | 'updated_at'>
+export type ProspectFormData = Omit<Prospect, 'id' | 'user_id' | 'team_id' | 'created_at' | 'updated_at'>
 
 export interface SectionPrefs {
   show_followup: boolean
@@ -132,6 +134,7 @@ export const DEFAULT_NOTIFICATION_PREFS: NotificationPrefs = {
 
 export interface UserProfile {
   id: string
+  team_id: string | null
   company_name: string
   primary_color: string
   logo_url: string | null
@@ -139,7 +142,6 @@ export interface UserProfile {
   suspended: boolean
   section_prefs: SectionPrefs | null
   notification_prefs: NotificationPrefs | null
-  custom_fields_schema: CustomFieldsSchema | null
   created_at: string
   updated_at: string
 }
@@ -171,6 +173,7 @@ export interface CustomField {
   isCurrency?: boolean          // formatting hint for type=number
   min?: number
   max?: number
+  delegable?: boolean           // type=select only: usable as a team-member territory
 }
 
 export interface CustomSection {
@@ -225,9 +228,61 @@ export function normalizeSchema(raw: unknown): CustomFieldsSchema {
     label: s.label,
     tab: (s.tab && BUILTIN_TAB_ORDER.includes(s.tab)) ? s.tab : 'company',
     position: typeof s.position === 'number' ? s.position : 0,
-    fields: s.fields ?? [],
+    fields: (s.fields ?? []).map((f) => ({
+      ...f,
+      delegable: f.type === 'select' ? Boolean(f.delegable) : false,
+    })),
   })) as CustomSection[]
   return { tabs, sections }
+}
+
+// ============================================================
+// Teams (multi-user accounts)
+// ============================================================
+
+export type TeamRole = 'owner' | 'member'
+
+export type TeamVisibilityMode = 'scope_only' | 'read_all'
+
+/** Map of custom-field key → list of allowed values for a team member.
+ *  Empty object means "no restriction" (member sees the whole team). */
+export type TeamScopes = Record<string, string[]>
+
+export interface Team {
+  id: string
+  owner_id: string
+  name: string
+  custom_fields_schema: CustomFieldsSchema | null
+  created_at: string
+  updated_at: string
+}
+
+export interface TeamMember {
+  team_id: string
+  user_id: string
+  role: TeamRole
+  visibility_mode: TeamVisibilityMode
+  scopes: TeamScopes
+  joined_at: string
+  /** Hydrated by useTeamMembers — joined from auth.users via RPC. */
+  email?: string | null
+  /** Hydrated by useTeamMembers — joined from user_profiles. */
+  display_name?: string | null
+}
+
+export type TeamInviteStatus = 'pending' | 'accepted' | 'expired' | 'cancelled'
+
+export interface TeamInvite {
+  id: string
+  team_id: string
+  email: string
+  invited_by: string
+  visibility_mode: TeamVisibilityMode
+  scopes: TeamScopes
+  token: string
+  status: TeamInviteStatus
+  created_at: string
+  expires_at: string
 }
 
 export interface AdminUserView {
