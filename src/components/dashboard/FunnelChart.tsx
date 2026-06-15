@@ -1,6 +1,7 @@
 import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, Cell } from 'recharts'
-import { STAGE_DOT_COLORS } from '@/lib/constants'
-import type { DashboardStats, PipelineStage } from '@/types'
+import { useDefaultPipeline } from '@/hooks/usePipelines'
+import { stageHex } from '@/lib/stageColors'
+import type { DashboardStats } from '@/types'
 
 interface Props {
   byStage: DashboardStats['byStage']
@@ -19,6 +20,7 @@ function CustomTooltip({ active, payload }: any) {
 }
 
 export default function FunnelChart({ byStage }: Props) {
+  const pipeline = useDefaultPipeline()
   const data = byStage.filter(d => d.count > 0)
 
   if (data.length === 0) {
@@ -44,7 +46,7 @@ export default function FunnelChart({ byStage }: Props) {
         <Tooltip content={<CustomTooltip />} cursor={{ fill: 'rgba(255,255,255,0.03)' }} />
         <Bar dataKey="count" radius={[0, 4, 4, 0]} maxBarSize={22}>
           {byStage.map((entry) => (
-            <Cell key={entry.stage} fill={STAGE_DOT_COLORS[entry.stage as PipelineStage]} />
+            <Cell key={entry.stage} fill={stageHex(pipeline?.stages, entry.stage)} />
           ))}
         </Bar>
       </BarChart>

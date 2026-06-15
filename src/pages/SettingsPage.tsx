@@ -15,6 +15,7 @@ import LogoUpload from '@/components/common/LogoUpload'
 import Toggle from '@/components/common/Toggle'
 import CustomFieldsEditor from '@/components/settings/CustomFieldsEditor'
 import TeamSettings from '@/components/settings/TeamSettings'
+import PipelinesEditor from '@/components/settings/PipelinesEditor'
 import type { SectionPrefs, NotificationPrefs } from '@/types'
 
 const NAV = [
@@ -23,6 +24,7 @@ const NAV = [
   { id: 'notifications', label: 'Notifications', emoji: '🔔' },
   { id: 'apparence', label: 'Apparence', emoji: '🎨' },
   { id: 'custom_fields', label: 'Rubriques & champs', emoji: '🧩' },
+  { id: 'pipelines', label: 'Pipelines', emoji: '🪜' },
   { id: 'equipe', label: 'Équipe', emoji: '👥' },
   { id: 'abonnement', label: 'Abonnement', emoji: '💳' },
   { id: 'donnees', label: 'Données', emoji: '📦' },
@@ -351,6 +353,18 @@ export default function SettingsPage() {
     ),
 
     custom_fields: <CustomFieldsEditor />,
+
+    pipelines: (
+      <div className="flex flex-col gap-5">
+        <div>
+          <h2 className="text-base font-bold text-text">Pipelines</h2>
+          <p className="text-[13px] text-muted mt-0.5">
+            Gérez vos pipelines et leurs étapes — un par activité (vente, recrutement, B2C…).
+          </p>
+        </div>
+        <PipelinesEditor />
+      </div>
+    ),
 
     equipe: <TeamSettings />,
 

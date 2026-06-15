@@ -1,6 +1,6 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { supabase } from '@/lib/supabase'
-import type { Prospect, ProspectFormData, PipelineStage } from '@/types'
+import type { Prospect, ProspectFormData } from '@/types'
 
 const KEY = ['prospects']
 
@@ -81,7 +81,7 @@ export function useBulkCreateProspects() {
 export function useMoveProspect() {
   const qc = useQueryClient()
   return useMutation({
-    mutationFn: async ({ id, stage }: { id: string; stage: PipelineStage }) => {
+    mutationFn: async ({ id, stage }: { id: string; stage: string }) => {
       const { error } = await supabase.from('prospects').update({ stage }).eq('id', id)
       if (error) throw error
     },

@@ -1,4 +1,8 @@
-export type PipelineStage =
+// The legacy 8 default stages — kept as a union for the seed
+// pipeline created by migration 012 and for the hardcoded fallback
+// colors. New custom pipelines use free-form labels (PipelineStage
+// = string at the data layer).
+export type LegacyPipelineStage =
   | 'Identifié'
   | 'Premier contact'
   | 'Réponse reçue'
@@ -7,6 +11,27 @@ export type PipelineStage =
   | 'En négociation'
   | 'Gagné'
   | 'Perdu'
+
+// At the data layer, a stage is just the label string of one of the
+// owning pipeline's stages. Validation (label ∈ pipeline.stages) is
+// handled in the UI rather than at the DB level.
+export type PipelineStage = string
+
+export interface PipelineStageDef {
+  label: string
+  color: string
+}
+
+export interface Pipeline {
+  id: string
+  team_id: string
+  name: string
+  stages: PipelineStageDef[]
+  is_default: boolean
+  position: number
+  created_at: string
+  updated_at: string
+}
 
 export type ProspectPriority = 'Chaud' | 'Tiède' | 'Froid'
 
@@ -52,6 +77,7 @@ export interface Prospect {
   country: string
   priority: ProspectPriority
   stage: PipelineStage
+  pipeline_id: string
   channel: ProspectingChannel
   services_interested: string[]
   deal_value: number | null

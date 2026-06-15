@@ -27,6 +27,7 @@ function p(overrides: Partial<Prospect> = {}): Prospect {
     country: 'France',
     priority: 'Froid',
     stage: 'Identifié',
+    pipeline_id: 'pl',
     channel: 'LinkedIn',
     services_interested: [],
     deal_value: null,

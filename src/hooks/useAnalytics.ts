@@ -2,7 +2,8 @@ import { useMemo } from 'react'
 import { parseISO, differenceInDays, subMonths, isSameMonth, format } from 'date-fns'
 import { fr } from 'date-fns/locale'
 import { useProspects } from './useProspects'
-import { PIPELINE_STAGES, CHANNELS } from '@/lib/constants'
+import { useDefaultPipeline } from './usePipelines'
+import { DEFAULT_STAGES, CHANNELS } from '@/lib/constants'
 
 export interface ChannelStat {
   channel: string
@@ -33,6 +34,11 @@ export interface AnalyticsData {
 
 export function useAnalytics(): { data: AnalyticsData | null; isLoading: boolean } {
   const { data: prospects = [], isLoading } = useProspects()
+  const defaultPipeline = useDefaultPipeline()
+  // Analytics funnel uses the default pipeline's stages. Prospects in
+  // other pipelines still count toward "won/lost" channel metrics
+  // since those labels are reserved across pipelines.
+  const pipelineLabels = (defaultPipeline?.stages ?? DEFAULT_STAGES).map(s => s.label)
 
   const data = useMemo<AnalyticsData | null>(() => {
     if (!prospects.length) return null
@@ -93,13 +99,19 @@ export function useAnalytics(): { data: AnalyticsData | null; isLoading: boolean
       )
     }
 
-    // Funnel: % of non-lost prospects reaching each stage or further
-    const nonLost = prospects.filter((p) => p.stage !== 'Perdu')
-    const activeStages = PIPELINE_STAGES.filter((s) => s !== 'Perdu')
+    // Funnel: % of non-lost prospects reaching each stage or further.
+    // Restricted to prospects in the default pipeline so the funnel
+    // makes sense (mixing different pipelines' stages would lie).
+    const onDefaultPipeline = defaultPipeline
+      ? prospects.filter(p => p.pipeline_id === defaultPipeline.id)
+      : prospects
+    const nonLost = onDefaultPipeline.filter((p) => p.stage !== 'Perdu')
+    const stageIndex = (label: string) => pipelineLabels.indexOf(label)
+    const activeStages = pipelineLabels.filter((s) => s !== 'Perdu')
     const funnelData: FunnelStep[] = activeStages.map((stage) => {
-      const stageIdx = PIPELINE_STAGES.indexOf(stage)
+      const stageIdx = stageIndex(stage)
       const atOrPast = nonLost.filter(
-        (p) => PIPELINE_STAGES.indexOf(p.stage) >= stageIdx
+        (p) => stageIndex(p.stage) >= stageIdx
       ).length
       const pct = nonLost.length > 0 ? Math.round((atOrPast / nonLost.length) * 100) : 0
       return { stage, count: atOrPast, pct }
@@ -118,7 +130,7 @@ export function useAnalytics(): { data: AnalyticsData | null; isLoading: boolean
       totalLost: lost.length,
       channelBreakdown,
     }
-  }, [prospects])
+  }, [prospects, pipelineLabels, defaultPipeline])
 
   return { data, isLoading }
 }

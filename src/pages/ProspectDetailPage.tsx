@@ -92,7 +92,7 @@ export default function ProspectDetailPage() {
               <span className={cn('inline-flex items-center gap-1 rounded-pill px-2.5 py-1 text-xs font-bold', priorityConf.classes)}>
                 {priorityConf.emoji} {priorityConf.label}
               </span>
-              <StageBadge stage={prospect.stage} />
+              <StageBadge stage={prospect.stage} pipelineId={prospect.pipeline_id} />
             </div>
             <p className="text-sm text-muted">
               {prospect.first_name} {prospect.last_name}
@@ -162,7 +162,7 @@ export default function ProspectDetailPage() {
       </div>
 
       {/* Stage selector */}
-      <StageSelector prospectId={prospect.id} currentStage={prospect.stage} />
+      <StageSelector prospectId={prospect.id} currentStage={prospect.stage} pipelineId={prospect.pipeline_id} />
 
       {/* Main 2-column layout: info left, timeline right */}
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-4 items-start">

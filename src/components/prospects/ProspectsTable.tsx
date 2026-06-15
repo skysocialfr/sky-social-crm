@@ -7,28 +7,33 @@ import EmptyState from '@/components/common/EmptyState'
 import { Users } from 'lucide-react'
 import { dicebearAvatar } from '@/lib/avatar'
 import { formatDate, isOverdue } from '@/lib/dateUtils'
-import { PIPELINE_STAGES } from '@/lib/constants'
 import { cn } from '@/lib/cn'
-import type { Prospect, PipelineStage } from '@/types'
+import type { Prospect, PipelineStageDef } from '@/types'
 
 type SortKey = 'company_name' | 'stage' | 'priority' | 'deal_value' | 'next_followup_date' | 'created_at'
 
 interface Props {
   prospects: Prospect[]
+  stages: PipelineStageDef[]
   onEdit: (p: Prospect) => void
   onDelete: (p: Prospect) => void
 }
 
 const PRIORITY_ORDER: Record<string, number> = { Chaud: 0, Tiède: 1, Froid: 2 }
-const ACTIVE_STAGES = PIPELINE_STAGES.filter((s) => s !== 'Perdu')
-function stageScore(stage: PipelineStage): number {
-  if (stage === 'Perdu') return 0
-  const idx = ACTIVE_STAGES.indexOf(stage)
-  return idx >= 0 ? Math.round(((idx + 1) / ACTIVE_STAGES.length) * 100) : 0
+
+// "Score" reflects how far a prospect is along the active pipeline.
+// 'Perdu' always scores 0 if present; other stages score linearly
+// from 1/N to 100% based on their position among non-Perdu stages.
+function makeStageScorer(stages: PipelineStageDef[]) {
+  const active = stages.filter(s => s.label !== 'Perdu')
+  return (stage: string): number => {
+    if (stage === 'Perdu') return 0
+    const idx = active.findIndex(s => s.label === stage)
+    return idx >= 0 ? Math.round(((idx + 1) / active.length) * 100) : 0
+  }
 }
 
-function ScoreBar({ stage }: { stage: PipelineStage }) {
-  const score = stageScore(stage)
+function ScoreBar({ stage, score }: { stage: string; score: number }) {
   const color =
     stage === 'Gagné'
       ? '#16a34a'
@@ -52,11 +57,12 @@ function ScoreBar({ stage }: { stage: PipelineStage }) {
   )
 }
 
-export default function ProspectsTable({ prospects, onEdit, onDelete }: Props) {
+export default function ProspectsTable({ prospects, stages, onEdit, onDelete }: Props) {
   const navigate = useNavigate()
   const [sortKey, setSortKey] = useState<SortKey>('created_at')
   const [sortDir, setSortDir] = useState<'asc' | 'desc'>('desc')
   const [openMenu, setOpenMenu] = useState<string | null>(null)
+  const stageScore = makeStageScorer(stages)
 
   const toggleSort = (key: SortKey) => {
     if (sortKey === key) setSortDir((d) => (d === 'asc' ? 'desc' : 'asc'))
@@ -169,7 +175,7 @@ export default function ProspectsTable({ prospects, onEdit, onDelete }: Props) {
 
               {/* Étape */}
               <td className="px-3 py-3">
-                <StageBadge stage={p.stage} />
+                <StageBadge stage={p.stage} pipelineId={p.pipeline_id} />
               </td>
 
               {/* Priorité */}
@@ -199,7 +205,7 @@ export default function ProspectsTable({ prospects, onEdit, onDelete }: Props) {
 
               {/* Score */}
               <td className="px-3 py-3 min-w-[90px]">
-                <ScoreBar stage={p.stage} />
+                <ScoreBar stage={p.stage} score={stageScore(p.stage)} />
               </td>
 
               {/* Prochain contact */}

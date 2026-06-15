@@ -1,4 +1,4 @@
-import { useState, useMemo } from 'react'
+import { useState, useMemo, useEffect } from 'react'
 import { Plus, Upload, Zap } from 'lucide-react'
 import {
   useProspects,
@@ -8,9 +8,11 @@ import {
   useBulkCreateProspects,
 } from '@/hooks/useProspects'
 import { useSubscription, FREE_PLAN } from '@/hooks/useSubscription'
+import { useActivePipeline, useDefaultPipeline } from '@/hooks/usePipelines'
 import ProspectForm from '@/components/forms/ProspectForm'
 import ProspectsTable from '@/components/prospects/ProspectsTable'
 import KanbanBoard from '@/components/prospects/KanbanBoard'
+import PipelineSwitcher from '@/components/prospects/PipelineSwitcher'
 import ViewToggle from '@/components/prospects/ViewToggle'
 import ProspectFilters, { type Filters } from '@/components/prospects/ProspectFilters'
 import AdvancedFilterPanel from '@/components/prospects/AdvancedFilterPanel'
@@ -21,7 +23,7 @@ import ConfirmDialog from '@/components/common/ConfirmDialog'
 import { useToast } from '@/components/common/Toast'
 import { evaluateConditions, type FilterCondition } from '@/lib/filterUtils'
 import { cn } from '@/lib/cn'
-import type { Prospect, ProspectFormData, PipelineStage } from '@/types'
+import type { Prospect, ProspectFormData } from '@/types'
 
 function useViewMode(): ['kanban' | 'table', (v: 'kanban' | 'table') => void] {
   const saved = (localStorage.getItem('crm-view') as 'kanban' | 'table') ?? 'table'
@@ -41,6 +43,28 @@ export default function ProspectsPage() {
   const bulkCreate = useBulkCreateProspects()
   const { data: subscription = FREE_PLAN } = useSubscription()
   const { toast } = useToast()
+
+  const defaultPipeline = useDefaultPipeline()
+  // Active pipeline: explicit selection first, then default. Stored
+  // in URL so it survives reload + share.
+  const initialPipelineId =
+    new URLSearchParams(window.location.search).get('pipeline') ?? null
+  const [activePipelineId, setActivePipelineId] = useState<string | null>(initialPipelineId)
+  const { pipeline: activePipeline, stages } = useActivePipeline(activePipelineId)
+
+  // Once pipelines load, lock the URL to the resolved active pipeline
+  // so refreshing keeps the same view.
+  useEffect(() => {
+    if (!activePipeline) return
+    const url = new URL(window.location.href)
+    if (url.searchParams.get('pipeline') !== activePipeline.id) {
+      url.searchParams.set('pipeline', activePipeline.id)
+      window.history.replaceState({}, '', url.toString())
+    }
+    if (activePipelineId !== activePipeline.id) {
+      setActivePipelineId(activePipeline.id)
+    }
+  }, [activePipeline, activePipelineId])
 
   const [view, setView] = useViewMode()
   const [filters, setFilters] = useState<Filters>({
@@ -64,6 +88,8 @@ export default function ProspectsPage() {
 
   const filtered = useMemo(() => {
     return prospects.filter((p) => {
+      // Pipeline scoping: only show prospects of the active pipeline.
+      if (activePipeline && p.pipeline_id !== activePipeline.id) return false
       if (filters.search) {
         const q = filters.search.toLowerCase()
         if (
@@ -81,12 +107,12 @@ export default function ProspectsPage() {
       if (advConditions.length > 0 && !evaluateConditions(p, advConditions)) return false
       return true
     })
-  }, [prospects, filters, advConditions])
+  }, [prospects, filters, advConditions, activePipeline])
 
-  const handleOpenCreate = (stage?: PipelineStage) => {
+  const handleOpenCreate = (stage?: string) => {
     if (isAtLimit) { setUpgradeOpen(true); return }
     setEditProspect(null)
-    setDefaultStage(stage ?? 'Identifié')
+    setDefaultStage(stage ?? stages[0]?.label ?? 'Identifié')
     setFormOpen(true)
   }
 
@@ -164,10 +190,14 @@ export default function ProspectsPage() {
         </div>
       </div>
 
+      {/* Pipeline tabs (hidden if team has only one) */}
+      <PipelineSwitcher activeId={activePipelineId} onChange={setActivePipelineId} />
+
       {/* Filters */}
       <ProspectFilters
         filters={filters}
         onChange={setFilters}
+        stages={stages}
         advancedCount={advConditions.length}
         onAdvancedToggle={() => setAdvOpen(true)}
       />
@@ -176,11 +206,12 @@ export default function ProspectsPage() {
       {view === 'table' ? (
         <ProspectsTable
           prospects={filtered}
+          stages={stages}
           onEdit={(p) => { setEditProspect(p); setFormOpen(true) }}
           onDelete={(p) => setDeleteTarget(p)}
         />
       ) : (
-        <KanbanBoard prospects={filtered} onAdd={handleOpenCreate} />
+        <KanbanBoard prospects={filtered} stages={stages} onAdd={handleOpenCreate} />
       )}
 
       {/* Advanced Filter Panel */}
@@ -197,6 +228,7 @@ export default function ProspectsPage() {
         onOpenChange={setFormOpen}
         prospect={editProspect}
         defaultStage={defaultStage}
+        defaultPipelineId={activePipeline?.id ?? defaultPipeline?.id ?? null}
         onSubmit={handleSubmit}
       />
       <UpgradeModal open={upgradeOpen} onOpenChange={setUpgradeOpen} />

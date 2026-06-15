@@ -125,7 +125,7 @@ function RelanceCard({
             >
               {p.company_name}
             </button>
-            <StageBadge stage={p.stage} />
+            <StageBadge stage={p.stage} pipelineId={p.pipeline_id} />
             {badgeEl}
           </div>
           <p className="text-[11px] text-muted">
@@ -324,7 +324,7 @@ function CalendarView({ prospects }: { prospects: Prospect[] }) {
                     {p.first_name} {p.last_name}
                   </p>
                 </div>
-                <StageBadge stage={p.stage} />
+                <StageBadge stage={p.stage} pipelineId={p.pipeline_id} />
               </button>
             ))}
           </div>

@@ -1,6 +1,6 @@
 import * as XLSX from 'xlsx'
-import type { ProspectFormData, PipelineStage, ProspectPriority, ProspectingChannel, CompanySize, Prospect } from '@/types'
-import { PIPELINE_STAGES, PRIORITIES, CHANNELS, COMPANY_SIZES } from '@/lib/constants'
+import type { ProspectFormData, ProspectPriority, ProspectingChannel, CompanySize, Prospect } from '@/types'
+import { PRIORITIES, CHANNELS, COMPANY_SIZES } from '@/lib/constants'
 
 export const FIELD_LABELS: Partial<Record<keyof ProspectFormData, string>> = {
   company_name: 'Entreprise *',
@@ -118,9 +118,11 @@ export function computeResult(
 
       switch (field) {
         case 'stage': {
-          const v = normalizeEnum(rawVal, [...PIPELINE_STAGES] as PipelineStage[])
-          if (v) data.stage = v
-          else errors.push(`Étape invalide: "${rawVal}"`)
+          // Stages are pipeline-defined and free-form. We accept any
+          // non-empty string. Labels that don't match the target
+          // pipeline's stages will appear as "orphan" stages the
+          // user can clean up post-import.
+          data.stage = rawVal
           break
         }
         case 'priority': {

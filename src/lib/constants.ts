@@ -1,17 +1,25 @@
-import type { PipelineStage, ProspectPriority, ProspectingChannel, CompanySize, InteractionType } from '@/types'
+import type { LegacyPipelineStage, ProspectPriority, ProspectingChannel, CompanySize, InteractionType, PipelineStageDef } from '@/types'
 
-export const PIPELINE_STAGES: PipelineStage[] = [
-  'Identifié',
-  'Premier contact',
-  'Réponse reçue',
-  'RDV fixé',
-  'Devis envoyé',
-  'En négociation',
-  'Gagné',
-  'Perdu',
+// Default stage flow used when a team or component has no pipeline
+// loaded yet (auth bootstrap, dashboard widgets that render before
+// pipelines query resolves, CSV preview).
+export const DEFAULT_STAGES: PipelineStageDef[] = [
+  { label: 'Identifié',       color: '#64748b' },
+  { label: 'Premier contact', color: '#3b82f6' },
+  { label: 'Réponse reçue',   color: '#06b6d4' },
+  { label: 'RDV fixé',        color: '#8b5cf6' },
+  { label: 'Devis envoyé',    color: '#f59e0b' },
+  { label: 'En négociation',  color: '#f97316' },
+  { label: 'Gagné',           color: '#10b981' },
+  { label: 'Perdu',           color: '#ef4444' },
 ]
 
-export const STAGE_COLORS: Record<PipelineStage, string> = {
+export const PIPELINE_STAGES: LegacyPipelineStage[] = DEFAULT_STAGES.map(s => s.label as LegacyPipelineStage)
+
+// Tailwind classes for the legacy 8 stages. Used as a fallback when
+// a stage label matches one of these; custom stages fall back to a
+// neutral slate.
+export const LEGACY_STAGE_TW_CLASSES: Record<string, string> = {
   'Identifié': 'bg-slate-100 text-slate-600 dark:bg-slate-700 dark:text-slate-200',
   'Premier contact': 'bg-blue-100 text-blue-700 dark:bg-blue-900 dark:text-blue-200',
   'Réponse reçue': 'bg-cyan-100 text-cyan-700 dark:bg-cyan-900 dark:text-cyan-200',
@@ -22,16 +30,18 @@ export const STAGE_COLORS: Record<PipelineStage, string> = {
   'Perdu': 'bg-red-100 text-red-600 dark:bg-red-900 dark:text-red-200',
 }
 
-export const STAGE_DOT_COLORS: Record<PipelineStage, string> = {
-  'Identifié': '#64748b',
-  'Premier contact': '#3b82f6',
-  'Réponse reçue': '#06b6d4',
-  'RDV fixé': '#8b5cf6',
-  'Devis envoyé': '#f59e0b',
-  'En négociation': '#f97316',
-  'Gagné': '#10b981',
-  'Perdu': '#ef4444',
-}
+// Kept for backward-compat imports — same data, indexed by legacy label.
+export const STAGE_COLORS = LEGACY_STAGE_TW_CLASSES
+export const STAGE_DOT_COLORS: Record<string, string> = Object.fromEntries(
+  DEFAULT_STAGES.map(s => [s.label, s.color])
+)
+
+// 12 preset stage colors users can pick from when editing a pipeline.
+export const STAGE_COLOR_PRESETS: string[] = [
+  '#64748b', '#3b82f6', '#06b6d4', '#8b5cf6',
+  '#f59e0b', '#f97316', '#10b981', '#ef4444',
+  '#ec4899', '#14b8a6', '#a855f7', '#84cc16',
+]
 
 export const PRIORITIES: ProspectPriority[] = ['Chaud', 'Tiède', 'Froid']
 
