@@ -9,16 +9,10 @@ create extension if not exists "uuid-ossp";
 -- ============================================================
 -- ENUMS
 -- ============================================================
-create type pipeline_stage as enum (
-  'Identifié',
-  'Premier contact',
-  'Réponse reçue',
-  'RDV fixé',
-  'Devis envoyé',
-  'En négociation',
-  'Gagné',
-  'Perdu'
-);
+-- prospects.stage was originally a `pipeline_stage` enum, but
+-- multi-pipeline support (migration 012) requires free-form
+-- labels. Migration 013 dropped the enum and converted the column
+-- to plain text; the column declaration below reflects that.
 
 create type prospect_priority as enum ('Chaud', 'Tiède', 'Froid');
 
@@ -74,7 +68,7 @@ create table prospects (
 
   -- CRM
   priority            prospect_priority not null default 'Froid',
-  stage               pipeline_stage not null default 'Identifié',
+  stage               text not null default 'Identifié',
   channel             prospecting_channel not null,
   services_interested text[] default '{}',
 
