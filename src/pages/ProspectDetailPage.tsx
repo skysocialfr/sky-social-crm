@@ -34,7 +34,7 @@ export default function ProspectDetailPage() {
 
   if (isLoading) {
     return (
-      <div className="flex flex-col gap-4 max-w-5xl animate-pulse">
+      <div className="flex flex-col gap-4 max-w-7xl animate-pulse">
         <div className="h-36 rounded-card bg-border" />
         <div className="h-14 rounded-card bg-border" />
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
@@ -68,7 +68,7 @@ export default function ProspectDetailPage() {
   const dealPct = prospect.deal_value ? Math.min(100, Math.round((prospect.deal_value / 10000) * 100)) : 0
 
   return (
-    <div className="flex flex-col gap-4 max-w-5xl">
+    <div className="flex flex-col gap-4 max-w-7xl">
       {/* Header card */}
       <div className="rounded-card shadow-card border border-border bg-card p-5">
         {/* Back + avatar row */}
