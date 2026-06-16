@@ -140,7 +140,7 @@ export default function ProspectInfoCard({ prospect: p, sectionPrefs = DEFAULT_S
       .sort((a, b) => a.position - b.position)
 
   return (
-    <div className="flex flex-col gap-4">
+    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
       {/* Company tab card */}
       <div className="rounded-xl border border-border bg-card p-4 space-y-3">
         <p className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">{tabLabel('company')}</p>
@@ -176,7 +176,7 @@ export default function ProspectInfoCard({ prospect: p, sectionPrefs = DEFAULT_S
       </div>
 
       {/* CRM tab card — spans both columns since it carries pipeline + custom sections */}
-      <div className="rounded-xl border border-border bg-card p-4 space-y-3">
+      <div className="rounded-xl border border-border bg-card p-4 space-y-3 md:col-span-2">
         <p className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">{tabLabel('crm')}</p>
         <div className="flex items-start gap-3">
           <div className="mt-0.5 flex-shrink-0">

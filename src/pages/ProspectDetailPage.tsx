@@ -164,31 +164,34 @@ export default function ProspectDetailPage() {
       {/* Stage selector */}
       <StageSelector prospectId={prospect.id} currentStage={prospect.stage} pipelineId={prospect.pipeline_id} />
 
-      {/* Main 2-column layout: info left, timeline right */}
+      {/* Main layout: info takes 2/3 with its own 2-col grid, timeline 1/3 */}
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-4 items-start">
 
-        {/* Left sidebar: info + deal + followup + score */}
-        <div className="flex flex-col gap-3">
+        {/* Info section: 2/3 width with internal 2-col grid for cards */}
+        <div className="lg:col-span-2 flex flex-col gap-3">
           <ProspectInfoCard
             prospect={prospect}
             sectionPrefs={{ ...sectionPrefs, show_deal: false, show_interactions: false }}
           />
 
-          {sectionPrefs.show_deal && prospect.deal_value != null && (
-            <div className="rounded-card shadow-card border border-border bg-card p-4">
-              <p className="text-[11px] font-semibold uppercase tracking-wider text-muted mb-2">
-                Valeur du deal
-              </p>
-              <p className="text-2xl font-black text-crm-green leading-tight">
-                {prospect.deal_value.toLocaleString('fr-FR')}{' '}
-                <span className="text-sm font-semibold">{prospect.currency}</span>
-              </p>
-            </div>
-          )}
+          {/* Deal + followup side by side */}
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+            {sectionPrefs.show_deal && prospect.deal_value != null && (
+              <div className="rounded-card shadow-card border border-border bg-card p-4">
+                <p className="text-[11px] font-semibold uppercase tracking-wider text-muted mb-2">
+                  Valeur du deal
+                </p>
+                <p className="text-2xl font-black text-crm-green leading-tight">
+                  {prospect.deal_value.toLocaleString('fr-FR')}{' '}
+                  <span className="text-sm font-semibold">{prospect.currency}</span>
+                </p>
+              </div>
+            )}
 
-          {sectionPrefs.show_followup && (
-            <FollowUpScheduler prospectId={prospect.id} date={prospect.next_followup_date} />
-          )}
+            {sectionPrefs.show_followup && (
+              <FollowUpScheduler prospectId={prospect.id} date={prospect.next_followup_date} />
+            )}
+          </div>
 
           {/* Lead score */}
           <div className="rounded-card shadow-card border border-border bg-card p-4">
@@ -198,30 +201,32 @@ export default function ProspectDetailPage() {
             <span className={cn('inline-flex items-center gap-1.5 rounded-pill px-3 py-1.5 text-xs font-bold mb-4', priorityConf.classes)}>
               {priorityConf.emoji} {priorityConf.label}
             </span>
-            <div className="space-y-2.5">
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
               {[
                 { label: 'Engagement', pct: engagementPct, color: '#6366f1' },
                 { label: 'Timing', pct: timingPct, color: '#d97706' },
                 { label: 'Valeur deal', pct: dealPct, color: '#16a34a' },
               ].map(({ label, pct, color }) => (
-                <div key={label} className="flex items-center justify-between gap-2 text-xs">
-                  <span className="text-muted w-20 flex-shrink-0">{label}</span>
-                  <div className="flex-1 h-1.5 bg-border rounded-full overflow-hidden">
+                <div key={label} className="flex flex-col gap-1.5">
+                  <div className="flex items-center justify-between text-xs">
+                    <span className="text-muted">{label}</span>
+                    <span className="text-text font-semibold">{pct}%</span>
+                  </div>
+                  <div className="h-1.5 bg-border rounded-full overflow-hidden">
                     <div
                       className="h-full rounded-full transition-all"
                       style={{ width: `${pct}%`, backgroundColor: color }}
                     />
                   </div>
-                  <span className="text-muted w-7 text-right">{pct}%</span>
                 </div>
               ))}
             </div>
           </div>
         </div>
 
-        {/* Right: interaction timeline */}
+        {/* Timeline: 1/3 width on the right (sticky-feel, always visible) */}
         {sectionPrefs.show_interactions && (
-          <div className="lg:col-span-2 flex flex-col gap-4">
+          <div className="flex flex-col gap-3">
             <InteractionForm prospectId={prospect.id} />
             <div className="rounded-card shadow-card border border-border bg-card p-4">
               <p className="mb-4 text-[11px] font-semibold uppercase tracking-wider text-muted">
