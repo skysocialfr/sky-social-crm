@@ -379,16 +379,22 @@ function ColorPicker({ color, onChange }: { color: string; onChange: (c: string)
       {open && (
         <>
           <div className="fixed inset-0 z-10" onClick={() => setOpen(false)} />
-          <div className="absolute top-full left-0 mt-1 z-20 grid grid-cols-4 gap-1 rounded-card border border-border bg-card p-2 shadow-modal">
+          {/* Explicit width — without it, grid-cols-4 with fr columns
+              collapses to 0-width when the parent (a 24px picker
+              button) doesn't constrain the popup, causing all 4
+              circles per row to overlap at x=0. */}
+          <div className="absolute top-full left-0 mt-1 z-20 grid grid-cols-4 gap-1.5 w-[136px] rounded-card border border-border bg-card p-2 shadow-modal">
             {STAGE_COLOR_PRESETS.map(c => (
               <button
                 key={c}
+                type="button"
                 onClick={() => { onChange(c); setOpen(false) }}
                 className={cn(
                   'h-6 w-6 rounded-full border-2 transition-transform hover:scale-110',
                   c === color ? 'border-text' : 'border-card'
                 )}
                 style={{ backgroundColor: c }}
+                aria-label={`Choisir la couleur ${c}`}
               />
             ))}
           </div>
