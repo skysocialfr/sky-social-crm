@@ -368,9 +368,22 @@ function StagesEditor({
 
 function ColorPicker({ color, onChange }: { color: string; onChange: (c: string) => void }) {
   const [open, setOpen] = useState(false)
+  const [customHex, setCustomHex] = useState(color)
+
+  // Keep the input in sync with the current colour when reopening.
+  useEffect(() => { setCustomHex(color) }, [color, open])
+
+  const tryApplyCustom = (raw: string) => {
+    const normalized = raw.trim().startsWith('#') ? raw.trim() : `#${raw.trim()}`
+    if (/^#[0-9a-fA-F]{6}$/.test(normalized)) {
+      onChange(normalized.toLowerCase())
+    }
+  }
+
   return (
     <div className="relative">
       <button
+        type="button"
         onClick={() => setOpen(o => !o)}
         className="h-6 w-6 rounded-full border-2 border-card shadow-sm"
         style={{ backgroundColor: color }}
@@ -383,20 +396,43 @@ function ColorPicker({ color, onChange }: { color: string; onChange: (c: string)
               collapses to 0-width when the parent (a 24px picker
               button) doesn't constrain the popup, causing all 4
               circles per row to overlap at x=0. */}
-          <div className="absolute top-full left-0 mt-1 z-20 grid grid-cols-4 gap-1.5 w-[136px] rounded-card border border-border bg-card p-2 shadow-modal">
-            {STAGE_COLOR_PRESETS.map(c => (
-              <button
-                key={c}
-                type="button"
-                onClick={() => { onChange(c); setOpen(false) }}
-                className={cn(
-                  'h-6 w-6 rounded-full border-2 transition-transform hover:scale-110',
-                  c === color ? 'border-text' : 'border-card'
-                )}
-                style={{ backgroundColor: c }}
-                aria-label={`Choisir la couleur ${c}`}
+          <div className="absolute top-full left-0 mt-1 z-20 w-[180px] rounded-card border border-border bg-card p-2 shadow-modal">
+            <div className="grid grid-cols-4 gap-1.5">
+              {STAGE_COLOR_PRESETS.map(c => (
+                <button
+                  key={c}
+                  type="button"
+                  onClick={() => { onChange(c); setOpen(false) }}
+                  className={cn(
+                    'h-6 w-6 rounded-full border-2 transition-transform hover:scale-110',
+                    c === color ? 'border-text' : 'border-card'
+                  )}
+                  style={{ backgroundColor: c }}
+                  aria-label={`Choisir la couleur ${c}`}
+                />
+              ))}
+            </div>
+            <div className="mt-2 flex items-center gap-1.5 border-t border-border pt-2">
+              <span
+                className="h-5 w-5 flex-shrink-0 rounded-full border border-border"
+                style={{ backgroundColor: /^#[0-9a-fA-F]{6}$/.test(customHex) ? customHex : color }}
               />
-            ))}
+              <input
+                value={customHex}
+                onChange={(e) => {
+                  setCustomHex(e.target.value)
+                  tryApplyCustom(e.target.value)
+                }}
+                onKeyDown={(e) => { if (e.key === 'Enter') setOpen(false) }}
+                placeholder="#64748b"
+                maxLength={7}
+                className="flex-1 min-w-0 rounded-btn border border-border bg-bg px-2 py-1 text-[11px] font-mono text-text focus:border-primary focus:outline-none"
+                aria-label="Code hexadécimal"
+              />
+            </div>
+            <p className="mt-1 text-[10px] text-muted">
+              Tape un hex (ex: #64748b) pour une couleur libre.
+            </p>
           </div>
         </>
       )}
