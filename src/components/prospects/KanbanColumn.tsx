@@ -1,19 +1,18 @@
 import { Droppable } from '@hello-pangea/dnd'
 import { Plus } from 'lucide-react'
 import KanbanCard from './KanbanCard'
-import { STAGE_DOT_COLORS } from '@/lib/constants'
 import { cn } from '@/lib/cn'
-import type { PipelineStage, Prospect } from '@/types'
+import type { Prospect } from '@/types'
 
 interface Props {
-  stage: PipelineStage
+  stage: string
+  color: string
   prospects: Prospect[]
-  onAdd: (stage: PipelineStage) => void
+  onAdd: (stage: string) => void
 }
 
-export default function KanbanColumn({ stage, prospects, onAdd }: Props) {
+export default function KanbanColumn({ stage, color, prospects, onAdd }: Props) {
   const totalValue = prospects.reduce((s, p) => s + (p.deal_value ?? 0), 0)
-  const color = STAGE_DOT_COLORS[stage]
 
   return (
     <div className="flex w-[268px] flex-shrink-0 flex-col rounded-card border border-border bg-bg">

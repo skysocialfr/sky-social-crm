@@ -2,11 +2,16 @@ import { useMemo } from 'react'
 import { isToday, isBefore, parseISO, startOfDay, subMonths, isSameMonth, format } from 'date-fns'
 import { fr } from 'date-fns/locale'
 import { useProspects } from './useProspects'
-import { PIPELINE_STAGES } from '@/lib/constants'
+import { useDefaultPipeline } from './usePipelines'
+import { DEFAULT_STAGES } from '@/lib/constants'
 import type { DashboardStats } from '@/types'
 
 export function useDashboardStats(): { stats: DashboardStats | null; isLoading: boolean } {
   const { data: prospects, isLoading } = useProspects()
+  const defaultPipeline = useDefaultPipeline()
+  // The dashboard "by stage" chart shows the default pipeline's stages.
+  // Multi-pipeline teams see per-pipeline breakdowns on Prospects page.
+  const stageLabels = (defaultPipeline?.stages ?? DEFAULT_STAGES).map(s => s.label)
 
   const stats = useMemo<DashboardStats | null>(() => {
     if (!prospects) return null
@@ -33,7 +38,7 @@ export function useDashboardStats(): { stats: DashboardStats | null; isLoading: 
     const conversionRate =
       prospects.length > 0 ? Math.round((won.length / prospects.length) * 100) : 0
 
-    const byStage = PIPELINE_STAGES.map((stage) => {
+    const byStage = stageLabels.map((stage) => {
       const sp = prospects.filter((p) => p.stage === stage)
       return { stage, count: sp.length, value: sp.reduce((s, p) => s + (p.deal_value ?? 0), 0) }
     })
@@ -122,6 +127,7 @@ export function useDashboardStats(): { stats: DashboardStats | null; isLoading: 
       .reduce((s, p) => s + (p.deal_value ?? 0), 0)
     const monthlyGoal = Math.max(monthlyRevenue * 1.5, potentialRevenue * 0.1, 5000)
 
+    // Returning here closes over stageLabels — listed in deps below.
     return {
       totalProspects: prospects.length,
       potentialRevenue,
@@ -146,7 +152,7 @@ export function useDashboardStats(): { stats: DashboardStats | null; isLoading: 
       revenueWon,
       revenuePipeline,
     }
-  }, [prospects])
+  }, [prospects, stageLabels])
 
   return { stats, isLoading }
 }

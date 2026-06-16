@@ -1,11 +1,12 @@
-import { cloneElement, isValidElement, useEffect, useId, useState } from 'react'
+import { cloneElement, isValidElement, useEffect, useId, useMemo, useState } from 'react'
 import type { ReactElement, ReactNode } from 'react'
 import * as Dialog from '@radix-ui/react-dialog'
 import { X } from 'lucide-react'
 import { cn } from '@/lib/cn'
-import { PIPELINE_STAGES, PRIORITIES, CHANNELS, COMPANY_SIZES, SERVICES, CURRENCIES } from '@/lib/constants'
+import { PRIORITIES, CHANNELS, COMPANY_SIZES, SERVICES, CURRENCIES, DEFAULT_STAGES } from '@/lib/constants'
 import { useTheme } from '@/context/ThemeContext'
 import { useTeamMembers, useCurrentMember } from '@/hooks/useTeam'
+import { usePipelines } from '@/hooks/usePipelines'
 import DynamicFieldInput from '@/components/forms/DynamicFieldInput'
 import { BUILTIN_TAB_ORDER, BUILTIN_TAB_DEFAULT_LABELS } from '@/types'
 import type { BuiltInTab, Prospect, ProspectFormData, CustomFieldValue, CustomSection } from '@/types'
@@ -15,6 +16,7 @@ interface Props {
   onOpenChange: (open: boolean) => void
   prospect?: Prospect | null
   defaultStage?: string
+  defaultPipelineId?: string | null
   onSubmit: (data: ProspectFormData) => Promise<void>
 }
 
@@ -69,6 +71,7 @@ type FormState = {
   phone: string
   priority: string
   stage: string
+  pipeline_id: string
   channel: string
   services_interested: string[]
   deal_value: string
@@ -79,7 +82,7 @@ type FormState = {
   assigned_to: string | null
 }
 
-const emptyForm = (defaultStage = 'Identifié'): FormState => ({
+const emptyForm = (defaultStage = 'Identifié', defaultPipelineId = ''): FormState => ({
   company_name: '',
   sector: '',
   company_size: '',
@@ -96,6 +99,7 @@ const emptyForm = (defaultStage = 'Identifié'): FormState => ({
   phone: '',
   priority: 'Froid',
   stage: defaultStage,
+  pipeline_id: defaultPipelineId,
   channel: 'LinkedIn',
   services_interested: [],
   deal_value: '',
@@ -106,11 +110,19 @@ const emptyForm = (defaultStage = 'Identifié'): FormState => ({
   assigned_to: null,
 })
 
-export default function ProspectForm({ open, onOpenChange, prospect, defaultStage, onSubmit }: Props) {
+export default function ProspectForm({ open, onOpenChange, prospect, defaultStage, defaultPipelineId, onSubmit }: Props) {
   const { customFieldsSchema } = useTheme()
   const { data: teamMembers = [] } = useTeamMembers()
   const { data: currentMember } = useCurrentMember()
+  const { data: pipelines = [] } = usePipelines()
   const isOwner = currentMember?.role === 'owner'
+
+  // Stages of the pipeline currently selected in the form.
+  const activeStages = useMemo(() => {
+    const id = prospect?.pipeline_id ?? defaultPipelineId ?? null
+    const pl = id ? pipelines.find(p => p.id === id) : null
+    return pl?.stages?.length ? pl.stages : DEFAULT_STAGES
+  }, [prospect, defaultPipelineId, pipelines])
 
   // Per-tenant label for a given built-in tab (falls back to default).
   const tabLabel = (t: BuiltInTab): string =>
@@ -152,6 +164,7 @@ export default function ProspectForm({ open, onOpenChange, prospect, defaultStag
         phone: prospect.phone ?? '',
         priority: prospect.priority ?? 'Froid',
         stage: prospect.stage ?? 'Identifié',
+        pipeline_id: prospect.pipeline_id ?? defaultPipelineId ?? '',
         channel: prospect.channel ?? 'LinkedIn',
         services_interested: prospect.services_interested ?? [],
         deal_value: prospect.deal_value != null ? String(prospect.deal_value) : '',
@@ -162,12 +175,12 @@ export default function ProspectForm({ open, onOpenChange, prospect, defaultStag
         assigned_to: prospect.assigned_to ?? null,
       })
     } else {
-      setForm(emptyForm(defaultStage))
+      setForm(emptyForm(defaultStage, defaultPipelineId ?? ''))
     }
     setErrors({})
     setSubmitError('')
     setTab('company')
-  }, [open, prospect, defaultStage])
+  }, [open, prospect, defaultStage, defaultPipelineId])
 
   const setCustomField = (key: string, value: CustomFieldValue) => {
     setForm(f => {
@@ -225,7 +238,8 @@ export default function ProspectForm({ open, onOpenChange, prospect, defaultStag
         email: form.email.trim() || null,
         phone: form.phone.trim() || null,
         priority: form.priority as ProspectFormData['priority'],
-        stage: form.stage as ProspectFormData['stage'],
+        stage: form.stage,
+        pipeline_id: form.pipeline_id,
         channel: form.channel as ProspectFormData['channel'],
         services_interested: form.services_interested,
         deal_value: form.deal_value ? parseFloat(form.deal_value) : null,
@@ -365,9 +379,36 @@ export default function ProspectForm({ open, onOpenChange, prospect, defaultStag
               {/* CRM */}
               <div className={cn('flex flex-col gap-6', tab !== 'crm' && 'hidden')}>
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                  {pipelines.length > 1 && (
+                    <div className="col-span-full">
+                      <Field label="Pipeline">
+                        <select
+                          className={inputClass}
+                          value={form.pipeline_id}
+                          onChange={e => {
+                            const newPipelineId = e.target.value
+                            const newPl = pipelines.find(p => p.id === newPipelineId)
+                            const firstStage = newPl?.stages?.[0]?.label ?? form.stage
+                            const stageStillValid = newPl?.stages?.some(s => s.label === form.stage)
+                            setForm(f => ({
+                              ...f,
+                              pipeline_id: newPipelineId,
+                              stage: stageStillValid ? f.stage : firstStage,
+                            }))
+                          }}
+                        >
+                          {pipelines.map(p => (
+                            <option key={p.id} value={p.id}>
+                              {p.name}{p.is_default ? ' (défaut)' : ''}
+                            </option>
+                          ))}
+                        </select>
+                      </Field>
+                    </div>
+                  )}
                   <Field label="Étape du pipeline">
                     <select className={inputClass} value={form.stage} onChange={e => set('stage', e.target.value)}>
-                      {PIPELINE_STAGES.map(s => <option key={s} value={s}>{s}</option>)}
+                      {activeStages.map(s => <option key={s.label} value={s.label}>{s.label}</option>)}
                     </select>
                   </Field>
                   <Field label="Priorité">

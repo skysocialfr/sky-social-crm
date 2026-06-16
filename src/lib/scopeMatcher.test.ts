@@ -55,6 +55,7 @@ function mkProspect(overrides: Partial<Prospect> = {}): Prospect {
     country: 'France',
     priority: 'Tiède',
     stage: 'Identifié',
+    pipeline_id: 'pl1',
     channel: 'LinkedIn',
     services_interested: [],
     deal_value: null,

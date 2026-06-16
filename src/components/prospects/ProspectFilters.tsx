@@ -1,11 +1,11 @@
 import { Search, X, SlidersHorizontal } from 'lucide-react'
-import { PIPELINE_STAGES, PRIORITIES, CHANNELS, SERVICES } from '@/lib/constants'
-import type { PipelineStage, ProspectPriority, ProspectingChannel } from '@/types'
+import { PRIORITIES, CHANNELS, SERVICES } from '@/lib/constants'
+import type { ProspectPriority, ProspectingChannel, PipelineStageDef } from '@/types'
 import { cn } from '@/lib/cn'
 
 export interface Filters {
   search: string
-  stage: PipelineStage | ''
+  stage: string
   priority: ProspectPriority | ''
   channel: ProspectingChannel | ''
   service: string
@@ -14,6 +14,7 @@ export interface Filters {
 interface Props {
   filters: Filters
   onChange: (filters: Filters) => void
+  stages: PipelineStageDef[]
   advancedCount?: number
   onAdvancedToggle?: () => void
 }
@@ -34,7 +35,7 @@ function Select({ value, onChange, children }: {
   )
 }
 
-export default function ProspectFilters({ filters, onChange, advancedCount = 0, onAdvancedToggle }: Props) {
+export default function ProspectFilters({ filters, onChange, stages, advancedCount = 0, onAdvancedToggle }: Props) {
   const set = <K extends keyof Filters>(key: K, value: Filters[K]) =>
     onChange({ ...filters, [key]: value })
 
@@ -53,10 +54,10 @@ export default function ProspectFilters({ filters, onChange, advancedCount = 0, 
         />
       </div>
 
-      <Select value={filters.stage} onChange={(v) => set('stage', v as Filters['stage'])}>
+      <Select value={filters.stage} onChange={(v) => set('stage', v)}>
         <option value="">Toutes les étapes</option>
-        {PIPELINE_STAGES.map((s) => (
-          <option key={s} value={s}>{s}</option>
+        {stages.map((s) => (
+          <option key={s.label} value={s.label}>{s.label}</option>
         ))}
       </Select>
 
