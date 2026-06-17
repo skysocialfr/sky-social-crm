@@ -3,6 +3,7 @@ import { format, parseISO, isValid } from 'date-fns'
 import { fr } from 'date-fns/locale'
 import ChannelIcon from '@/components/common/ChannelIcon'
 import { useTheme } from '@/context/ThemeContext'
+import { isSectionVisible, isBuiltinFieldVisible } from '@/lib/visibility'
 import { BUILTIN_TAB_DEFAULT_LABELS } from '@/types'
 import type { BuiltInTab, Prospect, SectionPrefs, CustomField, CustomSection } from '@/types'
 import { DEFAULT_SECTION_PREFS } from '@/types'
@@ -133,10 +134,11 @@ export default function ProspectInfoCard({ prospect: p, sectionPrefs = DEFAULT_S
   const tabLabel = (t: BuiltInTab): string =>
     customFieldsSchema.tabs[t].label?.trim() || BUILTIN_TAB_DEFAULT_LABELS[t]
   const isHidden = (t: BuiltInTab, key: string): boolean =>
-    customFieldsSchema.tabs[t].hidden_fields.includes(key)
+    !isBuiltinFieldVisible(customFieldsSchema, t, key, customData)
   const sectionsFor = (t: BuiltInTab): CustomSection[] =>
     customFieldsSchema.sections
       .filter(s => s.tab === t)
+      .filter(s => isSectionVisible(s, customData))
       .sort((a, b) => a.position - b.position)
 
   return (

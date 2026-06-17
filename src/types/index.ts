@@ -202,12 +202,23 @@ export interface CustomField {
   delegable?: boolean           // type=select only: usable as a team-member territory
 }
 
+// Conditional visibility: a section or a native field can be marked
+// "visible only when discriminator rubric X has value in [Y]".
+// `field_key` references a custom select-type rubric stored in
+// prospects.custom_data. `values` is the OR list of allowed values.
+// Empty values or undefined rule → always visible.
+export interface VisibilityRule {
+  field_key: string
+  values: string[]
+}
+
 export interface CustomSection {
   id: string
   label: string
   tab: BuiltInTab               // which built-in tab this section is pinned to
   position: number              // order within its tab
   fields: CustomField[]
+  visible_when?: VisibilityRule
 }
 
 export type BuiltInTab = 'company' | 'contact' | 'crm'
@@ -222,7 +233,12 @@ export const BUILTIN_TAB_DEFAULT_LABELS: Record<BuiltInTab, string> = {
 
 export interface TabConfig {
   label?: string               // optional override of the default label
-  hidden_fields: string[]      // built-in field keys hidden by the tenant
+  hidden_fields: string[]      // built-in field keys hidden globally for this tenant
+  // Per-field conditional visibility, keyed by built-in field key.
+  // A field listed here is hidden unless its rule matches. Combined
+  // with hidden_fields via OR: a field is visible iff it's not in
+  // hidden_fields AND (no rule OR rule matches).
+  field_rules?: Record<string, VisibilityRule>
 }
 
 export interface CustomFieldsSchema {
@@ -239,16 +255,41 @@ export const DEFAULT_CUSTOM_FIELDS_SCHEMA: CustomFieldsSchema = {
   sections: [],
 }
 
+// Sanitize a possibly-untyped visibility rule from the DB. Returns
+// undefined for malformed rules so callers don't have to defend.
+function normalizeRule(raw: unknown): VisibilityRule | undefined {
+  if (!raw || typeof raw !== 'object') return undefined
+  const r = raw as Partial<VisibilityRule>
+  if (typeof r.field_key !== 'string' || !r.field_key) return undefined
+  const values = Array.isArray(r.values) ? r.values.filter((v): v is string => typeof v === 'string') : []
+  if (values.length === 0) return undefined
+  return { field_key: r.field_key, values }
+}
+
 // Normalize a schema coming from the DB: old rows may be just
 // {"sections": []} (pre-tabs migration) and individual sections may
 // lack `tab`. Defaults everything to a safe baseline.
 export function normalizeSchema(raw: unknown): CustomFieldsSchema {
   const obj = (raw && typeof raw === 'object') ? raw as Partial<CustomFieldsSchema> : {}
+
+  const normalizeTab = (t: Partial<TabConfig> | undefined): TabConfig => ({
+    label: typeof t?.label === 'string' ? t.label : undefined,
+    hidden_fields: Array.isArray(t?.hidden_fields) ? t.hidden_fields.filter((s): s is string => typeof s === 'string') : [],
+    field_rules: t?.field_rules && typeof t.field_rules === 'object'
+      ? Object.fromEntries(
+          Object.entries(t.field_rules as Record<string, unknown>)
+            .map(([k, v]) => [k, normalizeRule(v)] as const)
+            .filter((kv): kv is [string, VisibilityRule] => kv[1] !== undefined)
+        )
+      : undefined,
+  })
+
   const tabs = {
-    company: { hidden_fields: [] as string[], ...(obj.tabs?.company ?? {}) },
-    contact: { hidden_fields: [] as string[], ...(obj.tabs?.contact ?? {}) },
-    crm:     { hidden_fields: [] as string[], ...(obj.tabs?.crm     ?? {}) },
+    company: normalizeTab(obj.tabs?.company),
+    contact: normalizeTab(obj.tabs?.contact),
+    crm:     normalizeTab(obj.tabs?.crm),
   }
+
   const sections = (obj.sections ?? []).map((s) => ({
     id: s.id,
     label: s.label,
@@ -258,6 +299,7 @@ export function normalizeSchema(raw: unknown): CustomFieldsSchema {
       ...f,
       delegable: f.type === 'select' ? Boolean(f.delegable) : false,
     })),
+    visible_when: normalizeRule((s as { visible_when?: unknown }).visible_when),
   })) as CustomSection[]
   return { tabs, sections }
 }

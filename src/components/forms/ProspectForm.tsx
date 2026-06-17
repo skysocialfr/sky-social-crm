@@ -7,6 +7,7 @@ import { PRIORITIES, CHANNELS, COMPANY_SIZES, SERVICES, CURRENCIES, DEFAULT_STAG
 import { useTheme } from '@/context/ThemeContext'
 import { useTeamMembers, useCurrentMember } from '@/hooks/useTeam'
 import { usePipelines } from '@/hooks/usePipelines'
+import { isSectionVisible, isBuiltinFieldVisible } from '@/lib/visibility'
 import DynamicFieldInput from '@/components/forms/DynamicFieldInput'
 import { BUILTIN_TAB_ORDER, BUILTIN_TAB_DEFAULT_LABELS } from '@/types'
 import type { BuiltInTab, Prospect, ProspectFormData, CustomFieldValue, CustomSection } from '@/types'
@@ -128,14 +129,19 @@ export default function ProspectForm({ open, onOpenChange, prospect, defaultStag
   const tabLabel = (t: BuiltInTab): string =>
     customFieldsSchema.tabs[t].label?.trim() || BUILTIN_TAB_DEFAULT_LABELS[t]
 
-  // True if a built-in field has been hidden by the tenant in Settings.
+  // True if a built-in field should be hidden in the current form state.
+  // Combines tenant-level hiding (hidden_fields) with conditional rules
+  // that depend on the live form.custom_data (e.g. "show 'site web'
+  // only when type d'acteur = Entreprise B2B").
   const isHidden = (t: BuiltInTab, fieldKey: string): boolean =>
-    customFieldsSchema.tabs[t].hidden_fields.includes(fieldKey)
+    !isBuiltinFieldVisible(customFieldsSchema, t, fieldKey, form.custom_data)
 
-  // Custom sections that should render inside a given built-in tab.
+  // Custom sections that should render inside a given built-in tab,
+  // filtered to those whose conditional visibility passes.
   const sectionsFor = (t: BuiltInTab): CustomSection[] =>
     customFieldsSchema.sections
       .filter(s => s.tab === t)
+      .filter(s => isSectionVisible(s, form.custom_data))
       .sort((a, b) => a.position - b.position)
 
   const [tab, setTab] = useState<BuiltInTab>('company')
