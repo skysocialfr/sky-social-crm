@@ -200,6 +200,8 @@ export interface CustomField {
   min?: number
   max?: number
   delegable?: boolean           // type=select only: usable as a team-member territory
+  is_type_selector?: boolean    // type=select only: gates the new-prospect form
+                                // as a wizard's first step (one per tenant)
 }
 
 // Conditional visibility: a section or a native field can be marked
@@ -298,6 +300,7 @@ export function normalizeSchema(raw: unknown): CustomFieldsSchema {
     fields: (s.fields ?? []).map((f) => ({
       ...f,
       delegable: f.type === 'select' ? Boolean(f.delegable) : false,
+      is_type_selector: f.type === 'select' ? Boolean(f.is_type_selector) : false,
     })),
     visible_when: normalizeRule((s as { visible_when?: unknown }).visible_when),
   })) as CustomSection[]
