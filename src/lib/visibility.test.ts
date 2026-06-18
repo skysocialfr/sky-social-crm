@@ -49,6 +49,7 @@ describe('isBuiltinFieldVisible', () => {
       crm:     { hidden_fields: [] },
     },
     sections: [],
+    prospect_types: [],
   }
 
   it('hides globally-hidden fields regardless of conditional rules', () => {
@@ -83,6 +84,7 @@ describe('discriminatorCandidates', () => {
   it('only returns select / multiselect rubrics', () => {
     const schema: CustomFieldsSchema = {
       tabs: { company: { hidden_fields: [] }, contact: { hidden_fields: [] }, crm: { hidden_fields: [] } },
+      prospect_types: [],
       sections: [{
         id: 's1', label: 'Section A', tab: 'company', position: 0,
         fields: [

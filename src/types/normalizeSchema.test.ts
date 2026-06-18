@@ -67,6 +67,53 @@ describe('normalizeSchema', () => {
     expect(normalized.sections[0].position).toBe(0)
   })
 
+  it('defaults prospect_types to an empty array when absent and no legacy selector', () => {
+    expect(normalizeSchema({ sections: [] }).prospect_types).toEqual([])
+  })
+
+  it('sanitizes an explicit prospect_types list (drops malformed, sorts by position)', () => {
+    const schema = {
+      sections: [],
+      prospect_types: [
+        { id: 'b', label: 'B', position: 1, fields: [{ id: 'f', key: 'k', label: 'K', type: 'text' }] },
+        { id: 'a', label: 'A', position: 0, fields: [] },
+        { label: 'no id' },          // dropped
+        { id: 'x' },                 // dropped (no label)
+      ],
+    }
+    const types = normalizeSchema(schema).prospect_types
+    expect(types.map(t => t.id)).toEqual(['a', 'b'])
+    expect(types[1].fields).toHaveLength(1)
+  })
+
+  it('auto-migrates a legacy type-selector + conditional sections into prospect_types', () => {
+    const legacy = {
+      sections: [
+        {
+          id: 'sel', label: 'Type', tab: 'company', position: 0,
+          fields: [{ id: 't', key: 'type_acteur', label: 'Type', type: 'select', options: ['Photographe', 'Agence'], is_type_selector: true }],
+        },
+        {
+          id: 'photo', label: 'Photo', tab: 'company', position: 1,
+          visible_when: { field_key: 'type_acteur', values: ['Photographe'] },
+          fields: [{ id: 'p1', key: 'tarif', label: 'Tarif', type: 'number' }],
+        },
+        {
+          id: 'shared', label: 'Commun', tab: 'company', position: 2,
+          fields: [{ id: 's1', key: 'site', label: 'Site', type: 'url' }],
+        },
+      ],
+    }
+    const types = normalizeSchema(legacy).prospect_types
+    expect(types.map(t => t.label)).toEqual(['Photographe', 'Agence'])
+    // Photographe gets its gated field + the always-visible shared field.
+    const photo = types.find(t => t.label === 'Photographe')!
+    expect(photo.fields.map(f => f.key).sort()).toEqual(['site', 'tarif'])
+    // Agence only gets the shared field; the selector field is never a question.
+    const agence = types.find(t => t.label === 'Agence')!
+    expect(agence.fields.map(f => f.key)).toEqual(['site'])
+  })
+
   it('keeps empty hidden_fields arrays even when partial tab config is given', () => {
     // Old rows might have only labels set, no hidden_fields key at all.
     const schema = {

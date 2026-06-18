@@ -8,6 +8,8 @@ import { Users } from 'lucide-react'
 import { dicebearAvatar } from '@/lib/avatar'
 import { formatDate, isOverdue } from '@/lib/dateUtils'
 import { cn } from '@/lib/cn'
+import { useTheme } from '@/context/ThemeContext'
+import { resolveProspectType } from '@/lib/prospectTypes'
 import type { Prospect, PipelineStageDef } from '@/types'
 
 type SortKey = 'company_name' | 'stage' | 'priority' | 'deal_value' | 'next_followup_date' | 'created_at'
@@ -59,6 +61,7 @@ function ScoreBar({ stage, score }: { stage: string; score: number }) {
 
 export default function ProspectsTable({ prospects, stages, onEdit, onDelete }: Props) {
   const navigate = useNavigate()
+  const { customFieldsSchema } = useTheme()
   const [sortKey, setSortKey] = useState<SortKey>('created_at')
   const [sortDir, setSortDir] = useState<'asc' | 'desc'>('desc')
   const [openMenu, setOpenMenu] = useState<string | null>(null)
@@ -162,9 +165,28 @@ export default function ProspectsTable({ prospects, stages, onEdit, onDelete }: 
                     className="rounded-full flex-shrink-0"
                   />
                   <div className="min-w-0">
-                    <p className="text-sm font-bold text-text truncate leading-tight">
-                      {p.company_name}
-                    </p>
+                    <div className="flex items-center gap-1.5 min-w-0">
+                      <p className="text-sm font-bold text-text truncate leading-tight">
+                        {p.company_name}
+                      </p>
+                      {(() => {
+                        const t = resolveProspectType(p.custom_data, customFieldsSchema)
+                        if (!t) return null
+                        return (
+                          <span
+                            className="inline-flex flex-shrink-0 items-center gap-0.5 rounded-full border px-1.5 py-0.5 text-[10px] font-semibold"
+                            style={{
+                              color: t.color || undefined,
+                              borderColor: `${t.color || '#6366f1'}55`,
+                              background: `${t.color || '#6366f1'}14`,
+                            }}
+                            title={t.label}
+                          >
+                            <span aria-hidden>{t.emoji || '👤'}</span>
+                          </span>
+                        )
+                      })()}
+                    </div>
                     <p className="text-[11px] text-muted truncate">
                       {p.first_name} {p.last_name}
                       {p.sector ? ` · ${p.sector}` : ''}

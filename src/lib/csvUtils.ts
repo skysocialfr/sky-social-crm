@@ -1,6 +1,21 @@
 import * as XLSX from 'xlsx'
-import type { ProspectFormData, ProspectPriority, ProspectingChannel, CompanySize, Prospect } from '@/types'
+import type {
+  ProspectFormData, ProspectPriority, ProspectingChannel, CompanySize, Prospect,
+  ProspectType, CustomField, CustomFieldValue,
+} from '@/types'
+import { PROSPECT_TYPE_KEY } from '@/types'
+import { findTypeByLabel } from '@/lib/prospectTypes'
 import { PRIORITIES, CHANNELS, COMPANY_SIZES } from '@/lib/constants'
+
+// Special mapping target: a file column that carries the prospect type
+// (resolved to a configured type by label). Custom-field targets use
+// the `custom:<fieldKey>` form.
+export const TYPE_TARGET = '__type'
+export const CUSTOM_PREFIX = 'custom:'
+
+/** A column can map to a built-in field, the prospect type, a custom
+ *  field (`custom:<key>`), or be ignored. */
+export type MapTarget = keyof ProspectFormData | typeof TYPE_TARGET | string | '_ignore'
 
 export const FIELD_LABELS: Partial<Record<keyof ProspectFormData, string>> = {
   company_name: 'Entreprise *',
@@ -49,6 +64,27 @@ const COLUMN_ALIASES: Record<string, keyof ProspectFormData> = {
   'services': 'services_interested', 'services_interested': 'services_interested',
 }
 
+// Column headers that should auto-map to the prospect type.
+const TYPE_COLUMN_ALIASES = new Set<string>([
+  'type', 'type de prospect', 'type prospect', 'catégorie', 'categorie', 'profil',
+])
+
+function parseCustomValue(field: CustomField | undefined, raw: string): CustomFieldValue {
+  if (!field) return raw
+  switch (field.type) {
+    case 'number': {
+      const n = parseFloat(raw.replace(',', '.').replace(/[\s€$£%]/g, ''))
+      return Number.isNaN(n) ? null : n
+    }
+    case 'multiselect':
+      return raw.split(/[;,]/).map(s => s.trim()).filter(Boolean)
+    case 'boolean':
+      return /^(oui|yes|true|vrai|1|x)$/i.test(raw.trim())
+    default:
+      return raw
+  }
+}
+
 export interface ParsedRow {
   index: number
   data: Partial<ProspectFormData>
@@ -87,20 +123,37 @@ export function parseFile(file: File): Promise<{ headers: string[]; rawRows: Rec
   })
 }
 
-export function autoDetectMapping(headers: string[]): Record<string, keyof ProspectFormData | '_ignore'> {
-  const mapping: Record<string, keyof ProspectFormData | '_ignore'> = {}
+export function autoDetectMapping(headers: string[]): Record<string, MapTarget> {
+  const mapping: Record<string, MapTarget> = {}
   for (const h of headers) {
-    mapping[h] = COLUMN_ALIASES[h.toLowerCase().trim()] ?? '_ignore'
+    const key = h.toLowerCase().trim()
+    if (TYPE_COLUMN_ALIASES.has(key)) mapping[h] = TYPE_TARGET
+    else mapping[h] = COLUMN_ALIASES[key] ?? '_ignore'
   }
   return mapping
+}
+
+export interface ImportContext {
+  prospectTypes?: ProspectType[]
+  /** Type applied to every row unless a column overrides it per-row. */
+  defaultTypeId?: string
 }
 
 export function computeResult(
   headers: string[],
   rawRows: Record<string, string>[],
-  mapping: Record<string, keyof ProspectFormData | '_ignore'>
+  mapping: Record<string, MapTarget>,
+  ctx: ImportContext = {}
 ): ParseResult {
+  const prospectTypes = ctx.prospectTypes ?? []
+  // Flatten every type's fields so a `custom:<key>` target can be parsed
+  // even when the row's type is driven by a column.
+  const fieldByKey = new Map<string, CustomField>()
+  for (const t of prospectTypes) for (const f of t.fields) fieldByKey.set(f.key, f)
+
   const rows: ParsedRow[] = rawRows.map((raw, index) => {
+    const custom_data: Record<string, CustomFieldValue> = {}
+    if (ctx.defaultTypeId) custom_data[PROSPECT_TYPE_KEY] = ctx.defaultTypeId
     const data: Partial<ProspectFormData> = {
       stage: 'Identifié',
       priority: 'Froid',
@@ -108,6 +161,7 @@ export function computeResult(
       country: 'France',
       currency: 'EUR',
       services_interested: [],
+      custom_data,
     }
     const errors: string[] = []
 
@@ -115,6 +169,19 @@ export function computeResult(
       if (field === '_ignore') continue
       const rawVal = String(raw[csvCol] ?? '').trim()
       if (!rawVal) continue
+
+      if (field === TYPE_TARGET) {
+        const matched = findTypeByLabel(rawVal, { prospect_types: prospectTypes })
+        if (matched) custom_data[PROSPECT_TYPE_KEY] = matched.id
+        else if (prospectTypes.length) errors.push(`Type inconnu : "${rawVal}"`)
+        continue
+      }
+      if (field.startsWith(CUSTOM_PREFIX)) {
+        const key = field.slice(CUSTOM_PREFIX.length)
+        const parsed = parseCustomValue(fieldByKey.get(key), rawVal)
+        if (parsed !== null && !(Array.isArray(parsed) && parsed.length === 0)) custom_data[key] = parsed
+        continue
+      }
 
       switch (field) {
         case 'stage': {

@@ -7,10 +7,11 @@ import { PRIORITIES, CHANNELS, COMPANY_SIZES, SERVICES, CURRENCIES, DEFAULT_STAG
 import { useTheme } from '@/context/ThemeContext'
 import { useTeamMembers, useCurrentMember } from '@/hooks/useTeam'
 import { usePipelines } from '@/hooks/usePipelines'
-import { isSectionVisible, isBuiltinFieldVisible, findTypeSelector } from '@/lib/visibility'
+import { isSectionVisible, isBuiltinFieldVisible } from '@/lib/visibility'
+import { resolveProspectType } from '@/lib/prospectTypes'
 import DynamicFieldInput from '@/components/forms/DynamicFieldInput'
-import { BUILTIN_TAB_ORDER, BUILTIN_TAB_DEFAULT_LABELS } from '@/types'
-import type { BuiltInTab, Prospect, ProspectFormData, CustomFieldValue, CustomSection } from '@/types'
+import { BUILTIN_TAB_ORDER, BUILTIN_TAB_DEFAULT_LABELS, PROSPECT_TYPE_KEY } from '@/types'
+import type { BuiltInTab, Prospect, ProspectFormData, CustomFieldValue, CustomSection, CustomField, ProspectType } from '@/types'
 
 interface Props {
   open: boolean
@@ -136,13 +137,16 @@ export default function ProspectForm({ open, onOpenChange, prospect, defaultStag
   const isHidden = (t: BuiltInTab, fieldKey: string): boolean =>
     !isBuiltinFieldVisible(customFieldsSchema, t, fieldKey, form.custom_data)
 
-  // Custom sections that should render inside a given built-in tab,
-  // filtered to those whose conditional visibility passes.
+  // Legacy custom sections inside a given built-in tab. Only used for
+  // tenants still on the old model (no prospect types configured) —
+  // when types exist, the selected type's fields replace them.
   const sectionsFor = (t: BuiltInTab): CustomSection[] =>
-    customFieldsSchema.sections
-      .filter(s => s.tab === t)
-      .filter(s => isSectionVisible(s, form.custom_data))
-      .sort((a, b) => a.position - b.position)
+    customFieldsSchema.prospect_types.length > 0
+      ? []
+      : customFieldsSchema.sections
+          .filter(s => s.tab === t)
+          .filter(s => isSectionVisible(s, form.custom_data))
+          .sort((a, b) => a.position - b.position)
 
   const [tab, setTab] = useState<BuiltInTab>('company')
   const [form, setForm] = useState<FormState>(emptyForm(defaultStage))
@@ -150,15 +154,15 @@ export default function ProspectForm({ open, onOpenChange, prospect, defaultStag
   const [submitError, setSubmitError] = useState('')
   const [saving, setSaving] = useState(false)
 
-  // Wizard mode: if a rubric is marked "type selector" and we're
-  // creating a new prospect that has no value for it yet, the form
-  // opens on a dedicated picker step instead of the regular fields.
-  // Editing existing prospects always skips the wizard.
-  const typeSelector = findTypeSelector(customFieldsSchema)
+  // Wizard mode: when creating a new prospect and the team has
+  // configured prospect types, the form opens on a dedicated type
+  // picker. Once a type is chosen we only ask that type's fields.
+  // Editing an existing prospect skips the picker (the type is shown
+  // as a chip and can still be changed).
+  const prospectTypes = customFieldsSchema.prospect_types
+  const hasTypes = prospectTypes.length > 0
   const isNew = !prospect
-  const typeSelectorValue = typeSelector
-    ? (form.custom_data[typeSelector.key] as string | undefined)
-    : undefined
+  const selectedType = resolveProspectType(form.custom_data, customFieldsSchema)
   const [wizardShown, setWizardShown] = useState(false)
 
   useEffect(() => {
@@ -197,12 +201,10 @@ export default function ProspectForm({ open, onOpenChange, prospect, defaultStag
     setErrors({})
     setSubmitError('')
     setTab('company')
-    // Show the wizard whenever we're creating a new prospect and a
-    // type selector is configured. Editing an existing prospect
-    // skips the wizard (the user can still change the type from
-    // the rubric in the regular form).
-    setWizardShown(!prospect && !!typeSelector)
-  }, [open, prospect, defaultStage, defaultPipelineId, typeSelector])
+    // Show the picker whenever we're creating a new prospect and the
+    // team has configured at least one type. Editing skips it.
+    setWizardShown(!prospect && hasTypes)
+  }, [open, prospect, defaultStage, defaultPipelineId, hasTypes])
 
   const setCustomField = (key: string, value: CustomFieldValue) => {
     setForm(f => {
@@ -233,9 +235,22 @@ export default function ProspectForm({ open, onOpenChange, prospect, defaultStag
     if (!form.last_name.trim()) errs.last_name = 'Nom requis'
     if (form.email && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(form.email)) errs.email = 'Email invalide'
     setErrors(errs)
+
+    // Required fields of the selected type live in custom_data.
+    const isCustomEmpty = (v: CustomFieldValue | undefined) =>
+      v == null || v === '' || (Array.isArray(v) && v.length === 0)
+    const missingType = (selectedType?.fields ?? []).filter(
+      f => f.required && isCustomEmpty(form.custom_data[f.key]),
+    )
+
     if (errs.company_name) setTab('company')
     else if (errs.first_name || errs.last_name || errs.email) setTab('contact')
-    return Object.keys(errs).length === 0
+    else if (missingType.length) setTab('company')
+
+    if (missingType.length) {
+      setSubmitError(`Champs requis manquants pour ce type : ${missingType.map(f => f.label).join(', ')}.`)
+    }
+    return Object.keys(errs).length === 0 && missingType.length === 0
   }
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -297,36 +312,55 @@ export default function ProspectForm({ open, onOpenChange, prospect, defaultStag
             </Dialog.Close>
           </div>
 
-          {/* Wizard step — only when creating + a type selector is configured */}
-          {wizardShown && typeSelector && (
+          {/* Type picker — only when creating + the team has types */}
+          {wizardShown && hasTypes && (
             <div className="flex flex-1 flex-col overflow-y-auto px-6 py-8">
-              <div className="mx-auto w-full max-w-md flex flex-col gap-4">
+              <div className="mx-auto w-full max-w-xl flex flex-col gap-5">
                 <div className="text-center">
                   <p className="text-[11px] font-semibold uppercase tracking-wider text-primary mb-2">Étape 1 sur 2</p>
-                  <h2 className="text-xl font-bold text-text">{typeSelector.label}</h2>
-                  <p className="text-sm text-muted mt-1">Choisis le type de prospect pour adapter le formulaire.</p>
+                  <h2 className="text-xl font-bold text-text">Quel type de prospect ?</h2>
+                  <p className="text-sm text-muted mt-1">Choisis un type pour n'afficher que les informations utiles.</p>
                 </div>
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 mt-2">
-                  {typeSelector.options.map((opt) => (
-                    <button
-                      key={opt}
-                      type="button"
-                      onClick={() => {
-                        setCustomField(typeSelector.key, opt)
-                        setWizardShown(false)
-                      }}
-                      className="rounded-card border border-border bg-card px-4 py-4 text-left text-sm font-semibold text-text hover:border-primary hover:bg-primary-light hover:shadow-card transition-all"
-                    >
-                      {opt}
-                    </button>
-                  ))}
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                  {prospectTypes.map((t) => {
+                    const accent = t.color || '#6366f1'
+                    const active = selectedType?.id === t.id
+                    return (
+                      <button
+                        key={t.id}
+                        type="button"
+                        onClick={() => {
+                          setCustomField(PROSPECT_TYPE_KEY, t.id)
+                          setTab('company')
+                          setWizardShown(false)
+                        }}
+                        className={cn(
+                          'group flex items-center gap-3 rounded-card border bg-card px-4 py-4 text-left transition-all hover:shadow-card',
+                          active ? 'border-primary bg-primary-light' : 'border-border hover:border-primary',
+                        )}
+                      >
+                        <span
+                          className="grid h-11 w-11 flex-shrink-0 place-items-center rounded-btn text-xl"
+                          style={{ background: `${accent}1a` }}
+                        >
+                          {t.emoji || '👤'}
+                        </span>
+                        <span className="min-w-0">
+                          <span className="block text-sm font-bold text-text truncate">{t.label}</span>
+                          {t.description && (
+                            <span className="block text-[12px] text-muted truncate">{t.description}</span>
+                          )}
+                        </span>
+                      </button>
+                    )
+                  })}
                 </div>
                 <button
                   type="button"
-                  onClick={() => setWizardShown(false)}
-                  className="mt-2 text-center text-xs font-medium text-muted hover:text-text transition-colors"
+                  onClick={() => { setCustomField(PROSPECT_TYPE_KEY, null); setWizardShown(false) }}
+                  className="text-center text-xs font-medium text-muted hover:text-text transition-colors"
                 >
-                  Passer cette étape
+                  Créer sans type
                 </button>
               </div>
             </div>
@@ -342,10 +376,18 @@ export default function ProspectForm({ open, onOpenChange, prospect, defaultStag
                   )}
                 >{tabLabel(t)}</button>
               ))}
-              {typeSelector && typeSelectorValue && (
+              {hasTypes && selectedType && (
                 <div className="ml-auto flex items-center gap-2 py-2">
-                  <span className="rounded-pill bg-primary-light text-primary border border-primary-border px-2.5 py-0.5 text-[11px] font-semibold">
-                    {typeSelectorValue}
+                  <span
+                    className="inline-flex items-center gap-1 rounded-pill border px-2.5 py-0.5 text-[11px] font-semibold"
+                    style={{
+                      color: selectedType.color || undefined,
+                      borderColor: `${selectedType.color || '#6366f1'}55`,
+                      background: `${selectedType.color || '#6366f1'}14`,
+                    }}
+                  >
+                    <span aria-hidden>{selectedType.emoji || '👤'}</span>
+                    {selectedType.label}
                   </span>
                   <button
                     type="button"
@@ -364,6 +406,9 @@ export default function ProspectForm({ open, onOpenChange, prospect, defaultStag
 
               {/* ENTREPRISE */}
               <div className={cn('flex flex-col gap-6', tab !== 'company' && 'hidden')}>
+                {hasTypes && selectedType && selectedType.fields.length > 0 && (
+                  <TypeFieldsSection type={selectedType} data={form.custom_data} onChange={setCustomField} />
+                )}
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                   <div className="col-span-full">
                     <Field label="Nom de l'entreprise" required error={errors.company_name}>
@@ -596,6 +641,46 @@ export default function ProspectForm({ open, onOpenChange, prospect, defaultStag
         </Dialog.Content>
       </Dialog.Portal>
     </Dialog.Root>
+  )
+}
+
+// Renders the selected prospect type's fields as a highlighted block
+// at the top of the form, so the type-specific questions feel like the
+// heart of the fiche.
+function TypeFieldsSection({
+  type,
+  data,
+  onChange,
+}: {
+  type: ProspectType
+  data: Record<string, CustomFieldValue>
+  onChange: (key: string, value: CustomFieldValue) => void
+}) {
+  const accent = type.color || '#6366f1'
+  return (
+    <div
+      className="rounded-card border p-4 flex flex-col gap-4"
+      style={{ borderColor: `${accent}40`, background: `${accent}0a` }}
+    >
+      <div className="flex items-center gap-2">
+        <span className="grid h-7 w-7 place-items-center rounded-btn text-base" style={{ background: `${accent}1f` }}>
+          {type.emoji || '👤'}
+        </span>
+        <h3 className="text-sm font-bold text-text">Informations · {type.label}</h3>
+      </div>
+      <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+        {type.fields.map((field: CustomField) => {
+          const fullWidth = field.type === 'textarea' || field.type === 'multiselect'
+          return (
+            <div key={field.id} className={cn(fullWidth && 'col-span-full')}>
+              <Field label={field.label} required={field.required}>
+                <DynamicFieldInput field={field} value={data[field.key]} onChange={val => onChange(field.key, val)} />
+              </Field>
+            </div>
+          )
+        })}
+      </div>
+    </div>
   )
 }
 

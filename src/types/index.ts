@@ -243,9 +243,34 @@ export interface TabConfig {
   field_rules?: Record<string, VisibilityRule>
 }
 
+// ============================================================
+// Prospect types (the simple, client-facing customization model)
+// ============================================================
+// A "type de prospect" is a named profile (Photographe, Agence de
+// com, Investisseur…) that carries its own set of custom fields. When
+// creating a prospect the user first picks a type, then only that
+// type's fields are asked. This replaces the old, hard-to-configure
+// discriminator + conditional-visibility machinery: the type IS the
+// discriminator, and there are no rules to wire up.
+export interface ProspectType {
+  id: string
+  label: string                 // "Photographe", "Agence de communication"…
+  emoji?: string                // small visual marker shown on the picker card
+  color?: string                // hex accent for the card, e.g. '#db2777'
+  description?: string          // one-liner shown under the label on the card
+  fields: CustomField[]         // the questions asked for this type
+  position: number              // order in the picker
+}
+
+// Reserved key inside prospects.custom_data that stores the chosen
+// ProspectType id. Underscore-prefixed so it can never collide with a
+// user-defined field key (slugify strips leading underscores).
+export const PROSPECT_TYPE_KEY = '__type'
+
 export interface CustomFieldsSchema {
   tabs: Record<BuiltInTab, TabConfig>
   sections: CustomSection[]
+  prospect_types: ProspectType[]
 }
 
 export const DEFAULT_CUSTOM_FIELDS_SCHEMA: CustomFieldsSchema = {
@@ -255,6 +280,7 @@ export const DEFAULT_CUSTOM_FIELDS_SCHEMA: CustomFieldsSchema = {
     crm:     { hidden_fields: [] },
   },
   sections: [],
+  prospect_types: [],
 }
 
 // Sanitize a possibly-untyped visibility rule from the DB. Returns
@@ -292,19 +318,109 @@ export function normalizeSchema(raw: unknown): CustomFieldsSchema {
     crm:     normalizeTab(obj.tabs?.crm),
   }
 
+  const normalizeFields = (raw: unknown): CustomField[] =>
+    (Array.isArray(raw) ? raw : []).map((f) => ({
+      ...f,
+      delegable: f.type === 'select' ? Boolean(f.delegable) : false,
+      is_type_selector: f.type === 'select' ? Boolean(f.is_type_selector) : false,
+    })) as CustomField[]
+
   const sections = (obj.sections ?? []).map((s) => ({
     id: s.id,
     label: s.label,
     tab: (s.tab && BUILTIN_TAB_ORDER.includes(s.tab)) ? s.tab : 'company',
     position: typeof s.position === 'number' ? s.position : 0,
-    fields: (s.fields ?? []).map((f) => ({
-      ...f,
-      delegable: f.type === 'select' ? Boolean(f.delegable) : false,
-      is_type_selector: f.type === 'select' ? Boolean(f.is_type_selector) : false,
-    })),
+    fields: normalizeFields(s.fields),
     visible_when: normalizeRule((s as { visible_when?: unknown }).visible_when),
   })) as CustomSection[]
-  return { tabs, sections }
+
+  const prospect_types = normalizeProspectTypes(obj.prospect_types, sections, normalizeFields)
+
+  return { tabs, sections, prospect_types }
+}
+
+// Deterministic slug used as a stable id for *migrated* prospect types
+// so that prospects keep pointing at the right type across reloads
+// (we can't use crypto.randomUUID — it would change every load).
+function slugId(label: string): string {
+  return (
+    label
+      .toLowerCase()
+      .normalize('NFD')
+      .replace(/[̀-ͯ]/g, '')
+      .replace(/[^a-z0-9]+/g, '_')
+      .replace(/^_+|_+$/g, '') || 'type'
+  )
+}
+
+// Build the prospect_types list. If the row already has a typed list
+// we just sanitize it. Otherwise we auto-migrate from the legacy model:
+// the old "is_type_selector" select field's options become the types,
+// and the custom fields of each conditionally-visible section are
+// distributed onto the types they were gated to (always-visible
+// sections apply to every type). This means a tenant that configured
+// the old discriminator UI gets a working type model for free.
+function normalizeProspectTypes(
+  raw: unknown,
+  sections: CustomSection[],
+  normalizeFields: (raw: unknown) => CustomField[],
+): ProspectType[] {
+  if (Array.isArray(raw)) {
+    return raw
+      .map((t, i) => {
+        const obj = (t && typeof t === 'object') ? t as Partial<ProspectType> : {}
+        if (typeof obj.id !== 'string' || typeof obj.label !== 'string') return null
+        return {
+          id: obj.id,
+          label: obj.label,
+          emoji: typeof obj.emoji === 'string' ? obj.emoji : undefined,
+          color: typeof obj.color === 'string' ? obj.color : undefined,
+          description: typeof obj.description === 'string' ? obj.description : undefined,
+          fields: normalizeFields(obj.fields),
+          position: typeof obj.position === 'number' ? obj.position : i,
+        } as ProspectType
+      })
+      .filter((t): t is ProspectType => t !== null)
+      .sort((a, b) => a.position - b.position)
+  }
+
+  // --- legacy migration -----------------------------------------------------
+  let selector: { key: string; options: string[] } | null = null
+  for (const s of sections) {
+    for (const f of s.fields) {
+      if (f.is_type_selector && f.type === 'select' && Array.isArray(f.options) && f.options.length) {
+        selector = { key: f.key, options: f.options }
+        break
+      }
+    }
+    if (selector) break
+  }
+  if (!selector) return []
+
+  const types: ProspectType[] = selector.options.map((opt, i) => ({
+    id: slugId(opt),
+    label: opt,
+    fields: [],
+    position: i,
+  }))
+  const byLabel = new Map(types.map((t) => [t.label, t]))
+
+  for (const section of sections) {
+    // Drop the selector field itself — it became the type, not a question.
+    const fields = section.fields.filter((f) => !f.is_type_selector)
+    if (fields.length === 0) continue
+    const rule = section.visible_when
+    const targets = rule && rule.field_key === selector.key && rule.values.length
+      ? rule.values.map((v) => byLabel.get(v)).filter((t): t is ProspectType => !!t)
+      : types // no rule (or unrelated rule) → shared across every type
+    for (const t of targets) {
+      for (const f of fields) {
+        if (!t.fields.some((existing) => existing.key === f.key)) t.fields.push(f)
+      }
+    }
+  }
+
+  return types
 }
 
 // ============================================================
