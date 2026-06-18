@@ -72,3 +72,22 @@ export function discriminatorCandidates(schema: CustomFieldsSchema): Array<{
   }
   return out
 }
+
+// The rubric that gates the new-prospect form as a wizard's first
+// step. Only one can be active at a time (the first one found wins
+// if the owner accidentally marks several). Returns null if no
+// rubric is currently designated as the type selector.
+export function findTypeSelector(schema: CustomFieldsSchema): {
+  key: string
+  label: string
+  options: string[]
+} | null {
+  for (const section of schema.sections) {
+    for (const field of section.fields) {
+      if (field.is_type_selector && field.type === 'select' && Array.isArray(field.options) && field.options.length > 0) {
+        return { key: field.key, label: field.label, options: field.options }
+      }
+    }
+  }
+  return null
+}

@@ -686,6 +686,23 @@ function FieldRow({
           </span>
         </label>
       )}
+
+      {field.type === 'select' && (
+        <label
+          className="ml-7 flex cursor-pointer items-center gap-2 rounded-btn border border-dashed border-border bg-bg/50 px-3 py-2 text-[12px] text-muted hover:border-primary/50 hover:text-text transition-colors"
+          title="Cette rubrique devient la première étape du formulaire 'Nouveau prospect'. Une seule rubrique par espace peut jouer ce rôle."
+        >
+          <Toggle
+            checked={!!field.is_type_selector}
+            onChange={() => onUpdate({ is_type_selector: !field.is_type_selector })}
+          />
+          <Eye size={13} className="text-muted" />
+          <span>
+            <span className="font-semibold text-text">Sélecteur de type</span>
+            <span className="ml-1.5 text-muted">— le formulaire commence par demander ce champ</span>
+          </span>
+        </label>
+      )}
     </div>
   )
 }

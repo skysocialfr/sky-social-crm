@@ -7,7 +7,7 @@ import { PRIORITIES, CHANNELS, COMPANY_SIZES, SERVICES, CURRENCIES, DEFAULT_STAG
 import { useTheme } from '@/context/ThemeContext'
 import { useTeamMembers, useCurrentMember } from '@/hooks/useTeam'
 import { usePipelines } from '@/hooks/usePipelines'
-import { isSectionVisible, isBuiltinFieldVisible } from '@/lib/visibility'
+import { isSectionVisible, isBuiltinFieldVisible, findTypeSelector } from '@/lib/visibility'
 import DynamicFieldInput from '@/components/forms/DynamicFieldInput'
 import { BUILTIN_TAB_ORDER, BUILTIN_TAB_DEFAULT_LABELS } from '@/types'
 import type { BuiltInTab, Prospect, ProspectFormData, CustomFieldValue, CustomSection } from '@/types'
@@ -150,6 +150,17 @@ export default function ProspectForm({ open, onOpenChange, prospect, defaultStag
   const [submitError, setSubmitError] = useState('')
   const [saving, setSaving] = useState(false)
 
+  // Wizard mode: if a rubric is marked "type selector" and we're
+  // creating a new prospect that has no value for it yet, the form
+  // opens on a dedicated picker step instead of the regular fields.
+  // Editing existing prospects always skips the wizard.
+  const typeSelector = findTypeSelector(customFieldsSchema)
+  const isNew = !prospect
+  const typeSelectorValue = typeSelector
+    ? (form.custom_data[typeSelector.key] as string | undefined)
+    : undefined
+  const [wizardShown, setWizardShown] = useState(false)
+
   useEffect(() => {
     if (!open) return
     if (prospect) {
@@ -186,7 +197,12 @@ export default function ProspectForm({ open, onOpenChange, prospect, defaultStag
     setErrors({})
     setSubmitError('')
     setTab('company')
-  }, [open, prospect, defaultStage, defaultPipelineId])
+    // Show the wizard whenever we're creating a new prospect and a
+    // type selector is configured. Editing an existing prospect
+    // skips the wizard (the user can still change the type from
+    // the rubric in the regular form).
+    setWizardShown(!prospect && !!typeSelector)
+  }, [open, prospect, defaultStage, defaultPipelineId, typeSelector])
 
   const setCustomField = (key: string, value: CustomFieldValue) => {
     setForm(f => {
@@ -281,18 +297,69 @@ export default function ProspectForm({ open, onOpenChange, prospect, defaultStag
             </Dialog.Close>
           </div>
 
-          {/* Tabs */}
-          <div className="flex border-b border-border px-6 overflow-x-auto">
-            {BUILTIN_TAB_ORDER.map((t) => (
-              <button key={t} type="button" onClick={() => setTab(t)}
-                className={cn('flex-shrink-0 px-4 py-3 text-sm font-medium border-b-2 -mb-px transition-colors',
-                  tab === t ? 'border-primary text-primary' : 'border-transparent text-muted-foreground hover:text-foreground'
-                )}
-              >{tabLabel(t)}</button>
-            ))}
-          </div>
+          {/* Wizard step — only when creating + a type selector is configured */}
+          {wizardShown && typeSelector && (
+            <div className="flex flex-1 flex-col overflow-y-auto px-6 py-8">
+              <div className="mx-auto w-full max-w-md flex flex-col gap-4">
+                <div className="text-center">
+                  <p className="text-[11px] font-semibold uppercase tracking-wider text-primary mb-2">Étape 1 sur 2</p>
+                  <h2 className="text-xl font-bold text-text">{typeSelector.label}</h2>
+                  <p className="text-sm text-muted mt-1">Choisis le type de prospect pour adapter le formulaire.</p>
+                </div>
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 mt-2">
+                  {typeSelector.options.map((opt) => (
+                    <button
+                      key={opt}
+                      type="button"
+                      onClick={() => {
+                        setCustomField(typeSelector.key, opt)
+                        setWizardShown(false)
+                      }}
+                      className="rounded-card border border-border bg-card px-4 py-4 text-left text-sm font-semibold text-text hover:border-primary hover:bg-primary-light hover:shadow-card transition-all"
+                    >
+                      {opt}
+                    </button>
+                  ))}
+                </div>
+                <button
+                  type="button"
+                  onClick={() => setWizardShown(false)}
+                  className="mt-2 text-center text-xs font-medium text-muted hover:text-text transition-colors"
+                >
+                  Passer cette étape
+                </button>
+              </div>
+            </div>
+          )}
 
-          <form onSubmit={handleSubmit} className="flex flex-col flex-1 overflow-hidden">
+          {/* Tabs — hidden during the wizard step */}
+          {!wizardShown && (
+            <div className="flex border-b border-border px-6 overflow-x-auto">
+              {BUILTIN_TAB_ORDER.map((t) => (
+                <button key={t} type="button" onClick={() => setTab(t)}
+                  className={cn('flex-shrink-0 px-4 py-3 text-sm font-medium border-b-2 -mb-px transition-colors',
+                    tab === t ? 'border-primary text-primary' : 'border-transparent text-muted-foreground hover:text-foreground'
+                  )}
+                >{tabLabel(t)}</button>
+              ))}
+              {typeSelector && typeSelectorValue && (
+                <div className="ml-auto flex items-center gap-2 py-2">
+                  <span className="rounded-pill bg-primary-light text-primary border border-primary-border px-2.5 py-0.5 text-[11px] font-semibold">
+                    {typeSelectorValue}
+                  </span>
+                  <button
+                    type="button"
+                    onClick={() => setWizardShown(true)}
+                    className="text-[11px] font-medium text-muted hover:text-primary transition-colors"
+                  >
+                    Changer
+                  </button>
+                </div>
+              )}
+            </div>
+          )}
+
+          <form onSubmit={handleSubmit} className={cn('flex flex-col flex-1 overflow-hidden', wizardShown && 'hidden')}>
             <div className="flex-1 overflow-y-auto px-6 py-5">
 
               {/* ENTREPRISE */}
