@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react'
 import { ChevronDown, ChevronUp, Plus, Trash2, Pencil, EyeOff, Eye, GripVertical, Check, X, Users } from 'lucide-react'
 import { useTheme } from '@/context/ThemeContext'
 import Toggle from '@/components/common/Toggle'
+import VisibilityRuleEditor from '@/components/settings/VisibilityRuleEditor'
 import { cn } from '@/lib/cn'
 import { BUILTIN_FIELDS } from '@/lib/builtinFields'
 import { slugify } from '@/lib/slugify'
@@ -15,6 +16,7 @@ import type {
   CustomFieldType,
   CustomSection,
   CustomFieldsSchema,
+  VisibilityRule,
 } from '@/types'
 
 const TYPE_OPTIONS: { value: CustomFieldType; label: string }[] = [
@@ -114,6 +116,31 @@ export default function CustomFieldsEditor() {
       const hidden = s.tabs[tab].hidden_fields
       const next = hidden.includes(key) ? hidden.filter(k => k !== key) : [...hidden, key]
       return { ...s, tabs: { ...s.tabs, [tab]: { ...s.tabs[tab], hidden_fields: next } } }
+    })
+  }
+
+  // Attach or clear a conditional visibility rule on a native field.
+  // Passing `undefined` removes the rule (field becomes unconditionally
+  // visible again, subject to hidden_fields).
+  const setNativeFieldRule = (tab: BuiltInTab, key: string, rule: VisibilityRule | undefined) => {
+    setSchema(s => {
+      const tabConfig = s.tabs[tab]
+      const nextRules = { ...(tabConfig.field_rules ?? {}) }
+      if (rule) {
+        nextRules[key] = rule
+      } else {
+        delete nextRules[key]
+      }
+      return {
+        ...s,
+        tabs: {
+          ...s.tabs,
+          [tab]: {
+            ...tabConfig,
+            field_rules: Object.keys(nextRules).length > 0 ? nextRules : undefined,
+          },
+        },
+      }
     })
   }
 
@@ -350,9 +377,10 @@ export default function CustomFieldsEditor() {
           {builtinForActive.map(field => {
             const hidden = hiddenInActive.has(field.key)
             const locked = !!field.required
+            const rule = schema.tabs[activeTab].field_rules?.[field.key]
             return (
-              <div key={field.key} className="flex items-center justify-between px-5 py-2.5">
-                <div className="flex items-center gap-2">
+              <div key={field.key} className="flex items-center justify-between px-5 py-2.5 gap-2">
+                <div className="flex items-center gap-2 min-w-0">
                   {hidden ? (
                     <EyeOff size={14} className="text-muted" />
                   ) : (
@@ -367,11 +395,22 @@ export default function CustomFieldsEditor() {
                     </span>
                   )}
                 </div>
-                <Toggle
-                  checked={!hidden}
-                  onChange={() => toggleFieldVisibility(activeTab, field.key)}
-                  disabled={locked}
-                />
+                <div className="flex items-center gap-2 flex-shrink-0">
+                  {!hidden && !locked && (
+                    <VisibilityRuleEditor
+                      variant="compact"
+                      rule={rule}
+                      onChange={r => setNativeFieldRule(activeTab, field.key, r)}
+                      schema={schema}
+                      label={`le champ « ${field.label} »`}
+                    />
+                  )}
+                  <Toggle
+                    checked={!hidden}
+                    onChange={() => toggleFieldVisibility(activeTab, field.key)}
+                    disabled={locked}
+                  />
+                </div>
               </div>
             )
           })}
@@ -470,6 +509,14 @@ export default function CustomFieldsEditor() {
 
               {isOpen && (
                 <div className="flex flex-col">
+                  <div className="px-5 py-3 border-b border-border">
+                    <VisibilityRuleEditor
+                      rule={section.visible_when}
+                      onChange={r => updateSection(section.id, { visible_when: r })}
+                      schema={schema}
+                      label="cette rubrique"
+                    />
+                  </div>
                   {section.fields.length === 0 ? (
                     <p className="px-5 py-4 text-[13px] text-muted text-center">
                       Aucun champ dans cette rubrique.
