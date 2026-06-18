@@ -9,7 +9,7 @@ import { dicebearAvatar } from '@/lib/avatar'
 import { formatDate, isOverdue } from '@/lib/dateUtils'
 import { cn } from '@/lib/cn'
 import { useTheme } from '@/context/ThemeContext'
-import { resolveProspectType } from '@/lib/prospectTypes'
+import { resolveProspectType, prospectDisplayName } from '@/lib/prospectTypes'
 import type { Prospect, PipelineStageDef } from '@/types'
 
 type SortKey = 'company_name' | 'stage' | 'priority' | 'deal_value' | 'next_followup_date' | 'created_at'
@@ -167,7 +167,7 @@ export default function ProspectsTable({ prospects, stages, onEdit, onDelete }: 
                   <div className="min-w-0">
                     <div className="flex items-center gap-1.5 min-w-0">
                       <p className="text-sm font-bold text-text truncate leading-tight">
-                        {p.company_name}
+                        {prospectDisplayName(p, customFieldsSchema)}
                       </p>
                       {(() => {
                         const t = resolveProspectType(p.custom_data, customFieldsSchema)
@@ -187,10 +187,12 @@ export default function ProspectsTable({ prospects, stages, onEdit, onDelete }: 
                         )
                       })()}
                     </div>
-                    <p className="text-[11px] text-muted truncate">
-                      {p.first_name} {p.last_name}
-                      {p.sector ? ` · ${p.sector}` : ''}
-                    </p>
+                    {(() => {
+                      const line = [`${p.first_name ?? ''} ${p.last_name ?? ''}`.trim(), p.sector]
+                        .filter(Boolean)
+                        .join(' · ')
+                      return line ? <p className="text-[11px] text-muted truncate">{line}</p> : null
+                    })()}
                   </div>
                 </div>
               </td>

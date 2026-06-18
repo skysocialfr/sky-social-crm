@@ -202,6 +202,10 @@ export interface CustomField {
   delegable?: boolean           // type=select only: usable as a team-member territory
   is_type_selector?: boolean    // type=select only: gates the new-prospect form
                                 // as a wizard's first step (one per tenant)
+  // Type-driven model:
+  section_id?: string           // which onglet (ProspectTypeSection) the field sits in
+  is_title?: boolean            // this field's value is copied to company_name (the
+                                // prospect's display title). One per type.
 }
 
 // Conditional visibility: a section or a native field can be marked
@@ -252,6 +256,16 @@ export interface TabConfig {
 // type's fields are asked. This replaces the old, hard-to-configure
 // discriminator + conditional-visibility machinery: the type IS the
 // discriminator, and there are no rules to wire up.
+// An "onglet" inside a type — a named group of fields. The client can
+// add/rename/remove these freely; the new-prospect form renders one tab
+// per section (plus a fixed "Suivi" tab for CRM mechanics). When a type
+// has no sections, all its fields render in a single default tab.
+export interface ProspectTypeSection {
+  id: string
+  label: string
+  position: number
+}
+
 export interface ProspectType {
   id: string
   label: string                 // "Photographe", "Agence de communication"…
@@ -259,6 +273,7 @@ export interface ProspectType {
   color?: string                // hex accent for the card, e.g. '#db2777'
   description?: string          // one-liner shown under the label on the card
   fields: CustomField[]         // the questions asked for this type
+  sections?: ProspectTypeSection[] // optional onglets to group the fields
   position: number              // order in the picker
 }
 
@@ -370,6 +385,16 @@ function normalizeProspectTypes(
       .map((t, i) => {
         const obj = (t && typeof t === 'object') ? t as Partial<ProspectType> : {}
         if (typeof obj.id !== 'string' || typeof obj.label !== 'string') return null
+        const sections = Array.isArray(obj.sections)
+          ? obj.sections
+              .map((s, si) => {
+                const so = (s && typeof s === 'object') ? s as Partial<ProspectTypeSection> : {}
+                if (typeof so.id !== 'string' || typeof so.label !== 'string') return null
+                return { id: so.id, label: so.label, position: typeof so.position === 'number' ? so.position : si }
+              })
+              .filter((s): s is ProspectTypeSection => s !== null)
+              .sort((a, b) => a.position - b.position)
+          : undefined
         return {
           id: obj.id,
           label: obj.label,
@@ -377,6 +402,7 @@ function normalizeProspectTypes(
           color: typeof obj.color === 'string' ? obj.color : undefined,
           description: typeof obj.description === 'string' ? obj.description : undefined,
           fields: normalizeFields(obj.fields),
+          sections: sections && sections.length ? sections : undefined,
           position: typeof obj.position === 'number' ? obj.position : i,
         } as ProspectType
       })

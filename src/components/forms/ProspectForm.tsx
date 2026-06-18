@@ -8,7 +8,7 @@ import { useTheme } from '@/context/ThemeContext'
 import { useTeamMembers, useCurrentMember } from '@/hooks/useTeam'
 import { usePipelines } from '@/hooks/usePipelines'
 import { isSectionVisible, isBuiltinFieldVisible } from '@/lib/visibility'
-import { resolveProspectType } from '@/lib/prospectTypes'
+import { resolveProspectType, getTitleValue } from '@/lib/prospectTypes'
 import DynamicFieldInput from '@/components/forms/DynamicFieldInput'
 import { BUILTIN_TAB_ORDER, BUILTIN_TAB_DEFAULT_LABELS, PROSPECT_TYPE_KEY } from '@/types'
 import type { BuiltInTab, Prospect, ProspectFormData, CustomFieldValue, CustomSection, CustomField, ProspectType } from '@/types'
@@ -23,10 +23,6 @@ interface Props {
 }
 
 function Field({ label, required, error, children }: { label: string; required?: boolean; error?: string; children: ReactNode }) {
-  // Wire up htmlFor ↔ id and aria-* without forcing every call site to
-  // hand-roll matching ids. React.useId() gives us a stable unique id
-  // per Field instance; we clone the (single) input/select/textarea
-  // child to inject id + aria-invalid + aria-describedby + aria-required.
   const id = useId()
   const errorId = useId()
 
@@ -112,6 +108,22 @@ const emptyForm = (defaultStage = 'Identifié', defaultPipelineId = ''): FormSta
   assigned_to: null,
 })
 
+const SUIVI_TAB_ID = '__suivi'
+
+// Group a type's fields into its onglets (sections). With no sections,
+// all fields live in a single default tab named after the type.
+function typeFieldTabs(type: ProspectType): { id: string; label: string; fields: CustomField[] }[] {
+  const secs = (type.sections ?? []).slice().sort((a, b) => a.position - b.position)
+  if (!secs.length) return [{ id: '__main', label: type.label, fields: type.fields }]
+  const firstId = secs[0].id
+  const byId = new Map<string, CustomField[]>(secs.map(s => [s.id, [] as CustomField[]]))
+  for (const f of type.fields) {
+    const sid = f.section_id && byId.has(f.section_id) ? f.section_id : firstId
+    byId.get(sid)!.push(f)
+  }
+  return secs.map(s => ({ id: s.id, label: s.label, fields: byId.get(s.id)! }))
+}
+
 export default function ProspectForm({ open, onOpenChange, prospect, defaultStage, defaultPipelineId, onSubmit }: Props) {
   const { customFieldsSchema } = useTheme()
   const { data: teamMembers = [] } = useTeamMembers()
@@ -119,27 +131,46 @@ export default function ProspectForm({ open, onOpenChange, prospect, defaultStag
   const { data: pipelines = [] } = usePipelines()
   const isOwner = currentMember?.role === 'owner'
 
+  const [tab, setTab] = useState<string>('company')
+  const [form, setForm] = useState<FormState>(emptyForm(defaultStage))
+  const [errors, setErrors] = useState<Partial<Record<keyof FormState, string>>>({})
+  const [submitError, setSubmitError] = useState('')
+  const [saving, setSaving] = useState(false)
+  const [wizardShown, setWizardShown] = useState(false)
+
+  const prospectTypes = customFieldsSchema.prospect_types
+  const hasTypes = prospectTypes.length > 0
+  const selectedType = resolveProspectType(form.custom_data, customFieldsSchema)
+  // Type-driven layout when a type is chosen; otherwise the legacy
+  // built-in tabs (company / contact / crm).
+  const typeMode = !!selectedType
+
   // Stages of the pipeline currently selected in the form.
   const activeStages = useMemo(() => {
-    const id = prospect?.pipeline_id ?? defaultPipelineId ?? null
+    const id = form.pipeline_id || prospect?.pipeline_id || defaultPipelineId || null
     const pl = id ? pipelines.find(p => p.id === id) : null
     return pl?.stages?.length ? pl.stages : DEFAULT_STAGES
-  }, [prospect, defaultPipelineId, pipelines])
+  }, [form.pipeline_id, prospect, defaultPipelineId, pipelines])
 
-  // Per-tenant label for a given built-in tab (falls back to default).
-  const tabLabel = (t: BuiltInTab): string =>
-    customFieldsSchema.tabs[t].label?.trim() || BUILTIN_TAB_DEFAULT_LABELS[t]
+  // Tabs to render: type onglets + a fixed "Suivi" tab in type mode,
+  // or the three built-in tabs in legacy mode.
+  const contentTabs = useMemo(
+    () => (selectedType ? typeFieldTabs(selectedType) : []),
+    [selectedType],
+  )
+  const tabs: { id: string; label: string }[] = typeMode
+    ? [...contentTabs.map(t => ({ id: t.id, label: t.label })), { id: SUIVI_TAB_ID, label: 'Suivi' }]
+    : BUILTIN_TAB_ORDER.map(t => ({ id: t, label: tabLabel(t) }))
+  const activeTabId = tabs.some(t => t.id === tab) ? tab : tabs[0]?.id
 
-  // True if a built-in field should be hidden in the current form state.
-  // Combines tenant-level hiding (hidden_fields) with conditional rules
-  // that depend on the live form.custom_data (e.g. "show 'site web'
-  // only when type d'acteur = Entreprise B2B").
+  function tabLabel(t: BuiltInTab): string {
+    return customFieldsSchema.tabs[t].label?.trim() || BUILTIN_TAB_DEFAULT_LABELS[t]
+  }
+
   const isHidden = (t: BuiltInTab, fieldKey: string): boolean =>
     !isBuiltinFieldVisible(customFieldsSchema, t, fieldKey, form.custom_data)
 
-  // Legacy custom sections inside a given built-in tab. Only used for
-  // tenants still on the old model (no prospect types configured) —
-  // when types exist, the selected type's fields replace them.
+  // Legacy custom sections (only used when no prospect types exist).
   const sectionsFor = (t: BuiltInTab): CustomSection[] =>
     customFieldsSchema.prospect_types.length > 0
       ? []
@@ -147,23 +178,6 @@ export default function ProspectForm({ open, onOpenChange, prospect, defaultStag
           .filter(s => s.tab === t)
           .filter(s => isSectionVisible(s, form.custom_data))
           .sort((a, b) => a.position - b.position)
-
-  const [tab, setTab] = useState<BuiltInTab>('company')
-  const [form, setForm] = useState<FormState>(emptyForm(defaultStage))
-  const [errors, setErrors] = useState<Partial<Record<keyof FormState, string>>>({})
-  const [submitError, setSubmitError] = useState('')
-  const [saving, setSaving] = useState(false)
-
-  // Wizard mode: when creating a new prospect and the team has
-  // configured prospect types, the form opens on a dedicated type
-  // picker. Once a type is chosen we only ask that type's fields.
-  // Editing an existing prospect skips the picker (the type is shown
-  // as a chip and can still be changed).
-  const prospectTypes = customFieldsSchema.prospect_types
-  const hasTypes = prospectTypes.length > 0
-  const isNew = !prospect
-  const selectedType = resolveProspectType(form.custom_data, customFieldsSchema)
-  const [wizardShown, setWizardShown] = useState(false)
 
   useEffect(() => {
     if (!open) return
@@ -218,6 +232,13 @@ export default function ProspectForm({ open, onOpenChange, prospect, defaultStag
     })
   }
 
+  const pickType = (type: ProspectType) => {
+    setCustomField(PROSPECT_TYPE_KEY, type.id)
+    const first = typeFieldTabs(type)[0]
+    setTab(first?.id ?? SUIVI_TAB_ID)
+    setWizardShown(false)
+  }
+
   const set = (key: keyof FormState, value: string | string[]) => {
     setForm(f => ({ ...f, [key]: value }))
     setErrors(e => ({ ...e, [key]: undefined }))
@@ -228,27 +249,36 @@ export default function ProspectForm({ open, onOpenChange, prospect, defaultStag
     set('services_interested', list.includes(s) ? list.filter(x => x !== s) : [...list, s])
   }
 
+  const isCustomEmpty = (v: CustomFieldValue | undefined) =>
+    v == null || v === '' || (Array.isArray(v) && v.length === 0)
+
   const validate = (): boolean => {
     const errs: Partial<Record<keyof FormState, string>> = {}
-    if (!form.company_name.trim()) errs.company_name = 'Nom de l\'entreprise requis'
-    if (!form.first_name.trim()) errs.first_name = 'Prénom requis'
-    if (!form.last_name.trim()) errs.last_name = 'Nom requis'
+    // Built-in identity fields are only mandatory in legacy mode; in
+    // type mode the type's own (required) fields stand in for them.
+    if (!typeMode) {
+      if (!form.company_name.trim()) errs.company_name = 'Nom de l\'entreprise requis'
+      if (!form.first_name.trim()) errs.first_name = 'Prénom requis'
+      if (!form.last_name.trim()) errs.last_name = 'Nom requis'
+    }
     if (form.email && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(form.email)) errs.email = 'Email invalide'
     setErrors(errs)
 
-    // Required fields of the selected type live in custom_data.
-    const isCustomEmpty = (v: CustomFieldValue | undefined) =>
-      v == null || v === '' || (Array.isArray(v) && v.length === 0)
     const missingType = (selectedType?.fields ?? []).filter(
       f => f.required && isCustomEmpty(form.custom_data[f.key]),
     )
 
-    if (errs.company_name) setTab('company')
-    else if (errs.first_name || errs.last_name || errs.email) setTab('contact')
-    else if (missingType.length) setTab('company')
+    if (!typeMode && errs.company_name) setTab('company')
+    else if (!typeMode && (errs.first_name || errs.last_name || errs.email)) setTab('contact')
+    else if (missingType.length && selectedType) {
+      // Jump to the first content tab that holds a missing field.
+      const tabsForType = typeFieldTabs(selectedType)
+      const target = tabsForType.find(ct => ct.fields.some(f => missingType.includes(f)))
+      setTab(target?.id ?? tabsForType[0]?.id ?? SUIVI_TAB_ID)
+    }
 
     if (missingType.length) {
-      setSubmitError(`Champs requis manquants pour ce type : ${missingType.map(f => f.label).join(', ')}.`)
+      setSubmitError(`Champs requis manquants : ${missingType.map(f => f.label).join(', ')}.`)
     }
     return Object.keys(errs).length === 0 && missingType.length === 0
   }
@@ -259,8 +289,12 @@ export default function ProspectForm({ open, onOpenChange, prospect, defaultStag
     setSaving(true)
     setSubmitError('')
     try {
+      // In type mode the prospect's title comes from its type fields and
+      // is mirrored into company_name so lists / search / detail keep
+      // working without any built-in name field.
+      const companyName = (selectedType ? getTitleValue(selectedType, form.custom_data) : '') || form.company_name.trim()
       await onSubmit({
-        company_name: form.company_name.trim(),
+        company_name: companyName,
         sector: form.sector.trim() || null,
         company_size: (form.company_size || null) as ProspectFormData['company_size'],
         website: form.website.trim() || null,
@@ -284,8 +318,6 @@ export default function ProspectForm({ open, onOpenChange, prospect, defaultStag
         next_followup_date: form.next_followup_date || null,
         notes: form.notes.trim() || null,
         custom_data: form.custom_data,
-        // Only the owner can change assigned_to; for everyone else we omit
-        // it on update so the BEFORE-UPDATE trigger doesn't reject.
         ...(isOwner ? { assigned_to: form.assigned_to } : {}),
       } as ProspectFormData)
       onOpenChange(false)
@@ -295,6 +327,102 @@ export default function ProspectForm({ open, onOpenChange, prospect, defaultStag
       setSaving(false)
     }
   }
+
+  // The CRM / "Suivi" mechanics, shared by the type-mode Suivi tab and
+  // the legacy CRM tab.
+  const renderSuivi = () => (
+    <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+      {pipelines.length > 1 && (
+        <div className="col-span-full">
+          <Field label="Pipeline">
+            <select
+              className={inputClass}
+              value={form.pipeline_id}
+              onChange={e => {
+                const newPipelineId = e.target.value
+                const newPl = pipelines.find(p => p.id === newPipelineId)
+                const firstStage = newPl?.stages?.[0]?.label ?? form.stage
+                const stageStillValid = newPl?.stages?.some(s => s.label === form.stage)
+                setForm(f => ({ ...f, pipeline_id: newPipelineId, stage: stageStillValid ? f.stage : firstStage }))
+              }}
+            >
+              {pipelines.map(p => (
+                <option key={p.id} value={p.id}>{p.name}{p.is_default ? ' (défaut)' : ''}</option>
+              ))}
+            </select>
+          </Field>
+        </div>
+      )}
+      <Field label="Étape du pipeline">
+        <select className={inputClass} value={form.stage} onChange={e => set('stage', e.target.value)}>
+          {activeStages.map(s => <option key={s.label} value={s.label}>{s.label}</option>)}
+        </select>
+      </Field>
+      <Field label="Priorité">
+        <select className={inputClass} value={form.priority} onChange={e => set('priority', e.target.value)}>
+          {PRIORITIES.map(p => <option key={p} value={p}>{p}</option>)}
+        </select>
+      </Field>
+      <div className="col-span-full">
+        <Field label="Canal de prospection">
+          <select className={inputClass} value={form.channel} onChange={e => set('channel', e.target.value)}>
+            {CHANNELS.map(c => <option key={c} value={c}>{c}</option>)}
+          </select>
+        </Field>
+      </div>
+      {teamMembers.length > 1 && (
+        <div className="col-span-full">
+          <Field label={isOwner ? 'Assigné à' : 'Assigné à (lecture seule)'}>
+            <select
+              className={cn(inputClass, !isOwner && 'opacity-60 cursor-not-allowed')}
+              value={form.assigned_to ?? ''}
+              onChange={e => setForm(f => ({ ...f, assigned_to: e.target.value || null }))}
+              disabled={!isOwner}
+            >
+              <option value="">— Non assigné —</option>
+              {teamMembers.map(m => (
+                <option key={m.user_id} value={m.user_id}>
+                  {m.display_name?.trim() || m.email || m.user_id}{m.role === 'owner' ? ' (propriétaire)' : ''}
+                </option>
+              ))}
+            </select>
+          </Field>
+        </div>
+      )}
+      <div className="col-span-full">
+        <label className="mb-2 block text-xs font-medium text-muted-foreground">Services intéressés</label>
+        <div className="flex flex-wrap gap-2">
+          {SERVICES.map(s => (
+            <button key={s} type="button" onClick={() => toggleService(s)}
+              className={cn('rounded-full border px-3 py-1 text-xs font-medium transition-colors',
+                form.services_interested.includes(s)
+                  ? 'border-primary bg-primary/15 text-primary'
+                  : 'border-border text-muted-foreground hover:border-primary/50 hover:text-foreground'
+              )}
+            >{s}</button>
+          ))}
+        </div>
+      </div>
+      <Field label="Valeur estimée (€)">
+        <input className={inputClass} type="number" min={0} value={form.deal_value} onChange={e => set('deal_value', e.target.value)} placeholder="1500" />
+      </Field>
+      <Field label="Devise">
+        <select className={inputClass} value={form.currency} onChange={e => set('currency', e.target.value)}>
+          {CURRENCIES.map(c => <option key={c} value={c}>{c}</option>)}
+        </select>
+      </Field>
+      <div className="col-span-full">
+        <Field label="Prochain contact">
+          <input className={inputClass} type="date" value={form.next_followup_date} onChange={e => set('next_followup_date', e.target.value)} />
+        </Field>
+      </div>
+      <div className="col-span-full">
+        <Field label="Notes">
+          <textarea className={cn(inputClass, 'resize-none')} rows={3} value={form.notes} onChange={e => set('notes', e.target.value)} placeholder="Informations supplémentaires…" />
+        </Field>
+      </div>
+    </div>
+  )
 
   return (
     <Dialog.Root open={open} onOpenChange={onOpenChange}>
@@ -329,27 +457,18 @@ export default function ProspectForm({ open, onOpenChange, prospect, defaultStag
                       <button
                         key={t.id}
                         type="button"
-                        onClick={() => {
-                          setCustomField(PROSPECT_TYPE_KEY, t.id)
-                          setTab('company')
-                          setWizardShown(false)
-                        }}
+                        onClick={() => pickType(t)}
                         className={cn(
                           'group flex items-center gap-3 rounded-card border bg-card px-4 py-4 text-left transition-all hover:shadow-card',
                           active ? 'border-primary bg-primary-light' : 'border-border hover:border-primary',
                         )}
                       >
-                        <span
-                          className="grid h-11 w-11 flex-shrink-0 place-items-center rounded-btn text-xl"
-                          style={{ background: `${accent}1a` }}
-                        >
+                        <span className="grid h-11 w-11 flex-shrink-0 place-items-center rounded-btn text-xl" style={{ background: `${accent}1a` }}>
                           {t.emoji || '👤'}
                         </span>
                         <span className="min-w-0">
                           <span className="block text-sm font-bold text-text truncate">{t.label}</span>
-                          {t.description && (
-                            <span className="block text-[12px] text-muted truncate">{t.description}</span>
-                          )}
+                          {t.description && <span className="block text-[12px] text-muted truncate">{t.description}</span>}
                         </span>
                       </button>
                     )
@@ -357,7 +476,7 @@ export default function ProspectForm({ open, onOpenChange, prospect, defaultStag
                 </div>
                 <button
                   type="button"
-                  onClick={() => { setCustomField(PROSPECT_TYPE_KEY, null); setWizardShown(false) }}
+                  onClick={() => { setCustomField(PROSPECT_TYPE_KEY, null); setTab('company'); setWizardShown(false) }}
                   className="text-center text-xs font-medium text-muted hover:text-text transition-colors"
                 >
                   Créer sans type
@@ -366,34 +485,26 @@ export default function ProspectForm({ open, onOpenChange, prospect, defaultStag
             </div>
           )}
 
-          {/* Tabs — hidden during the wizard step */}
+          {/* Tabs */}
           {!wizardShown && (
             <div className="flex border-b border-border px-6 overflow-x-auto">
-              {BUILTIN_TAB_ORDER.map((t) => (
-                <button key={t} type="button" onClick={() => setTab(t)}
+              {tabs.map((t) => (
+                <button key={t.id} type="button" onClick={() => setTab(t.id)}
                   className={cn('flex-shrink-0 px-4 py-3 text-sm font-medium border-b-2 -mb-px transition-colors',
-                    tab === t ? 'border-primary text-primary' : 'border-transparent text-muted-foreground hover:text-foreground'
+                    activeTabId === t.id ? 'border-primary text-primary' : 'border-transparent text-muted-foreground hover:text-foreground'
                   )}
-                >{tabLabel(t)}</button>
+                >{t.label}</button>
               ))}
-              {hasTypes && selectedType && (
+              {selectedType && (
                 <div className="ml-auto flex items-center gap-2 py-2">
                   <span
                     className="inline-flex items-center gap-1 rounded-pill border px-2.5 py-0.5 text-[11px] font-semibold"
-                    style={{
-                      color: selectedType.color || undefined,
-                      borderColor: `${selectedType.color || '#6366f1'}55`,
-                      background: `${selectedType.color || '#6366f1'}14`,
-                    }}
+                    style={{ color: selectedType.color || undefined, borderColor: `${selectedType.color || '#6366f1'}55`, background: `${selectedType.color || '#6366f1'}14` }}
                   >
                     <span aria-hidden>{selectedType.emoji || '👤'}</span>
                     {selectedType.label}
                   </span>
-                  <button
-                    type="button"
-                    onClick={() => setWizardShown(true)}
-                    className="text-[11px] font-medium text-muted hover:text-primary transition-colors"
-                  >
+                  <button type="button" onClick={() => setWizardShown(true)} className="text-[11px] font-medium text-muted hover:text-primary transition-colors">
                     Changer
                   </button>
                 </div>
@@ -404,208 +515,134 @@ export default function ProspectForm({ open, onOpenChange, prospect, defaultStag
           <form onSubmit={handleSubmit} className={cn('flex flex-col flex-1 overflow-hidden', wizardShown && 'hidden')}>
             <div className="flex-1 overflow-y-auto px-6 py-5">
 
-              {/* ENTREPRISE */}
-              <div className={cn('flex flex-col gap-6', tab !== 'company' && 'hidden')}>
-                {hasTypes && selectedType && selectedType.fields.length > 0 && (
-                  <TypeFieldsSection type={selectedType} data={form.custom_data} onChange={setCustomField} />
-                )}
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                  <div className="col-span-full">
-                    <Field label="Nom de l'entreprise" required error={errors.company_name}>
-                      <input className={inputClass} value={form.company_name} onChange={e => set('company_name', e.target.value)} placeholder="Ex: Acme SARL" />
-                    </Field>
+              {/* TYPE MODE: one tab per onglet + the Suivi tab */}
+              {typeMode && selectedType && (
+                <>
+                  {contentTabs.map(ct => (
+                    <div key={ct.id} className={cn(activeTabId !== ct.id && 'hidden')}>
+                      {ct.fields.length === 0 ? (
+                        <p className="text-sm text-muted-foreground italic py-4">
+                          Aucun champ dans cet onglet. Ajoute-les depuis Paramètres → Types de prospect.
+                        </p>
+                      ) : (
+                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                          {ct.fields.map(field => {
+                            const fullWidth = field.type === 'textarea' || field.type === 'multiselect'
+                            return (
+                              <div key={field.id} className={cn(fullWidth && 'col-span-full')}>
+                                <Field label={field.label} required={field.required}>
+                                  <DynamicFieldInput field={field} value={form.custom_data[field.key]} onChange={val => setCustomField(field.key, val)} />
+                                </Field>
+                              </div>
+                            )
+                          })}
+                        </div>
+                      )}
+                    </div>
+                  ))}
+                  <div className={cn(activeTabId !== SUIVI_TAB_ID && 'hidden')}>
+                    {renderSuivi()}
                   </div>
-                  {!isHidden('company', 'sector') && (
-                    <Field label="Secteur d'activité">
-                      <input className={inputClass} value={form.sector} onChange={e => set('sector', e.target.value)} placeholder="Ex: Restaurant, E-commerce…" />
-                    </Field>
-                  )}
-                  {!isHidden('company', 'company_size') && (
-                    <Field label="Taille">
-                      <select className={inputClass} value={form.company_size} onChange={e => set('company_size', e.target.value)}>
-                        <option value="">— Sélectionner —</option>
-                        {COMPANY_SIZES.map(s => <option key={s} value={s}>{s}</option>)}
-                      </select>
-                    </Field>
-                  )}
-                  {!isHidden('company', 'website') && (
-                    <Field label="Site web actuel">
-                      <input className={inputClass} value={form.website} onChange={e => set('website', e.target.value)} placeholder="https://…" />
-                    </Field>
-                  )}
-                  {!isHidden('company', 'linkedin_url') && (
-                    <Field label="URL LinkedIn">
-                      <input className={inputClass} value={form.linkedin_url} onChange={e => set('linkedin_url', e.target.value)} placeholder="https://linkedin.com/…" />
-                    </Field>
-                  )}
-                  {!isHidden('company', 'instagram_url') && (
-                    <Field label="URL Instagram">
-                      <input className={inputClass} value={form.instagram_url} onChange={e => set('instagram_url', e.target.value)} placeholder="https://instagram.com/…" />
-                    </Field>
-                  )}
-                  {!isHidden('company', 'google_maps_url') && (
-                    <div className="col-span-full">
-                      <Field label="Fiche Google Maps">
-                        <input className={inputClass} value={form.google_maps_url} onChange={e => set('google_maps_url', e.target.value)} placeholder="https://maps.google.com/…" />
-                      </Field>
-                    </div>
-                  )}
-                  {!isHidden('company', 'city') && (
-                    <Field label="Ville">
-                      <input className={inputClass} value={form.city} onChange={e => set('city', e.target.value)} placeholder="Paris" />
-                    </Field>
-                  )}
-                  {!isHidden('company', 'country') && (
-                    <Field label="Pays">
-                      <input className={inputClass} value={form.country} onChange={e => set('country', e.target.value)} placeholder="France" />
-                    </Field>
-                  )}
-                </div>
-                <CustomSections sections={sectionsFor('company')} data={form.custom_data} onChange={setCustomField} />
-              </div>
+                </>
+              )}
 
-              {/* CONTACT */}
-              <div className={cn('flex flex-col gap-6', tab !== 'contact' && 'hidden')}>
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                  <Field label="Prénom" required error={errors.first_name}>
-                    <input className={inputClass} value={form.first_name} onChange={e => set('first_name', e.target.value)} placeholder="Marie" />
-                  </Field>
-                  <Field label="Nom" required error={errors.last_name}>
-                    <input className={inputClass} value={form.last_name} onChange={e => set('last_name', e.target.value)} placeholder="Dupont" />
-                  </Field>
-                  {!isHidden('contact', 'title') && (
-                    <Field label="Poste / Titre">
-                      <input className={inputClass} value={form.title} onChange={e => set('title', e.target.value)} placeholder="Directrice Marketing" />
-                    </Field>
-                  )}
-                  {!isHidden('contact', 'email') && (
-                    <Field label="Email" error={errors.email}>
-                      <input className={inputClass} type="email" value={form.email} onChange={e => set('email', e.target.value)} placeholder="contact@exemple.fr" />
-                    </Field>
-                  )}
-                  {!isHidden('contact', 'phone') && (
-                    <div className="col-span-full">
-                      <Field label="Téléphone">
-                        <input className={inputClass} value={form.phone} onChange={e => set('phone', e.target.value)} placeholder="+33 6 00 00 00 00" />
-                      </Field>
-                    </div>
-                  )}
-                </div>
-                <CustomSections sections={sectionsFor('contact')} data={form.custom_data} onChange={setCustomField} />
-              </div>
-
-              {/* CRM */}
-              <div className={cn('flex flex-col gap-6', tab !== 'crm' && 'hidden')}>
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                  {pipelines.length > 1 && (
-                    <div className="col-span-full">
-                      <Field label="Pipeline">
-                        <select
-                          className={inputClass}
-                          value={form.pipeline_id}
-                          onChange={e => {
-                            const newPipelineId = e.target.value
-                            const newPl = pipelines.find(p => p.id === newPipelineId)
-                            const firstStage = newPl?.stages?.[0]?.label ?? form.stage
-                            const stageStillValid = newPl?.stages?.some(s => s.label === form.stage)
-                            setForm(f => ({
-                              ...f,
-                              pipeline_id: newPipelineId,
-                              stage: stageStillValid ? f.stage : firstStage,
-                            }))
-                          }}
-                        >
-                          {pipelines.map(p => (
-                            <option key={p.id} value={p.id}>
-                              {p.name}{p.is_default ? ' (défaut)' : ''}
-                            </option>
-                          ))}
-                        </select>
-                      </Field>
-                    </div>
-                  )}
-                  <Field label="Étape du pipeline">
-                    <select className={inputClass} value={form.stage} onChange={e => set('stage', e.target.value)}>
-                      {activeStages.map(s => <option key={s.label} value={s.label}>{s.label}</option>)}
-                    </select>
-                  </Field>
-                  <Field label="Priorité">
-                    <select className={inputClass} value={form.priority} onChange={e => set('priority', e.target.value)}>
-                      {PRIORITIES.map(p => <option key={p} value={p}>{p}</option>)}
-                    </select>
-                  </Field>
-                  <div className="col-span-full">
-                    <Field label="Canal de prospection">
-                      <select className={inputClass} value={form.channel} onChange={e => set('channel', e.target.value)}>
-                        {CHANNELS.map(c => <option key={c} value={c}>{c}</option>)}
-                      </select>
-                    </Field>
-                  </div>
-                  {teamMembers.length > 1 && (
-                    <div className="col-span-full">
-                      <Field label={isOwner ? 'Assigné à' : 'Assigné à (lecture seule)'}>
-                        <select
-                          className={cn(inputClass, !isOwner && 'opacity-60 cursor-not-allowed')}
-                          value={form.assigned_to ?? ''}
-                          onChange={e => setForm(f => ({ ...f, assigned_to: e.target.value || null }))}
-                          disabled={!isOwner}
-                        >
-                          <option value="">— Non assigné —</option>
-                          {teamMembers.map(m => (
-                            <option key={m.user_id} value={m.user_id}>
-                              {m.display_name?.trim() || m.email || m.user_id}
-                              {m.role === 'owner' ? ' (propriétaire)' : ''}
-                            </option>
-                          ))}
-                        </select>
-                      </Field>
-                    </div>
-                  )}
-                  {!isHidden('crm', 'services_interested') && (
-                    <div className="col-span-full">
-                      <label className="mb-2 block text-xs font-medium text-muted-foreground">Services intéressés</label>
-                      <div className="flex flex-wrap gap-2">
-                        {SERVICES.map(s => (
-                          <button key={s} type="button" onClick={() => toggleService(s)}
-                            className={cn('rounded-full border px-3 py-1 text-xs font-medium transition-colors',
-                              form.services_interested.includes(s)
-                                ? 'border-primary bg-primary/15 text-primary'
-                                : 'border-border text-muted-foreground hover:border-primary/50 hover:text-foreground'
-                            )}
-                          >{s}</button>
-                        ))}
+              {/* LEGACY MODE: built-in company / contact / crm tabs */}
+              {!typeMode && (
+                <>
+                  {/* ENTREPRISE */}
+                  <div className={cn('flex flex-col gap-6', activeTabId !== 'company' && 'hidden')}>
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                      <div className="col-span-full">
+                        <Field label="Nom de l'entreprise" required error={errors.company_name}>
+                          <input className={inputClass} value={form.company_name} onChange={e => set('company_name', e.target.value)} placeholder="Ex: Acme SARL" />
+                        </Field>
                       </div>
+                      {!isHidden('company', 'sector') && (
+                        <Field label="Secteur d'activité">
+                          <input className={inputClass} value={form.sector} onChange={e => set('sector', e.target.value)} placeholder="Ex: Restaurant, E-commerce…" />
+                        </Field>
+                      )}
+                      {!isHidden('company', 'company_size') && (
+                        <Field label="Taille">
+                          <select className={inputClass} value={form.company_size} onChange={e => set('company_size', e.target.value)}>
+                            <option value="">— Sélectionner —</option>
+                            {COMPANY_SIZES.map(s => <option key={s} value={s}>{s}</option>)}
+                          </select>
+                        </Field>
+                      )}
+                      {!isHidden('company', 'website') && (
+                        <Field label="Site web actuel">
+                          <input className={inputClass} value={form.website} onChange={e => set('website', e.target.value)} placeholder="https://…" />
+                        </Field>
+                      )}
+                      {!isHidden('company', 'linkedin_url') && (
+                        <Field label="URL LinkedIn">
+                          <input className={inputClass} value={form.linkedin_url} onChange={e => set('linkedin_url', e.target.value)} placeholder="https://linkedin.com/…" />
+                        </Field>
+                      )}
+                      {!isHidden('company', 'instagram_url') && (
+                        <Field label="URL Instagram">
+                          <input className={inputClass} value={form.instagram_url} onChange={e => set('instagram_url', e.target.value)} placeholder="https://instagram.com/…" />
+                        </Field>
+                      )}
+                      {!isHidden('company', 'google_maps_url') && (
+                        <div className="col-span-full">
+                          <Field label="Fiche Google Maps">
+                            <input className={inputClass} value={form.google_maps_url} onChange={e => set('google_maps_url', e.target.value)} placeholder="https://maps.google.com/…" />
+                          </Field>
+                        </div>
+                      )}
+                      {!isHidden('company', 'city') && (
+                        <Field label="Ville">
+                          <input className={inputClass} value={form.city} onChange={e => set('city', e.target.value)} placeholder="Paris" />
+                        </Field>
+                      )}
+                      {!isHidden('company', 'country') && (
+                        <Field label="Pays">
+                          <input className={inputClass} value={form.country} onChange={e => set('country', e.target.value)} placeholder="France" />
+                        </Field>
+                      )}
                     </div>
-                  )}
-                  {!isHidden('crm', 'deal_value') && (
-                    <>
-                      <Field label="Valeur estimée (€)">
-                        <input className={inputClass} type="number" min={0} value={form.deal_value} onChange={e => set('deal_value', e.target.value)} placeholder="1500" />
+                    <CustomSections sections={sectionsFor('company')} data={form.custom_data} onChange={setCustomField} />
+                  </div>
+
+                  {/* CONTACT */}
+                  <div className={cn('flex flex-col gap-6', activeTabId !== 'contact' && 'hidden')}>
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                      <Field label="Prénom" required error={errors.first_name}>
+                        <input className={inputClass} value={form.first_name} onChange={e => set('first_name', e.target.value)} placeholder="Marie" />
                       </Field>
-                      <Field label="Devise">
-                        <select className={inputClass} value={form.currency} onChange={e => set('currency', e.target.value)}>
-                          {CURRENCIES.map(c => <option key={c} value={c}>{c}</option>)}
-                        </select>
+                      <Field label="Nom" required error={errors.last_name}>
+                        <input className={inputClass} value={form.last_name} onChange={e => set('last_name', e.target.value)} placeholder="Dupont" />
                       </Field>
-                    </>
-                  )}
-                  {!isHidden('crm', 'next_followup_date') && (
-                    <div className="col-span-full">
-                      <Field label="Prochain contact">
-                        <input className={inputClass} type="date" value={form.next_followup_date} onChange={e => set('next_followup_date', e.target.value)} />
-                      </Field>
+                      {!isHidden('contact', 'title') && (
+                        <Field label="Poste / Titre">
+                          <input className={inputClass} value={form.title} onChange={e => set('title', e.target.value)} placeholder="Directrice Marketing" />
+                        </Field>
+                      )}
+                      {!isHidden('contact', 'email') && (
+                        <Field label="Email" error={errors.email}>
+                          <input className={inputClass} type="email" value={form.email} onChange={e => set('email', e.target.value)} placeholder="contact@exemple.fr" />
+                        </Field>
+                      )}
+                      {!isHidden('contact', 'phone') && (
+                        <div className="col-span-full">
+                          <Field label="Téléphone">
+                            <input className={inputClass} value={form.phone} onChange={e => set('phone', e.target.value)} placeholder="+33 6 00 00 00 00" />
+                          </Field>
+                        </div>
+                      )}
                     </div>
-                  )}
-                  {!isHidden('crm', 'notes') && (
-                    <div className="col-span-full">
-                      <Field label="Notes">
-                        <textarea className={cn(inputClass, 'resize-none')} rows={3} value={form.notes} onChange={e => set('notes', e.target.value)} placeholder="Informations supplémentaires…" />
-                      </Field>
-                    </div>
-                  )}
-                </div>
-                <CustomSections sections={sectionsFor('crm')} data={form.custom_data} onChange={setCustomField} />
-              </div>
+                    <CustomSections sections={sectionsFor('contact')} data={form.custom_data} onChange={setCustomField} />
+                  </div>
+
+                  {/* CRM */}
+                  <div className={cn('flex flex-col gap-6', activeTabId !== 'crm' && 'hidden')}>
+                    {renderSuivi()}
+                    <CustomSections sections={sectionsFor('crm')} data={form.custom_data} onChange={setCustomField} />
+                  </div>
+                </>
+              )}
             </div>
 
             {/* Error */}
@@ -618,9 +655,9 @@ export default function ProspectForm({ open, onOpenChange, prospect, defaultStag
             {/* Footer */}
             <div className="flex justify-between items-center border-t border-border px-6 py-4">
               <div className="flex gap-2">
-                {BUILTIN_TAB_ORDER.map(t => (
-                  <button key={t} type="button" onClick={() => setTab(t)}
-                    className={cn('h-1.5 w-6 rounded-full transition-colors', tab === t ? 'bg-primary' : 'bg-muted')}
+                {tabs.map(t => (
+                  <button key={t.id} type="button" onClick={() => setTab(t.id)}
+                    className={cn('h-1.5 w-6 rounded-full transition-colors', activeTabId === t.id ? 'bg-primary' : 'bg-muted')}
                   />
                 ))}
               </div>
@@ -644,47 +681,8 @@ export default function ProspectForm({ open, onOpenChange, prospect, defaultStag
   )
 }
 
-// Renders the selected prospect type's fields as a highlighted block
-// at the top of the form, so the type-specific questions feel like the
-// heart of the fiche.
-function TypeFieldsSection({
-  type,
-  data,
-  onChange,
-}: {
-  type: ProspectType
-  data: Record<string, CustomFieldValue>
-  onChange: (key: string, value: CustomFieldValue) => void
-}) {
-  const accent = type.color || '#6366f1'
-  return (
-    <div
-      className="rounded-card border p-4 flex flex-col gap-4"
-      style={{ borderColor: `${accent}40`, background: `${accent}0a` }}
-    >
-      <div className="flex items-center gap-2">
-        <span className="grid h-7 w-7 place-items-center rounded-btn text-base" style={{ background: `${accent}1f` }}>
-          {type.emoji || '👤'}
-        </span>
-        <h3 className="text-sm font-bold text-text">Informations · {type.label}</h3>
-      </div>
-      <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-        {type.fields.map((field: CustomField) => {
-          const fullWidth = field.type === 'textarea' || field.type === 'multiselect'
-          return (
-            <div key={field.id} className={cn(fullWidth && 'col-span-full')}>
-              <Field label={field.label} required={field.required}>
-                <DynamicFieldInput field={field} value={data[field.key]} onChange={val => onChange(field.key, val)} />
-              </Field>
-            </div>
-          )
-        })}
-      </div>
-    </div>
-  )
-}
-
-// Renders custom sections + their fields, used inside each built-in tab.
+// Renders legacy custom sections + their fields, used inside each
+// built-in tab when no prospect types are configured.
 function CustomSections({
   sections,
   data,

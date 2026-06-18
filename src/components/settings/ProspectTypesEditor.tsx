@@ -19,6 +19,7 @@ import type {
   CustomFieldType,
   CustomFieldsSchema,
   ProspectType,
+  ProspectTypeSection,
 } from '@/types'
 
 const TYPE_OPTIONS: { value: CustomFieldType; label: string }[] = [
@@ -161,6 +162,60 @@ export default function ProspectTypesEditor() {
         const idx = t.fields.findIndex((f) => f.id === fieldId)
         if (idx < 0) return t
         return { ...t, fields: moveItem(t.fields, idx, idx + dir) }
+      }),
+    )
+  }
+
+  // Mark a field as the type's title (mirrored into the prospect name).
+  // Only one per type, so flip the others off.
+  const setTitleField = (typeId: string, fieldId: string) => {
+    setTypes((prev) =>
+      prev.map((t) =>
+        t.id !== typeId
+          ? t
+          : { ...t, fields: t.fields.map((f) => ({ ...f, is_title: f.id === fieldId ? !f.is_title : false })) },
+      ),
+    )
+  }
+
+  // --- onglet (section) ops -------------------------------------------------
+
+  const addSection = (typeId: string) => {
+    setTypes((prev) =>
+      prev.map((t) => {
+        if (t.id !== typeId) return t
+        const secs = t.sections ?? []
+        return { ...t, sections: [...secs, { id: uid(), label: `Onglet ${secs.length + 1}`, position: secs.length }] }
+      }),
+    )
+  }
+
+  const updateSection = (typeId: string, secId: string, label: string) => {
+    setTypes((prev) =>
+      prev.map((t) =>
+        t.id !== typeId ? t : { ...t, sections: (t.sections ?? []).map((s) => (s.id === secId ? { ...s, label } : s)) },
+      ),
+    )
+  }
+
+  const removeSection = (typeId: string, secId: string) => {
+    setTypes((prev) =>
+      prev.map((t) => {
+        if (t.id !== typeId) return t
+        const sections = (t.sections ?? []).filter((s) => s.id !== secId).map((s, i) => ({ ...s, position: i }))
+        // Detach fields that pointed at the removed onglet.
+        const fields = t.fields.map((f) => (f.section_id === secId ? { ...f, section_id: undefined } : f))
+        return { ...t, sections: sections.length ? sections : undefined, fields }
+      }),
+    )
+  }
+
+  const moveSection = (typeId: string, idx: number, dir: -1 | 1) => {
+    setTypes((prev) =>
+      prev.map((t) => {
+        if (t.id !== typeId || !t.sections) return t
+        const reordered = moveItem(t.sections, idx, idx + dir).map((s, i) => ({ ...s, position: i }))
+        return { ...t, sections: reordered }
       }),
     )
   }
@@ -375,11 +430,68 @@ export default function ProspectTypesEditor() {
                       </div>
                     </div>
 
+                    {/* Onglets (sections) */}
+                    <div className="rounded-card border border-border">
+                      <div className="flex items-center justify-between px-4 py-2.5 border-b border-border">
+                        <p className="text-[11px] font-semibold uppercase tracking-wider text-muted">
+                          Onglets du formulaire
+                        </p>
+                        {isTeamOwner && (
+                          <button type="button" onClick={() => addSection(type.id)}
+                            className="inline-flex items-center gap-1 text-xs font-semibold text-primary hover:underline">
+                            <Plus size={12} /> Ajouter un onglet
+                          </button>
+                        )}
+                      </div>
+                      {(type.sections?.length ?? 0) === 0 ? (
+                        <p className="px-4 py-3 text-[12px] text-muted">
+                          Aucun onglet : tous les champs s'affichent dans un seul onglet « {type.label || 'Profil'} ».
+                          Ajoute des onglets pour regrouper les champs.
+                        </p>
+                      ) : (
+                        <div className="divide-y divide-border">
+                          {type.sections!.map((sec, si) => (
+                            <div key={sec.id} className="flex items-center gap-2 px-3 py-2">
+                              {isTeamOwner && (
+                                <div className="flex flex-col gap-0.5">
+                                  <button type="button" onClick={() => moveSection(type.id, si, -1)} disabled={si === 0}
+                                    className="text-muted hover:text-text disabled:opacity-30" aria-label="Monter">
+                                    <ChevronUp size={12} />
+                                  </button>
+                                  <button type="button" onClick={() => moveSection(type.id, si, 1)} disabled={si === type.sections!.length - 1}
+                                    className="text-muted hover:text-text disabled:opacity-30" aria-label="Descendre">
+                                    <ChevronDown size={12} />
+                                  </button>
+                                </div>
+                              )}
+                              <input
+                                value={sec.label}
+                                onChange={(e) => updateSection(type.id, sec.id, e.target.value)}
+                                disabled={!isTeamOwner}
+                                className={cn(inputClass, 'flex-1')}
+                                placeholder="Nom de l'onglet"
+                              />
+                              {isTeamOwner && (
+                                <button type="button" onClick={() => removeSection(type.id, sec.id)}
+                                  className="rounded-btn p-1.5 text-muted hover:text-crm-red hover:bg-crm-red-light transition-colors"
+                                  aria-label="Supprimer l'onglet">
+                                  <Trash2 size={14} />
+                                </button>
+                              )}
+                            </div>
+                          ))}
+                        </div>
+                      )}
+                    </div>
+
                     {/* Fields */}
                     <div className="rounded-card border border-border">
                       <div className="px-4 py-2.5 border-b border-border">
                         <p className="text-[11px] font-semibold uppercase tracking-wider text-muted">
                           Champs demandés pour ce type
+                        </p>
+                        <p className="text-[11px] text-muted mt-0.5">
+                          Coche « Titre » sur le champ qui sert de nom du prospect (affiché dans les listes).
                         </p>
                       </div>
                       {type.fields.length === 0 ? (
@@ -395,9 +507,11 @@ export default function ProspectTypesEditor() {
                               readOnly={!isTeamOwner}
                               isFirst={fieldIdx === 0}
                               isLast={fieldIdx === type.fields.length - 1}
+                              sections={type.sections ?? []}
                               onUpdate={(patch) => updateField(type.id, field.id, patch)}
                               onRemove={() => removeField(type.id, field.id)}
                               onMove={(dir) => moveField(type.id, field.id, dir)}
+                              onTitle={() => setTitleField(type.id, field.id)}
                             />
                           ))}
                         </div>
@@ -481,20 +595,22 @@ export default function ProspectTypesEditor() {
 // --- field row --------------------------------------------------------------
 
 function FieldRow({
-  field, readOnly, isFirst, isLast, onUpdate, onRemove, onMove,
+  field, readOnly, isFirst, isLast, sections, onUpdate, onRemove, onMove, onTitle,
 }: {
   field: CustomField
   readOnly: boolean
   isFirst: boolean
   isLast: boolean
+  sections: ProspectTypeSection[]
   onUpdate: (patch: Partial<CustomField>) => void
   onRemove: () => void
   onMove: (dir: -1 | 1) => void
+  onTitle: () => void
 }) {
   const needsOptions = TYPES_WITH_OPTIONS.includes(field.type)
   return (
     <div className="px-3 py-3 flex flex-col gap-2">
-      <div className="flex items-center gap-2">
+      <div className="flex flex-wrap items-center gap-2">
         {!readOnly && (
           <div className="flex flex-col gap-0.5">
             <button type="button" onClick={() => onMove(-1)} disabled={isFirst}
@@ -513,18 +629,43 @@ function FieldRow({
           onChange={(e) => onUpdate({ label: e.target.value })}
           disabled={readOnly}
           placeholder="Libellé du champ"
-          className={cn(inputClass, 'flex-1')}
+          className={cn(inputClass, 'flex-1 min-w-[8rem]')}
         />
         <select
           value={field.type}
           onChange={(e) => onUpdate({ type: e.target.value as CustomFieldType })}
           disabled={readOnly}
-          className={cn(inputClass, 'w-40')}
+          className={cn(inputClass, 'w-36')}
         >
           {TYPE_OPTIONS.map((o) => (
             <option key={o.value} value={o.value}>{o.label}</option>
           ))}
         </select>
+        {sections.length > 0 && (
+          <select
+            value={field.section_id ?? sections[0].id}
+            onChange={(e) => onUpdate({ section_id: e.target.value })}
+            disabled={readOnly}
+            className={cn(inputClass, 'w-32')}
+            title="Onglet d'affichage"
+          >
+            {sections.map((s) => (
+              <option key={s.id} value={s.id}>{s.label}</option>
+            ))}
+          </select>
+        )}
+        <button
+          type="button"
+          onClick={onTitle}
+          disabled={readOnly}
+          className={cn(
+            'rounded-pill border px-2 py-1 text-[11px] font-semibold transition-colors',
+            field.is_title ? 'border-primary bg-primary-light text-primary' : 'border-border text-muted hover:text-text',
+          )}
+          title="Ce champ sert de nom du prospect (affiché partout)"
+        >
+          Titre
+        </button>
         <div className="flex items-center gap-1.5 px-1">
           <Toggle checked={!!field.required} onChange={() => onUpdate({ required: !field.required })} disabled={readOnly} />
           <span className="text-[11px] text-muted">Requis</span>
