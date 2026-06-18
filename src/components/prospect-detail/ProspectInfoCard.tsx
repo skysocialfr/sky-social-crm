@@ -4,6 +4,7 @@ import { fr } from 'date-fns/locale'
 import ChannelIcon from '@/components/common/ChannelIcon'
 import { useTheme } from '@/context/ThemeContext'
 import { isSectionVisible, isBuiltinFieldVisible } from '@/lib/visibility'
+import { resolveProspectType } from '@/lib/prospectTypes'
 import { BUILTIN_TAB_DEFAULT_LABELS } from '@/types'
 import type { BuiltInTab, Prospect, SectionPrefs, CustomField, CustomSection } from '@/types'
 import { DEFAULT_SECTION_PREFS } from '@/types'
@@ -131,21 +132,43 @@ export default function ProspectInfoCard({ prospect: p, sectionPrefs = DEFAULT_S
   const customData = p.custom_data ?? {}
   const currency = p.currency ?? 'EUR'
 
+  const prospectType = resolveProspectType(customData, customFieldsSchema)
+  const hasTypes = customFieldsSchema.prospect_types.length > 0
+
   const tabLabel = (t: BuiltInTab): string =>
     customFieldsSchema.tabs[t].label?.trim() || BUILTIN_TAB_DEFAULT_LABELS[t]
   const isHidden = (t: BuiltInTab, key: string): boolean =>
     !isBuiltinFieldVisible(customFieldsSchema, t, key, customData)
+  // Legacy custom sections only render when the tenant has no prospect
+  // types (otherwise the type's fields take over).
   const sectionsFor = (t: BuiltInTab): CustomSection[] =>
-    customFieldsSchema.sections
-      .filter(s => s.tab === t)
-      .filter(s => isSectionVisible(s, customData))
-      .sort((a, b) => a.position - b.position)
+    hasTypes
+      ? []
+      : customFieldsSchema.sections
+          .filter(s => s.tab === t)
+          .filter(s => isSectionVisible(s, customData))
+          .sort((a, b) => a.position - b.position)
 
   return (
     <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
       {/* Company tab card */}
       <div className="rounded-xl border border-border bg-card p-4 space-y-3">
-        <p className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">{tabLabel('company')}</p>
+        <div className="flex items-center justify-between gap-2">
+          <p className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">{tabLabel('company')}</p>
+          {prospectType && (
+            <span
+              className="inline-flex items-center gap-1 rounded-full border px-2 py-0.5 text-[11px] font-semibold"
+              style={{
+                color: prospectType.color || undefined,
+                borderColor: `${prospectType.color || '#6366f1'}55`,
+                background: `${prospectType.color || '#6366f1'}14`,
+              }}
+            >
+              <span aria-hidden>{prospectType.emoji || '👤'}</span>
+              {prospectType.label}
+            </span>
+          )}
+        </div>
         <Row icon={Building2} label="Entreprise" value={p.company_name} />
         {!isHidden('company', 'sector') && <Row icon={Tag} label="Secteur" value={p.sector} />}
         {!isHidden('company', 'company_size') && <Row icon={Building2} label="Taille" value={p.company_size} />}
@@ -163,6 +186,13 @@ export default function ProspectInfoCard({ prospect: p, sectionPrefs = DEFAULT_S
             label="Localisation"
             value={[isHidden('company', 'city') ? null : p.city, isHidden('company', 'country') ? null : p.country].filter(Boolean).join(', ')}
           />
+        )}
+        {prospectType && prospectType.fields.some(f => f.type === 'boolean' || !isEmpty(customData[f.key])) && (
+          <div className="space-y-3 pt-3 border-t border-border">
+            {prospectType.fields.map(field => (
+              <CustomFieldRow key={field.id} field={field} value={customData[field.key]} currency={currency} />
+            ))}
+          </div>
         )}
         {renderCustomSections(sectionsFor('company'), customData, currency)}
       </div>

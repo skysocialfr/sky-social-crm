@@ -13,7 +13,7 @@ import { cn } from '@/lib/cn'
 import ColorPicker from '@/components/common/ColorPicker'
 import LogoUpload from '@/components/common/LogoUpload'
 import Toggle from '@/components/common/Toggle'
-import CustomFieldsEditor from '@/components/settings/CustomFieldsEditor'
+import ProspectTypesEditor from '@/components/settings/ProspectTypesEditor'
 import TeamSettings from '@/components/settings/TeamSettings'
 import PipelinesEditor from '@/components/settings/PipelinesEditor'
 import type { SectionPrefs, NotificationPrefs } from '@/types'
@@ -23,7 +23,7 @@ const NAV = [
   { id: 'securite', label: 'Sécurité', emoji: '🔒' },
   { id: 'notifications', label: 'Notifications', emoji: '🔔' },
   { id: 'apparence', label: 'Apparence', emoji: '🎨' },
-  { id: 'custom_fields', label: 'Rubriques & champs', emoji: '🧩' },
+  { id: 'custom_fields', label: 'Types de prospect', emoji: '🧩' },
   { id: 'pipelines', label: 'Pipelines', emoji: '🪜' },
   { id: 'equipe', label: 'Équipe', emoji: '👥' },
   { id: 'abonnement', label: 'Abonnement', emoji: '💳' },
@@ -352,7 +352,7 @@ export default function SettingsPage() {
       </form>
     ),
 
-    custom_fields: <CustomFieldsEditor />,
+    custom_fields: <ProspectTypesEditor />,
 
     pipelines: (
       <div className="flex flex-col gap-5">

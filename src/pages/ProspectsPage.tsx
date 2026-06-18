@@ -21,7 +21,9 @@ import ImportCSVModal from '@/components/prospects/ImportCSVModal'
 import UpgradeModal from '@/components/common/UpgradeModal'
 import ConfirmDialog from '@/components/common/ConfirmDialog'
 import { useToast } from '@/components/common/Toast'
+import { useTheme } from '@/context/ThemeContext'
 import { evaluateConditions, type FilterCondition } from '@/lib/filterUtils'
+import { getProspectTypeId } from '@/lib/prospectTypes'
 import { cn } from '@/lib/cn'
 import type { Prospect, ProspectFormData } from '@/types'
 
@@ -43,6 +45,8 @@ export default function ProspectsPage() {
   const bulkCreate = useBulkCreateProspects()
   const { data: subscription = FREE_PLAN } = useSubscription()
   const { toast } = useToast()
+  const { customFieldsSchema } = useTheme()
+  const prospectTypes = customFieldsSchema.prospect_types
 
   const defaultPipeline = useDefaultPipeline()
   // Active pipeline: explicit selection first, then default. Stored
@@ -74,6 +78,7 @@ export default function ProspectsPage() {
     channel: '',
     service: '',
   })
+  const [typeFilter, setTypeFilter] = useState<string>('')
   const [advConditions, setAdvConditions] = useState<FilterCondition[]>([])
   const [advOpen, setAdvOpen] = useState(false)
   const [formOpen, setFormOpen] = useState(false)
@@ -104,10 +109,27 @@ export default function ProspectsPage() {
       if (filters.priority && p.priority !== filters.priority) return false
       if (filters.channel && p.channel !== filters.channel) return false
       if (filters.service && !p.services_interested.includes(filters.service)) return false
+      if (typeFilter) {
+        const tid = getProspectTypeId(p.custom_data)
+        if (typeFilter === '__none' ? !!tid : tid !== typeFilter) return false
+      }
       if (advConditions.length > 0 && !evaluateConditions(p, advConditions)) return false
       return true
     })
-  }, [prospects, filters, advConditions, activePipeline])
+  }, [prospects, filters, advConditions, activePipeline, typeFilter])
+
+  // Counts per type, scoped to the active pipeline, for the filter bar.
+  const typeCounts = useMemo(() => {
+    const counts: Record<string, number> = {}
+    let untyped = 0
+    for (const p of prospects) {
+      if (activePipeline && p.pipeline_id !== activePipeline.id) continue
+      const tid = getProspectTypeId(p.custom_data)
+      if (tid) counts[tid] = (counts[tid] ?? 0) + 1
+      else untyped += 1
+    }
+    return { counts, untyped }
+  }, [prospects, activePipeline])
 
   const handleOpenCreate = (stage?: string) => {
     if (isAtLimit) { setUpgradeOpen(true); return }
@@ -192,6 +214,59 @@ export default function ProspectsPage() {
 
       {/* Pipeline tabs (hidden if team has only one) */}
       <PipelineSwitcher activeId={activePipelineId} onChange={setActivePipelineId} />
+
+      {/* Type filter bar (only when types are configured) */}
+      {prospectTypes.length > 0 && (
+        <div className="flex flex-wrap items-center gap-1.5">
+          <button
+            onClick={() => setTypeFilter('')}
+            className={cn(
+              'rounded-pill border px-3 py-1.5 text-xs font-semibold transition-colors',
+              typeFilter === ''
+                ? 'border-primary bg-primary-light text-primary'
+                : 'border-border bg-card text-muted hover:text-text',
+            )}
+          >
+            Tous
+          </button>
+          {prospectTypes.map((t) => {
+            const active = typeFilter === t.id
+            const count = typeCounts.counts[t.id] ?? 0
+            return (
+              <button
+                key={t.id}
+                onClick={() => setTypeFilter(active ? '' : t.id)}
+                className={cn(
+                  'inline-flex items-center gap-1.5 rounded-pill border px-3 py-1.5 text-xs font-semibold transition-colors',
+                  active ? '' : 'border-border bg-card text-muted hover:text-text',
+                )}
+                style={
+                  active
+                    ? { borderColor: t.color || '#6366f1', background: `${t.color || '#6366f1'}14`, color: t.color || undefined }
+                    : undefined
+                }
+              >
+                <span aria-hidden>{t.emoji || '👤'}</span>
+                {t.label}
+                <span className="text-[10px] opacity-70">{count}</span>
+              </button>
+            )
+          })}
+          {typeCounts.untyped > 0 && (
+            <button
+              onClick={() => setTypeFilter(typeFilter === '__none' ? '' : '__none')}
+              className={cn(
+                'rounded-pill border px-3 py-1.5 text-xs font-semibold transition-colors',
+                typeFilter === '__none'
+                  ? 'border-primary bg-primary-light text-primary'
+                  : 'border-border bg-card text-muted hover:text-text',
+              )}
+            >
+              Sans type <span className="text-[10px] opacity-70">{typeCounts.untyped}</span>
+            </button>
+          )}
+        </div>
+      )}
 
       {/* Filters */}
       <ProspectFilters

@@ -163,6 +163,7 @@ describe('listDelegableFields', () => {
         contact: { hidden_fields: [] },
         crm: { hidden_fields: [] },
       },
+      prospect_types: [],
       sections: [{
         id: 's1', label: 'Photo', tab: 'company', position: 0, fields: [
           { id: 'f1', key: 'zone',   label: 'Zone',       type: 'select', options: ['paris', 'lyon'], delegable: true },

@@ -4,11 +4,12 @@ import { Upload, FileSpreadsheet, AlertCircle, CheckCircle2, X, ChevronRight } f
 import { cn } from '@/lib/cn'
 import {
   parseFile, autoDetectMapping, computeResult, getValidRows,
-  FIELD_LABELS, type ParseResult,
+  FIELD_LABELS, TYPE_TARGET, CUSTOM_PREFIX, type ParseResult, type MapTarget, type ImportContext,
 } from '@/lib/csvUtils'
+import { useTheme } from '@/context/ThemeContext'
 import type { ProspectFormData } from '@/types'
 
-type FieldMapping = Record<string, keyof ProspectFormData | '_ignore'>
+type FieldMapping = Record<string, MapTarget>
 
 type Step = 'upload' | 'mapping' | 'importing' | 'done'
 
@@ -18,12 +19,10 @@ interface Props {
   onImport: (rows: ProspectFormData[]) => Promise<void>
 }
 
-const FIELD_OPTIONS = [
-  { value: '_ignore', label: '— Ignorer —' },
-  ...Object.entries(FIELD_LABELS).map(([k, v]) => ({ value: k, label: v })),
-]
-
 export default function ImportCSVModal({ open, onOpenChange, onImport }: Props) {
+  const { customFieldsSchema } = useTheme()
+  const prospectTypes = customFieldsSchema.prospect_types
+
   const [step, setStep] = useState<Step>('upload')
   const [file, setFile] = useState<File | null>(null)
   const [rawData, setRawData] = useState<{ headers: string[]; rawRows: Record<string, string>[] } | null>(null)
@@ -31,6 +30,20 @@ export default function ImportCSVModal({ open, onOpenChange, onImport }: Props) 
   const [result, setResult] = useState<ParseResult | null>(null)
   const [parseError, setParseError] = useState('')
   const [isDragging, setIsDragging] = useState(false)
+  const [defaultTypeId, setDefaultTypeId] = useState('')
+
+  const selectedType = prospectTypes.find(t => t.id === defaultTypeId)
+
+  // Available mapping targets: built-in fields + the prospect type +
+  // (when a type is chosen) that type's custom fields.
+  const fieldOptions = [
+    { value: '_ignore', label: '— Ignorer —' },
+    ...(prospectTypes.length ? [{ value: TYPE_TARGET, label: 'Type de prospect' }] : []),
+    ...Object.entries(FIELD_LABELS).map(([k, v]) => ({ value: k, label: v })),
+    ...(selectedType?.fields.map(f => ({ value: `${CUSTOM_PREFIX}${f.key}`, label: `${selectedType.emoji ?? ''} ${f.label}`.trim() })) ?? []),
+  ]
+
+  const ctx = (): ImportContext => ({ prospectTypes, defaultTypeId: defaultTypeId || undefined })
 
   const handleClose = () => {
     onOpenChange(false)
@@ -41,6 +54,7 @@ export default function ImportCSVModal({ open, onOpenChange, onImport }: Props) 
       setMapping({})
       setResult(null)
       setParseError('')
+      setDefaultTypeId('')
     }, 300)
   }
 
@@ -56,7 +70,7 @@ export default function ImportCSVModal({ open, onOpenChange, onImport }: Props) 
       const detected = autoDetectMapping(data.headers)
       setRawData(data)
       setMapping(detected)
-      setResult(computeResult(data.headers, data.rawRows, detected))
+      setResult(computeResult(data.headers, data.rawRows, detected, ctx()))
       setStep('mapping')
     } catch {
       setParseError("Impossible de lire le fichier. Vérifiez qu'il s'agit d'un fichier CSV ou Excel valide.")
@@ -77,9 +91,16 @@ export default function ImportCSVModal({ open, onOpenChange, onImport }: Props) 
   }, []) // eslint-disable-line react-hooks/exhaustive-deps
 
   const handleMappingChange = (header: string, field: string) => {
-    const next: FieldMapping = { ...mapping, [header]: field as keyof ProspectFormData | '_ignore' }
+    const next: FieldMapping = { ...mapping, [header]: field as MapTarget }
     setMapping(next)
-    if (rawData) setResult(computeResult(rawData.headers, rawData.rawRows, next))
+    if (rawData) setResult(computeResult(rawData.headers, rawData.rawRows, next, ctx()))
+  }
+
+  const handleDefaultTypeChange = (id: string) => {
+    setDefaultTypeId(id)
+    if (rawData) {
+      setResult(computeResult(rawData.headers, rawData.rawRows, mapping, { prospectTypes, defaultTypeId: id || undefined }))
+    }
   }
 
   const handleImport = async () => {
@@ -153,7 +174,7 @@ export default function ImportCSVModal({ open, onOpenChange, onImport }: Props) 
 
                 <div className="rounded-lg bg-muted/50 p-3 text-xs text-muted-foreground space-y-1">
                   <p className="font-medium text-foreground">Colonnes reconnues automatiquement :</p>
-                  <p>entreprise, prénom, nom, canal, email, téléphone, secteur, ville, priorité, étape, valeur, notes, prochain contact…</p>
+                  <p>entreprise, prénom, nom, type, canal, email, téléphone, secteur, ville, priorité, étape, valeur, notes, prochain contact…</p>
                 </div>
               </div>
             )}
@@ -173,6 +194,28 @@ export default function ImportCSVModal({ open, onOpenChange, onImport }: Props) 
                     )}
                   </div>
                 </div>
+
+                {prospectTypes.length > 0 && (
+                  <div>
+                    <label className="text-xs font-semibold uppercase tracking-wide text-muted-foreground mb-2 block">
+                      Type de prospect pour cet import
+                    </label>
+                    <select
+                      value={defaultTypeId}
+                      onChange={(e) => handleDefaultTypeChange(e.target.value)}
+                      disabled={step === 'importing'}
+                      className="w-full rounded border border-border bg-input px-2.5 py-2 text-sm text-foreground focus:outline-none focus:border-primary"
+                    >
+                      <option value="">— Aucun (ou défini par une colonne) —</option>
+                      {prospectTypes.map((t) => (
+                        <option key={t.id} value={t.id}>{t.emoji ? `${t.emoji} ` : ''}{t.label}</option>
+                      ))}
+                    </select>
+                    <p className="text-[11px] text-muted-foreground mt-1">
+                      Appliqué à toutes les lignes. Choisir un type ajoute ses champs ci-dessous pour la correspondance.
+                    </p>
+                  </div>
+                )}
 
                 <div>
                   <p className="text-xs font-semibold uppercase tracking-wide text-muted-foreground mb-2">
@@ -203,7 +246,7 @@ export default function ImportCSVModal({ open, onOpenChange, onImport }: Props) 
                                 disabled={step === 'importing'}
                                 className="w-full rounded border border-border bg-input px-2 py-1 text-xs text-foreground focus:outline-none focus:border-primary"
                               >
-                                {FIELD_OPTIONS.map((o) => (
+                                {fieldOptions.map((o) => (
                                   <option key={o.value} value={o.value}>{o.label}</option>
                                 ))}
                               </select>
