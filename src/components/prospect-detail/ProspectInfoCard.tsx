@@ -200,7 +200,7 @@ export default function ProspectInfoCard({ prospect: p, sectionPrefs = DEFAULT_S
       {/* Contact tab card */}
       <div className="rounded-xl border border-border bg-card p-4 space-y-3">
         <p className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">{tabLabel('contact')}</p>
-        <Row icon={Building2} label="Nom complet" value={`${p.first_name} ${p.last_name}`} />
+        <Row icon={Building2} label="Nom complet" value={`${p.first_name ?? ''} ${p.last_name ?? ''}`.trim() || null} />
         {!isHidden('contact', 'title') && <Row icon={Tag} label="Poste" value={p.title} />}
         {!isHidden('contact', 'email') && <Row icon={Mail} label="Email" value={p.email} href={p.email ? `mailto:${p.email}` : undefined} />}
         {!isHidden('contact', 'phone') && <Row icon={Phone} label="Téléphone" value={p.phone} href={p.phone ? `tel:${p.phone}` : undefined} />}
