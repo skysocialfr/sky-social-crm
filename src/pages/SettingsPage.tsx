@@ -24,7 +24,7 @@ const NAV = [
   { id: 'notifications', label: 'Notifications', emoji: '🔔' },
   { id: 'apparence', label: 'Apparence', emoji: '🎨' },
   { id: 'custom_fields', label: 'Types de prospect', emoji: '🧩' },
-  { id: 'pipelines', label: 'Pipelines', emoji: '🪜' },
+  { id: 'pipelines', label: 'Leads', emoji: '🎯' },
   { id: 'equipe', label: 'Équipe', emoji: '👥' },
   { id: 'abonnement', label: 'Abonnement', emoji: '💳' },
   { id: 'donnees', label: 'Données', emoji: '📦' },
@@ -357,9 +357,9 @@ export default function SettingsPage() {
     pipelines: (
       <div className="flex flex-col gap-5">
         <div>
-          <h2 className="text-base font-bold text-text">Pipelines</h2>
+          <h2 className="text-base font-bold text-text">Leads</h2>
           <p className="text-[13px] text-muted mt-0.5">
-            Gérez vos pipelines et leurs étapes — un par activité (vente, recrutement, B2C…).
+            Gérez vos différents leads et leurs étapes — un par canal d'acquisition (Acquisition B2C, B2B, recrutement…).
           </p>
         </div>
         <PipelinesEditor />

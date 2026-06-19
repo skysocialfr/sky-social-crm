@@ -35,7 +35,7 @@ export default function PipelinesEditor() {
     return (
       <div className="rounded-card border border-border bg-card p-5">
         <p className="text-sm text-muted">
-          Seul le propriétaire de l'équipe peut gérer les pipelines.
+          Seul le propriétaire de l'équipe peut gérer les leads.
         </p>
       </div>
     )
@@ -49,9 +49,9 @@ export default function PipelinesEditor() {
     <div className="flex flex-col gap-4">
       <div className="flex items-center justify-between">
         <div>
-          <p className="text-sm font-bold text-text">Pipelines</p>
+          <p className="text-sm font-bold text-text">Leads</p>
           <p className="text-[11px] text-muted mt-0.5">
-            Crée plusieurs pipelines pour gérer différentes activités (ex: Vente B2B, Recrutement prestataires, Acquisition B2C).
+            Crée plusieurs leads pour gérer différents canaux d'acquisition (ex: Acquisition B2C, Acquisition B2B, Recrutement).
           </p>
         </div>
         <button
@@ -59,7 +59,7 @@ export default function PipelinesEditor() {
           className="flex items-center gap-1.5 rounded-btn bg-primary px-3 py-2 text-xs font-bold text-white hover:bg-primary-hover transition-colors shadow-primary"
         >
           <Plus size={13} />
-          Nouveau pipeline
+          Nouveau lead
         </button>
       </div>
 
@@ -73,7 +73,7 @@ export default function PipelinesEditor() {
             onToggle={() => setExpandedId(prev => (prev === p.id ? null : p.id))}
             onSetDefault={async () => {
               await setDefault.mutateAsync(p.id)
-              toast(`"${p.name}" est désormais le pipeline par défaut.`)
+              toast(`"${p.name}" est désormais le lead par défaut.`)
             }}
             onDelete={() => setDeleteTarget(p)}
           />
@@ -85,7 +85,7 @@ export default function PipelinesEditor() {
         onOpenChange={setShowNewModal}
         onCreate={async (name, stages) => {
           await createPipeline.mutateAsync({ name, stages })
-          toast(`Pipeline "${name}" créé.`)
+          toast(`Lead "${name}" créé.`)
         }}
       />
 
@@ -105,7 +105,7 @@ export default function PipelinesEditor() {
               moveToFirstStage: firstStage,
               wasDefault: deleteTarget.is_default,
             })
-            toast(`Pipeline supprimé. Les prospects ont été déplacés vers "${dest?.name}".`)
+            toast(`Lead supprimé. Les prospects ont été déplacés vers "${dest?.name}".`)
             setDeleteTarget(null)
           } catch (err: unknown) {
             const msg = err instanceof Error ? err.message : 'Erreur lors de la suppression.'
@@ -150,9 +150,9 @@ function DeletePipelineModal({
       <div className="w-full max-w-md rounded-card border border-border bg-card p-6 shadow-modal">
         <p className="text-base font-bold text-text mb-1">Supprimer « {pipeline.name} »</p>
         <p className="text-[12px] text-muted mb-4">
-          Cette action est irréversible. Les prospects de ce pipeline seront déplacés vers un autre pipeline
+          Cette action est irréversible. Les prospects de ce lead seront déplacés vers un autre lead
           (et replacés sur sa première étape).
-          {pipeline.is_default && ' Comme c’est le pipeline par défaut, la destination deviendra le nouveau pipeline par défaut.'}
+          {pipeline.is_default && ' Comme c’est le lead par défaut, la destination deviendra le nouveau lead par défaut.'}
         </p>
 
         <label className="text-xs font-semibold text-text">Déplacer les prospects vers</label>
@@ -226,7 +226,7 @@ function PipelineCard({
     }
     await update.mutateAsync({ id: pipeline.id, name: trimmed })
     setEditingName(false)
-    toast('Pipeline renommé.')
+    toast('Lead renommé.')
   }
 
   const saveStages = async () => {
@@ -297,7 +297,7 @@ function PipelineCard({
               <button
                 onClick={onSetDefault}
                 className="rounded-btn p-1.5 text-muted hover:text-amber-600 hover:bg-bg transition-colors"
-                title="Définir comme pipeline par défaut"
+                title="Définir comme lead par défaut"
               >
                 <Star size={13} />
               </button>
@@ -563,9 +563,9 @@ function NewPipelineModal({
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm px-4">
       <div className="w-full max-w-md rounded-card border border-border bg-card p-6 shadow-modal">
-        <p className="text-base font-bold text-text mb-1">Nouveau pipeline</p>
+        <p className="text-base font-bold text-text mb-1">Nouveau lead</p>
         <p className="text-[11px] text-muted mb-4">
-          Donne-lui un nom (ex: "Vente B2B", "Recrutement prestataires") et choisis un modèle de départ.
+          Donne-lui un nom (ex: "Acquisition B2C", "Acquisition B2B", "Recrutement") et choisis un modèle de départ.
         </p>
 
         <div className="flex flex-col gap-3">
@@ -576,7 +576,7 @@ function NewPipelineModal({
               value={name}
               onChange={(e) => setName(e.target.value)}
               onKeyDown={(e) => { if (e.key === 'Enter') handleCreate() }}
-              placeholder="Vente B2B"
+              placeholder="Acquisition B2C"
               className="mt-1 w-full rounded-btn border border-border bg-bg px-3 py-2 text-sm text-text focus:border-primary focus:outline-none"
             />
           </div>
@@ -588,7 +588,7 @@ function NewPipelineModal({
                 value="commercial"
                 current={preset}
                 onChange={setPreset}
-                label="Pipeline commercial classique"
+                label="Modèle commercial classique"
                 description="8 étapes : Identifié → Premier contact → … → Gagné / Perdu"
               />
               <PresetOption
@@ -614,7 +614,7 @@ function NewPipelineModal({
             disabled={!name.trim() || saving}
             className="rounded-btn bg-primary px-3 py-1.5 text-xs font-bold text-white hover:bg-primary-hover transition-colors disabled:opacity-50"
           >
-            {saving ? 'Création…' : 'Créer le pipeline'}
+            {saving ? 'Création…' : 'Créer le lead'}
           </button>
         </div>
       </div>

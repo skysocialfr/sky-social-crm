@@ -334,7 +334,7 @@ export default function ProspectForm({ open, onOpenChange, prospect, defaultStag
     <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
       {pipelines.length > 1 && (
         <div className="col-span-full">
-          <Field label="Pipeline">
+          <Field label="Leads">
             <select
               className={inputClass}
               value={form.pipeline_id}
@@ -353,7 +353,7 @@ export default function ProspectForm({ open, onOpenChange, prospect, defaultStag
           </Field>
         </div>
       )}
-      <Field label="Étape du pipeline">
+      <Field label="Étape du lead">
         <select className={inputClass} value={form.stage} onChange={e => set('stage', e.target.value)}>
           {activeStages.map(s => <option key={s.label} value={s.label}>{s.label}</option>)}
         </select>

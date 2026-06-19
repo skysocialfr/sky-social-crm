@@ -27,7 +27,7 @@ export default function StageSelector({ prospectId, currentStage, pipelineId }: 
 
   return (
     <div className="rounded-xl border border-border bg-card p-4">
-      <p className="mb-3 text-xs font-semibold uppercase tracking-wide text-muted-foreground">Pipeline</p>
+      <p className="mb-3 text-xs font-semibold uppercase tracking-wide text-muted-foreground">Leads</p>
       <div className="flex flex-wrap gap-2">
         {stages.map((stage, i) => {
           const isActive = stage.label === currentStage
