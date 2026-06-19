@@ -3,7 +3,6 @@ import {
   ChevronDown, ChevronUp, Plus, Trash2, Sparkles, GripVertical, Wand2,
 } from 'lucide-react'
 import { useTheme } from '@/context/ThemeContext'
-import { useBulkCreateProspects } from '@/hooks/useProspects'
 import { useToast } from '@/components/common/Toast'
 import Toggle from '@/components/common/Toggle'
 import ProspectTypesWizard from '@/components/settings/ProspectTypesWizard'
@@ -13,7 +12,6 @@ import {
   EXAMPLE_PROSPECT_TYPES,
   TYPE_COLOR_PRESETS,
   TYPE_EMOJI_PRESETS,
-  buildDemoProspects,
 } from '@/lib/prospectTypes'
 import type {
   CustomField,
@@ -60,7 +58,6 @@ function moveItem<T>(list: T[], from: number, to: number): T[] {
 
 export default function ProspectTypesEditor() {
   const { customFieldsSchema, updateCustomFieldsSchema, isTeamOwner } = useTheme()
-  const bulkCreate = useBulkCreateProspects()
   const { toast } = useToast()
 
   const [types, setTypes] = useState<ProspectType[]>(customFieldsSchema.prospect_types)
@@ -68,7 +65,6 @@ export default function ProspectTypesEditor() {
   const [saving, setSaving] = useState(false)
   const [success, setSuccess] = useState(false)
   const [error, setError] = useState('')
-  const [seeding, setSeeding] = useState(false)
   const [wizardOpen, setWizardOpen] = useState(false)
 
   useEffect(() => {
@@ -238,24 +234,6 @@ export default function ProspectTypesEditor() {
     }
   }
 
-  const handleSeedDemo = async () => {
-    setSeeding(true)
-    setError('')
-    try {
-      // Ensure the example types exist so the demo prospects resolve to
-      // a real type. Only seed types if the tenant has none yet.
-      const baseTypes = types.length ? types : EXAMPLE_PROSPECT_TYPES
-      await updateCustomFieldsSchema(withSchema(baseTypes))
-      setTypes(baseTypes.map((t, i) => ({ ...t, position: i })))
-      await bulkCreate.mutateAsync(buildDemoProspects())
-      toast('5 prospects de démonstration créés !')
-    } catch (err) {
-      setError(err instanceof Error ? err.message : 'Erreur lors de la génération des données de démo.')
-    } finally {
-      setSeeding(false)
-    }
-  }
-
   // Append the wizard's freshly-built types to the existing ones and
   // persist immediately so the client sees the result without a manual
   // save step.
@@ -276,18 +254,7 @@ export default function ProspectTypesEditor() {
         onComplete={handleWizardComplete}
       />
       <div>
-        <div className="flex items-start justify-between gap-3">
-          <h2 className="text-base font-bold text-text">Types de prospect</h2>
-          {isTeamOwner && types.length > 0 && (
-            <button
-              type="button"
-              onClick={() => setWizardOpen(true)}
-              className="flex-shrink-0 inline-flex items-center gap-1.5 rounded-btn border border-primary px-3 py-1.5 text-xs font-semibold text-primary hover:bg-primary-light transition-colors"
-            >
-              <Wand2 size={13} /> Assistant guidé
-            </button>
-          )}
-        </div>
+        <h2 className="text-base font-bold text-text">Types de prospect</h2>
         <p className="text-[13px] text-muted mt-0.5">
           Définissez les profils que vous prospectez. À la création d'un prospect, vous choisirez d'abord son
           type, puis ne remplirez que les champs utiles à ce type.
@@ -298,6 +265,30 @@ export default function ProspectTypesEditor() {
           </p>
         )}
       </div>
+
+      {/* Persistent guided-setup entry point — always available so a
+          client can ask to be walked through adding more types later,
+          even after they've already created some. */}
+      {isTeamOwner && types.length > 0 && (
+        <div className="flex flex-col sm:flex-row sm:items-center gap-3 rounded-card border border-primary/30 bg-primary-light px-4 py-3">
+          <span className="grid h-9 w-9 flex-shrink-0 place-items-center rounded-btn bg-primary/15 text-primary">
+            <Wand2 size={17} />
+          </span>
+          <div className="min-w-0 flex-1">
+            <p className="text-sm font-bold text-text">Besoin d'aide pour ajouter un type ?</p>
+            <p className="text-[12px] text-muted">
+              L'assistant vous guide pas à pas : type de prospect, informations à enregistrer, et c'est créé.
+            </p>
+          </div>
+          <button
+            type="button"
+            onClick={() => setWizardOpen(true)}
+            className="flex-shrink-0 inline-flex items-center justify-center gap-1.5 rounded-btn bg-primary px-4 py-2 text-xs font-bold text-white hover:bg-primary-hover transition-colors shadow-primary"
+          >
+            <Wand2 size={13} /> Lancer l'assistant guidé
+          </button>
+        </div>
+      )}
 
       {/* Empty state */}
       {types.length === 0 && (
@@ -612,15 +603,6 @@ export default function ProspectTypesEditor() {
               Annuler les modifications
             </button>
           )}
-          <button
-            type="button"
-            onClick={handleSeedDemo}
-            disabled={seeding || bulkCreate.isPending}
-            className="ml-auto inline-flex items-center gap-1.5 rounded-btn border border-border px-4 py-2 text-xs font-semibold text-text hover:bg-bg transition-colors disabled:opacity-50"
-            title="Crée 5 prospects fictifs (un par type d'exemple) pour tester."
-          >
-            <Sparkles size={13} /> {seeding ? 'Génération…' : 'Générer 5 prospects de démo'}
-          </button>
         </div>
       )}
     </div>

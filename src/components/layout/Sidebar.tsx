@@ -10,7 +10,7 @@ const NAV = [
   { to: '/app/prospects', label: 'Prospects',        emoji: '👥', end: false },
   { to: '/app/relances',  label: 'Relances',         emoji: '🔔', end: false, badge: true },
   { to: '/app/journal',   label: 'Journal',          emoji: '📓', end: false },
-  { to: '/app/analytics', label: 'Analytics',        emoji: '📊', end: false, isNew: true },
+  { to: '/app/analytics', label: 'Analytics',        emoji: '📊', end: false },
   { to: '/app/settings',  label: 'Paramètres',       emoji: '⚙️', end: false },
 ]
 
@@ -51,7 +51,7 @@ export default function Sidebar() {
 
       {/* Navigation */}
       <nav className="flex-1 px-2 py-[10px] flex flex-col gap-[2px] overflow-y-auto">
-        {NAV.map(({ to, label, emoji, end, badge, isNew }) => (
+        {NAV.map(({ to, label, emoji, end, badge }) => (
           <NavLink
             key={to}
             to={to}
@@ -69,11 +69,6 @@ export default function Sidebar() {
             {badge && overdueCount > 0 && (
               <span className="text-[10px] font-bold text-white bg-[#dc2626] rounded-[10px] px-[6px] py-[1px] leading-[1.4] flex-shrink-0">
                 {overdueCount}
-              </span>
-            )}
-            {isNew && (
-              <span className="text-[9px] font-extrabold text-[#6366f1] bg-[rgba(99,102,241,0.08)] border border-[rgba(99,102,241,0.2)] rounded-[4px] px-[6px] py-[2px] tracking-[0.06em] flex-shrink-0">
-                NEW
               </span>
             )}
           </NavLink>
