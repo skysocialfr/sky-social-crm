@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
 import { Zap, Eye, EyeOff, ArrowLeft, CheckCircle2 } from 'lucide-react'
 import { useAuth } from '@/hooks/useAuth'
@@ -6,8 +6,14 @@ import { supabase } from '@/lib/supabase'
 import { cn } from '@/lib/cn'
 
 export default function LoginPage() {
-  const { login } = useAuth()
+  const { login, session } = useAuth()
   const navigate = useNavigate()
+
+  // Already signed in (e.g. returning from OAuth, or revisiting /login) →
+  // send the user straight to their workspace instead of leaving them stuck here.
+  useEffect(() => {
+    if (session) navigate('/app', { replace: true })
+  }, [session, navigate])
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
   const [showPassword, setShowPassword] = useState(false)
@@ -25,7 +31,7 @@ export default function LoginPage() {
       // /app via the redirectTo below.
       const { error: oauthError } = await supabase.auth.signInWithOAuth({
         provider: 'google',
-        options: { redirectTo: `${window.location.origin}/app` },
+        options: { redirectTo: `${window.location.origin}/auth/callback` },
       })
       if (oauthError) throw oauthError
     } catch (err) {

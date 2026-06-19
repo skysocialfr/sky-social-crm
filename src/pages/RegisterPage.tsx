@@ -37,7 +37,7 @@ export default function RegisterPage() {
       // fill it in Settings → Mon compte after landing on /app.
       const { error: oauthError } = await supabase.auth.signInWithOAuth({
         provider: 'google',
-        options: { redirectTo: `${window.location.origin}/app` },
+        options: { redirectTo: `${window.location.origin}/auth/callback` },
       })
       if (oauthError) throw oauthError
     } catch (err) {
