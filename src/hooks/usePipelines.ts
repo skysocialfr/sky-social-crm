@@ -140,3 +140,46 @@ export function useDeletePipeline() {
     onSuccess: () => qc.invalidateQueries({ queryKey: KEY }),
   })
 }
+
+// Delete a pipeline after moving its prospects to another one. Needed
+// because prospects.pipeline_id is NOT NULL with ON DELETE RESTRICT, so
+// a pipeline can never be dropped while prospects still point at it.
+// Moved prospects are reset to the destination's first stage (their old
+// stage labels don't exist in the new pipeline). When the deleted
+// pipeline was the team default, the destination is promoted to default
+// first so the "one default per team" index is always satisfied.
+export function useDeletePipelineWithReassign() {
+  const qc = useQueryClient()
+  const { profile } = useTheme()
+  return useMutation({
+    mutationFn: async (input: { id: string; moveToId: string; moveToFirstStage: string; wasDefault: boolean }) => {
+      const { error: moveErr } = await supabase
+        .from('prospects')
+        .update({ pipeline_id: input.moveToId, stage: input.moveToFirstStage })
+        .eq('pipeline_id', input.id)
+      if (moveErr) throw moveErr
+
+      if (input.wasDefault) {
+        if (!profile?.team_id) throw new Error('Pas d\'équipe active')
+        const { error: clearErr } = await supabase
+          .from('pipelines')
+          .update({ is_default: false })
+          .eq('team_id', profile.team_id)
+          .eq('is_default', true)
+        if (clearErr) throw clearErr
+        const { error: setErr } = await supabase
+          .from('pipelines')
+          .update({ is_default: true })
+          .eq('id', input.moveToId)
+        if (setErr) throw setErr
+      }
+
+      const { error: delErr } = await supabase.from('pipelines').delete().eq('id', input.id)
+      if (delErr) throw delErr
+    },
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: KEY })
+      qc.invalidateQueries({ queryKey: ['prospects'] })
+    },
+  })
+}

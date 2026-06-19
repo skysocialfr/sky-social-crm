@@ -4,12 +4,11 @@ import {
   usePipelines,
   useCreatePipeline,
   useUpdatePipeline,
-  useDeletePipeline,
+  useDeletePipelineWithReassign,
   useSetDefaultPipeline,
 } from '@/hooks/usePipelines'
 import { useTheme } from '@/context/ThemeContext'
 import { useToast } from '@/components/common/Toast'
-import ConfirmDialog from '@/components/common/ConfirmDialog'
 import { STAGE_COLOR_PRESETS, DEFAULT_STAGES } from '@/lib/constants'
 import { cn } from '@/lib/cn'
 import type { Pipeline, PipelineStageDef } from '@/types'
@@ -24,7 +23,7 @@ export default function PipelinesEditor() {
   const { isTeamOwner } = useTheme()
   const { data: pipelines = [], isLoading } = usePipelines()
   const createPipeline = useCreatePipeline()
-  const deletePipeline = useDeletePipeline()
+  const deletePipeline = useDeletePipelineWithReassign()
   const setDefault = useSetDefaultPipeline()
   const { toast } = useToast()
 
@@ -69,6 +68,7 @@ export default function PipelinesEditor() {
           <PipelineCard
             key={p.id}
             pipeline={p}
+            canDelete={pipelines.length > 1}
             expanded={expandedId === p.id}
             onToggle={() => setExpandedId(prev => (prev === p.id ? null : p.id))}
             onSetDefault={async () => {
@@ -89,24 +89,99 @@ export default function PipelinesEditor() {
         }}
       />
 
-      <ConfirmDialog
-        open={!!deleteTarget}
-        onOpenChange={(o) => !o && setDeleteTarget(null)}
-        title={`Supprimer "${deleteTarget?.name}"`}
-        description="Cette action est irréversible. La suppression échouera si des prospects sont encore dans ce pipeline."
-        onConfirm={async () => {
+      <DeletePipelineModal
+        pipeline={deleteTarget}
+        others={pipelines.filter(p => p.id !== deleteTarget?.id)}
+        loading={deletePipeline.isPending}
+        onClose={() => setDeleteTarget(null)}
+        onConfirm={async (moveToId) => {
           if (!deleteTarget) return
+          const dest = pipelines.find(p => p.id === moveToId)
+          const firstStage = dest?.stages?.[0]?.label ?? DEFAULT_STAGES[0].label
           try {
-            await deletePipeline.mutateAsync(deleteTarget.id)
-            toast('Pipeline supprimé.')
+            await deletePipeline.mutateAsync({
+              id: deleteTarget.id,
+              moveToId,
+              moveToFirstStage: firstStage,
+              wasDefault: deleteTarget.is_default,
+            })
+            toast(`Pipeline supprimé. Les prospects ont été déplacés vers "${dest?.name}".`)
             setDeleteTarget(null)
           } catch (err: unknown) {
             const msg = err instanceof Error ? err.message : 'Erreur lors de la suppression.'
             toast(msg, 'error')
           }
         }}
-        loading={deletePipeline.isPending}
       />
+    </div>
+  )
+}
+
+// ---------------------------------------------------------------
+// Delete confirmation — prospects must be moved to another pipeline
+// first (pipeline_id is NOT NULL / ON DELETE RESTRICT in the DB).
+// ---------------------------------------------------------------
+
+function DeletePipelineModal({
+  pipeline,
+  others,
+  loading,
+  onClose,
+  onConfirm,
+}: {
+  pipeline: Pipeline | null
+  others: Pipeline[]
+  loading: boolean
+  onClose: () => void
+  onConfirm: (moveToId: string) => void
+}) {
+  const [moveToId, setMoveToId] = useState('')
+
+  useEffect(() => {
+    if (pipeline && others.length) {
+      setMoveToId((others.find(p => p.is_default) ?? others[0]).id)
+    }
+  }, [pipeline, others])
+
+  if (!pipeline) return null
+
+  return (
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm px-4">
+      <div className="w-full max-w-md rounded-card border border-border bg-card p-6 shadow-modal">
+        <p className="text-base font-bold text-text mb-1">Supprimer « {pipeline.name} »</p>
+        <p className="text-[12px] text-muted mb-4">
+          Cette action est irréversible. Les prospects de ce pipeline seront déplacés vers un autre pipeline
+          (et replacés sur sa première étape).
+          {pipeline.is_default && ' Comme c’est le pipeline par défaut, la destination deviendra le nouveau pipeline par défaut.'}
+        </p>
+
+        <label className="text-xs font-semibold text-text">Déplacer les prospects vers</label>
+        <select
+          value={moveToId}
+          onChange={(e) => setMoveToId(e.target.value)}
+          className="mt-1 w-full rounded-btn border border-border bg-bg px-3 py-2 text-sm text-text focus:border-primary focus:outline-none"
+        >
+          {others.map(p => (
+            <option key={p.id} value={p.id}>{p.name}{p.is_default ? ' (défaut)' : ''}</option>
+          ))}
+        </select>
+
+        <div className="flex items-center justify-end gap-2 mt-5">
+          <button
+            onClick={onClose}
+            className="rounded-btn border border-border px-3 py-1.5 text-xs font-semibold text-muted hover:bg-bg"
+          >
+            Annuler
+          </button>
+          <button
+            onClick={() => onConfirm(moveToId)}
+            disabled={!moveToId || loading}
+            className="rounded-btn bg-crm-red px-3 py-1.5 text-xs font-bold text-white hover:opacity-90 transition-opacity disabled:opacity-50"
+          >
+            {loading ? 'Suppression…' : 'Déplacer et supprimer'}
+          </button>
+        </div>
+      </div>
     </div>
   )
 }
@@ -117,12 +192,14 @@ export default function PipelinesEditor() {
 
 function PipelineCard({
   pipeline,
+  canDelete,
   expanded,
   onToggle,
   onSetDefault,
   onDelete,
 }: {
   pipeline: Pipeline
+  canDelete: boolean
   expanded: boolean
   onToggle: () => void
   onSetDefault: () => void
@@ -225,7 +302,7 @@ function PipelineCard({
                 <Star size={13} />
               </button>
             )}
-            {!pipeline.is_default && (
+            {canDelete && (
               <button
                 onClick={onDelete}
                 className="rounded-btn p-1.5 text-muted hover:text-crm-red hover:bg-bg transition-colors"

@@ -6,6 +6,7 @@ import { useTheme } from '@/context/ThemeContext'
 import { useBulkCreateProspects } from '@/hooks/useProspects'
 import { useToast } from '@/components/common/Toast'
 import Toggle from '@/components/common/Toggle'
+import ProspectTypesWizard from '@/components/settings/ProspectTypesWizard'
 import { cn } from '@/lib/cn'
 import { slugify } from '@/lib/slugify'
 import {
@@ -68,6 +69,7 @@ export default function ProspectTypesEditor() {
   const [success, setSuccess] = useState(false)
   const [error, setError] = useState('')
   const [seeding, setSeeding] = useState(false)
+  const [wizardOpen, setWizardOpen] = useState(false)
 
   useEffect(() => {
     setTypes(customFieldsSchema.prospect_types)
@@ -254,12 +256,38 @@ export default function ProspectTypesEditor() {
     }
   }
 
+  // Append the wizard's freshly-built types to the existing ones and
+  // persist immediately so the client sees the result without a manual
+  // save step.
+  const handleWizardComplete = async (newTypes: ProspectType[]) => {
+    const merged = [...types, ...newTypes].map((t, i) => ({ ...t, position: i }))
+    setTypes(merged)
+    await updateCustomFieldsSchema(withSchema(merged))
+    toast(`${newTypes.length} type${newTypes.length > 1 ? 's' : ''} créé${newTypes.length > 1 ? 's' : ''} !`)
+  }
+
   // --- render ---------------------------------------------------------------
 
   return (
     <div className="flex flex-col gap-5">
+      <ProspectTypesWizard
+        open={wizardOpen}
+        onOpenChange={setWizardOpen}
+        onComplete={handleWizardComplete}
+      />
       <div>
-        <h2 className="text-base font-bold text-text">Types de prospect</h2>
+        <div className="flex items-start justify-between gap-3">
+          <h2 className="text-base font-bold text-text">Types de prospect</h2>
+          {isTeamOwner && types.length > 0 && (
+            <button
+              type="button"
+              onClick={() => setWizardOpen(true)}
+              className="flex-shrink-0 inline-flex items-center gap-1.5 rounded-btn border border-primary px-3 py-1.5 text-xs font-semibold text-primary hover:bg-primary-light transition-colors"
+            >
+              <Wand2 size={13} /> Assistant guidé
+            </button>
+          )}
+        </div>
         <p className="text-[13px] text-muted mt-0.5">
           Définissez les profils que vous prospectez. À la création d'un prospect, vous choisirez d'abord son
           type, puis ne remplirez que les champs utiles à ce type.
@@ -286,10 +314,17 @@ export default function ProspectTypesEditor() {
             <div className="flex flex-wrap items-center justify-center gap-2 mt-1">
               <button
                 type="button"
-                onClick={loadExamples}
+                onClick={() => setWizardOpen(true)}
                 className="inline-flex items-center gap-1.5 rounded-btn bg-primary px-4 py-2 text-xs font-bold text-white hover:bg-primary-hover transition-colors shadow-primary"
               >
-                <Wand2 size={13} /> Charger les types d'exemple
+                <Wand2 size={13} /> Lancer l'assistant guidé
+              </button>
+              <button
+                type="button"
+                onClick={loadExamples}
+                className="inline-flex items-center gap-1.5 rounded-btn border border-border px-4 py-2 text-xs font-semibold text-text hover:bg-bg transition-colors"
+              >
+                <Sparkles size={13} /> Charger des exemples
               </button>
               <button
                 type="button"
