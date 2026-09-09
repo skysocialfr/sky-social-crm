@@ -39,10 +39,13 @@ const SECTION_LABELS: { key: keyof SectionPrefs; label: string; description: str
 ]
 
 
+// Only toggles backed by a real sender are listed. Both are produced by
+// the send-notification-digest edge function on the pg_cron schedule in
+// migration 014. (email_new_prospect is kept in the type for storage
+// compatibility but has no sender yet, so it isn't offered here.)
 const NOTIF_LABELS: { key: keyof NotificationPrefs; label: string; description: string }[] = [
-  { key: 'email_relances_overdue', label: 'Relances en retard',     description: 'Email quotidien si des relances sont dues.' },
-  { key: 'email_weekly_recap',     label: 'Récapitulatif hebdo',    description: 'Résumé chaque lundi : nouveaux prospects, deals avancés.' },
-  { key: 'email_new_prospect',     label: 'Nouveau prospect ajouté',description: 'Confirmation par email à chaque ajout.' },
+  { key: 'email_relances_overdue', label: 'Relances du jour',    description: "Chaque matin, la liste des relances à faire aujourd'hui et en retard. Rien n'est envoyé si vous êtes à jour." },
+  { key: 'email_weekly_recap',     label: 'Récapitulatif hebdo', description: 'Chaque lundi matin : nouveaux prospects, deals gagnés, relances de la semaine.' },
 ]
 
 export default function SettingsPage() {

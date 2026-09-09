@@ -27,3 +27,8 @@ verify_jwt = false
 
 [functions.accept-team-invite]
 verify_jwt = false
+
+# Called by pg_cron with a shared secret (CRON_SECRET), not by a browser
+# session — the function checks the bearer itself.
+[functions.send-notification-digest]
+verify_jwt = false

@@ -272,14 +272,13 @@ export default function LandingPage() {
               <p className="text-4xl font-black text-gray-900 mb-1">
                 <span className="text-2xl">À partir de</span><br />29€
               </p>
-              <p className="text-sm text-gray-400 mb-6">par mois / utilisateur</p>
+              <p className="text-sm text-gray-400 mb-6">par mois · 3 utilisateurs inclus</p>
               <ul className="space-y-2.5 mb-6">
                 {[
                   'Tout le plan Pro',
-                  'Multi-utilisateurs & équipes',
-                  'Espaces clients séparés',
+                  "Jusqu'à 3 utilisateurs, sièges supplémentaires sur devis",
+                  'Droits par membre : visibilité et périmètre',
                   'Analytics avancées',
-                  'Intégrations API & webhooks',
                   'Account manager dédié',
                 ].map(f => (
                   <li key={f} className="flex items-center gap-2 text-sm text-gray-600">
