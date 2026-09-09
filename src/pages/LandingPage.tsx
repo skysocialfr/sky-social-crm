@@ -1,18 +1,26 @@
 import { Link, Navigate } from 'react-router-dom'
 import {
-  Zap, Bell, Upload, Mail, BarChart3,
-  CheckCircle2, ArrowRight, Star, ChevronDown, ChevronUp, Users,
+  Zap, Bell, Upload, Mail, BarChart3, Users, SlidersHorizontal,
+  CheckCircle2, ArrowRight, Star, ChevronDown, ChevronUp,
+  FileSpreadsheet, KanbanSquare, BellRing,
 } from 'lucide-react'
+import type { LucideIcon } from 'lucide-react'
 import { useState } from 'react'
 import { useAuth } from '@/hooks/useAuth'
 
-const FEATURES = [
-  { emoji: '📊', bg: 'bg-blue-50', title: 'Pipeline visuel', desc: "Visualisez vos prospects en Kanban ou tableau. Glissez les cartes d'une étape à l'autre en un clic." },
-  { emoji: '🔔', bg: 'bg-amber-50', title: 'Relances intelligentes', desc: "Planifiez vos prochains contacts et recevez des alertes pour ne jamais laisser un prospect sans suite." },
-  { emoji: '✉️', bg: 'bg-violet-50', title: 'Email direct', desc: "Envoyez des emails personnalisés depuis la fiche prospect. L'historique est enregistré automatiquement." },
-  { emoji: '📁', bg: 'bg-emerald-50', title: 'Import CSV / Excel', desc: "Importez vos fichiers de prospects existants. La détection des colonnes est automatique." },
-  { emoji: '🏢', bg: 'bg-pink-50', title: 'Multi-agence', desc: "Chaque client obtient son propre espace CRM avec ses couleurs, son logo et ses données." },
-  { emoji: '⚡', bg: 'bg-indigo-50', title: 'Personnalisable', desc: "Activez ou désactivez les rubriques selon vos besoins : deal, services, réseaux sociaux, et plus." },
+const FEATURES: { icon: LucideIcon; bg: string; fg: string; title: string; desc: string }[] = [
+  { icon: BarChart3, bg: 'bg-blue-50', fg: 'text-blue-600', title: 'Pipeline visuel', desc: "Visualisez vos prospects en Kanban ou tableau. Glissez les cartes d'une étape à l'autre en un clic." },
+  { icon: Bell, bg: 'bg-amber-50', fg: 'text-amber-600', title: 'Relances par email', desc: "Chaque matin, la liste des relances du jour et en retard arrive dans votre boîte mail. Le lundi, un récapitulatif de la semaine." },
+  { icon: Mail, bg: 'bg-violet-50', fg: 'text-violet-600', title: 'Email direct', desc: "Envoyez des emails personnalisés depuis la fiche prospect. L'historique est enregistré automatiquement." },
+  { icon: Upload, bg: 'bg-emerald-50', fg: 'text-emerald-600', title: 'Import CSV / Excel', desc: "Importez vos fichiers de prospects existants. La détection des colonnes est automatique." },
+  { icon: Users, bg: 'bg-pink-50', fg: 'text-pink-600', title: 'Travail en équipe', desc: "Invitez vos collaborateurs et choisissez ce que chacun voit : toute la base, ou seulement son périmètre." },
+  { icon: SlidersHorizontal, bg: 'bg-indigo-50', fg: 'text-indigo-600', title: 'Vos champs, vos étapes', desc: "Définissez vos types de prospects, vos champs et les étapes de votre pipeline. Le CRM s'adapte à votre métier, pas l'inverse." },
+]
+
+const STEPS: { icon: LucideIcon; title: string; desc: string }[] = [
+  { icon: FileSpreadsheet, title: 'Importez', desc: 'Votre fichier Excel ou CSV existant, ou vos premiers prospects à la main. Prêt en quelques minutes.' },
+  { icon: KanbanSquare, title: 'Suivez', desc: "Chaque prospect avance d'étape en étape. Vous voyez d'un coup d'œil où en est chaque deal." },
+  { icon: BellRing, title: 'Relancez', desc: "Planifiez la prochaine action. Velmio vous la rappelle par email le jour venu. Plus rien ne tombe dans l'oubli." },
 ]
 
 const TESTIMONIALS = [
@@ -26,6 +34,8 @@ const FAQ = [
   { q: 'Puis-je importer mes prospects existants ?', a: "Oui, l'import CSV et Excel est disponible sur le plan Pro. La détection des colonnes est automatique." },
   { q: 'Comment fonctionnent les emails directs ?', a: 'Depuis la fiche d\'un prospect, cliquez sur "Email" pour envoyer un message via des modèles prédéfinis (suivi, relance, RDV). L\'envoi est enregistré dans l\'historique.' },
   { q: "Puis-je personnaliser l'apparence ?", a: "Oui, chaque espace a sa propre couleur principale et son logo. Vos clients voient votre identité visuelle." },
+  { q: 'Comment suis-je prévenu de mes relances ?', a: "Chaque matin, vous recevez par email la liste des relances du jour et de celles en retard — uniquement s'il y en a. Le lundi, un récapitulatif de la semaine. Les deux se désactivent en un clic dans les réglages." },
+  { q: 'Puis-je travailler à plusieurs ?', a: "Oui, avec le plan Agence. Vous invitez vos collaborateurs par email et choisissez pour chacun ce qu'il voit : toute la base en lecture, ou seulement son périmètre (une zone, une spécialité…)." },
 ]
 
 function FaqItem({ q, a }: { q: string; a: string }) {
@@ -61,6 +71,11 @@ export default function LandingPage() {
             </div>
             <span className="text-sm font-bold text-gray-900 tracking-tight">Velmio CRM</span>
           </div>
+          <nav className="hidden md:flex items-center gap-6 text-sm font-medium text-gray-500">
+            <a href="#fonctionnalites" className="hover:text-gray-900 transition-colors">Fonctionnalités</a>
+            <a href="#tarifs" className="hover:text-gray-900 transition-colors">Tarifs</a>
+            <a href="#faq" className="hover:text-gray-900 transition-colors">FAQ</a>
+          </nav>
           <div className="flex items-center gap-3">
             <Link to="/login" className="rounded-lg px-4 py-2 text-sm font-medium text-gray-600 hover:text-gray-900 transition-colors">
               Se connecter
@@ -77,8 +92,13 @@ export default function LandingPage() {
       </header>
 
       {/* Hero */}
-      <section className="px-5 pt-20 pb-10 text-center">
-        <div className="mx-auto max-w-3xl">
+      <section className="relative overflow-hidden px-5 pt-20 pb-10 text-center">
+        {/* Soft glow + dot grid behind the hero — pure CSS, no asset */}
+        <div aria-hidden className="pointer-events-none absolute inset-0 -z-0">
+          <div className="absolute left-1/2 top-0 h-[520px] w-[900px] -translate-x-1/2 rounded-full opacity-60 blur-3xl" style={{ background: 'radial-gradient(closest-side, rgba(99,102,241,0.18), transparent)' }} />
+          <div className="absolute inset-0" style={{ backgroundImage: 'radial-gradient(rgba(99,102,241,0.14) 1px, transparent 1px)', backgroundSize: '22px 22px', maskImage: 'linear-gradient(to bottom, black, transparent 70%)', WebkitMaskImage: 'linear-gradient(to bottom, black, transparent 70%)' }} />
+        </div>
+        <div className="relative mx-auto max-w-3xl">
           <div className="mb-5 inline-flex items-center gap-2 rounded-full border border-indigo-100 bg-indigo-50 px-4 py-1.5 text-xs font-medium text-indigo-600">
             <Star size={11} className="text-yellow-400" fill="currentColor" />
             CRM conçu pour les agences de prospection
@@ -118,7 +138,7 @@ export default function LandingPage() {
         </div>
 
         {/* Dashboard mockup */}
-        <div className="mx-auto mt-14 max-w-4xl">
+        <div className="relative mx-auto mt-14 max-w-4xl">
           <div className="rounded-2xl border border-[#e8eaf8] bg-white overflow-hidden" style={{ boxShadow: '0 20px 60px rgba(99,102,241,0.12)' }}>
             <div className="flex items-center gap-2 border-b border-[#f0f1f8] bg-[#f8f9ff] px-4 py-3">
               <div className="h-3 w-3 rounded-full bg-red-400" />
@@ -165,18 +185,42 @@ export default function LandingPage() {
         </div>
       </section>
 
+      {/* How it works */}
+      <section className="px-5 pt-16 pb-6">
+        <div className="mx-auto max-w-5xl">
+          <div className="mb-10 text-center">
+            <p className="mb-2 text-xs font-semibold uppercase tracking-wider text-indigo-500">Comment ça marche</p>
+            <h2 className="text-2xl font-bold text-gray-900 sm:text-3xl">Trois gestes, et plus aucun prospect oublié</h2>
+          </div>
+          <ol className="grid gap-4 md:grid-cols-3">
+            {STEPS.map(({ icon: Icon, title, desc }, i) => (
+              <li key={title} className="relative rounded-2xl border border-[#e8eaf8] bg-white p-6">
+                <div className="mb-4 flex items-center gap-3">
+                  <span className="flex h-9 w-9 items-center justify-center rounded-xl text-white" style={{ background: 'linear-gradient(135deg, #6366f1, #8b5cf6)' }}>
+                    <Icon size={17} />
+                  </span>
+                  <span className="text-xs font-bold text-gray-300">0{i + 1}</span>
+                </div>
+                <h3 className="mb-1.5 text-base font-bold text-gray-900">{title}</h3>
+                <p className="text-sm text-gray-500 leading-relaxed">{desc}</p>
+              </li>
+            ))}
+          </ol>
+        </div>
+      </section>
+
       {/* Features */}
-      <section className="px-5 py-20">
+      <section id="fonctionnalites" className="scroll-mt-20 px-5 py-20">
         <div className="mx-auto max-w-6xl">
           <div className="mb-12 text-center">
             <h2 className="text-2xl font-bold text-gray-900 sm:text-3xl">Tout ce qu'il vous faut pour prospecter</h2>
             <p className="mt-3 text-sm text-gray-500">Un outil simple et puissant, pensé pour les agences et freelances.</p>
           </div>
           <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-            {FEATURES.map(({ emoji, bg, title, desc }) => (
+            {FEATURES.map(({ icon: Icon, bg, fg, title, desc }) => (
               <div key={title} className="rounded-2xl border border-[#e8eaf8] bg-white p-6 hover:shadow-lg hover:-translate-y-0.5 transition-all duration-200">
-                <div className={`mb-4 flex h-10 w-10 items-center justify-center rounded-xl ${bg} text-xl`}>
-                  {emoji}
+                <div className={`mb-4 flex h-10 w-10 items-center justify-center rounded-xl ${bg} ${fg}`}>
+                  <Icon size={18} />
                 </div>
                 <h3 className="mb-2 text-sm font-semibold text-gray-900">{title}</h3>
                 <p className="text-sm text-gray-500 leading-relaxed">{desc}</p>
@@ -212,7 +256,7 @@ export default function LandingPage() {
       </section>
 
       {/* Pricing */}
-      <section className="px-5 py-20 bg-white">
+      <section id="tarifs" className="scroll-mt-20 px-5 py-20 bg-white">
         <div className="mx-auto max-w-5xl">
           <div className="mb-12 text-center">
             <h2 className="text-2xl font-bold text-gray-900 sm:text-3xl">Tarifs simples et transparents</h2>
@@ -299,7 +343,7 @@ export default function LandingPage() {
       </section>
 
       {/* FAQ */}
-      <section className="px-5 py-20 bg-[#f4f6ff]">
+      <section id="faq" className="scroll-mt-20 px-5 py-20 bg-[#f4f6ff]">
         <div className="mx-auto max-w-2xl">
           <div className="mb-10 text-center">
             <h2 className="text-2xl font-bold text-gray-900 sm:text-3xl">Questions fréquentes</h2>
@@ -339,6 +383,8 @@ export default function LandingPage() {
           <Link to="/legal/cgu" className="hover:text-indigo-600 transition-colors">CGU</Link>
           <span>·</span>
           <Link to="/legal/confidentialite" className="hover:text-indigo-600 transition-colors">Politique de confidentialité</Link>
+          <span>·</span>
+          <a href="mailto:skysocialfr@gmail.com" className="hover:text-indigo-600 transition-colors">Contact</a>
         </div>
         <p>Velmio © {new Date().getFullYear()} · CRM de prospection</p>
       </footer>
