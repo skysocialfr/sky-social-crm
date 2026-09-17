@@ -3,6 +3,7 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { supabase } from '@/lib/supabase'
 import { useTheme } from '@/context/ThemeContext'
 import { DEFAULT_STAGES } from '@/lib/constants'
+import { renamesAreChained, type StageRename } from '@/lib/stageUtils'
 import type { Pipeline, PipelineStageDef } from '@/types'
 
 const KEY = ['pipelines']
@@ -86,10 +87,39 @@ export function useCreatePipeline() {
   })
 }
 
+// Prospects store their stage as a label string, so renaming a stage
+// must rewrite that label on the pipeline's prospects — otherwise they
+// keep pointing at a stage that no longer exists. Chained renames
+// (A→B while B→C, or a swap) go through temporary labels so two stages
+// never get merged along the way.
+async function applyStageRenames(pipelineId: string, renames: StageRename[]) {
+  const move = async (from: string, to: string) => {
+    const { error } = await supabase
+      .from('prospects')
+      .update({ stage: to })
+      .eq('pipeline_id', pipelineId)
+      .eq('stage', from)
+    if (error) throw error
+  }
+
+  if (!renamesAreChained(renames)) {
+    for (const r of renames) await move(r.from, r.to)
+    return
+  }
+  const tmp = (i: number) => `__rename_${pipelineId}_${i}`
+  for (const [i, r] of renames.entries()) await move(r.from, tmp(i))
+  for (const [i, r] of renames.entries()) await move(tmp(i), r.to)
+}
+
 export function useUpdatePipeline() {
   const qc = useQueryClient()
   return useMutation({
-    mutationFn: async (input: { id: string; name?: string; stages?: PipelineStageDef[] }) => {
+    mutationFn: async (input: {
+      id: string
+      name?: string
+      stages?: PipelineStageDef[]
+      renames?: StageRename[]
+    }) => {
       const patch: Record<string, unknown> = {}
       if (input.name !== undefined) patch.name = input.name
       if (input.stages !== undefined) patch.stages = input.stages
@@ -98,6 +128,9 @@ export function useUpdatePipeline() {
         .update(patch)
         .eq('id', input.id)
       if (error) throw error
+      if (input.renames && input.renames.length > 0) {
+        await applyStageRenames(input.id, input.renames)
+      }
     },
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: KEY })

@@ -2,6 +2,7 @@ import { DragDropContext, type DropResult } from '@hello-pangea/dnd'
 import KanbanColumn from './KanbanColumn'
 import { useMoveProspect } from '@/hooks/useProspects'
 import { useToast } from '@/components/common/Toast'
+import { groupByStage } from '@/lib/stageUtils'
 import type { Prospect, PipelineStageDef } from '@/types'
 
 interface Props {
@@ -14,11 +15,10 @@ export default function KanbanBoard({ prospects, stages, onAdd }: Props) {
   const moveProspect = useMoveProspect()
   const { toast } = useToast()
 
-  const byStage: Record<string, Prospect[]> = {}
-  for (const s of stages) byStage[s.label] = []
-  for (const p of prospects) {
-    if (byStage[p.stage]) byStage[p.stage].push(p)
-  }
+  // Prospects whose stage isn't defined by this pipeline (renamed or
+  // removed stage, CSV import with its own labels) get their own columns
+  // at the end rather than vanishing from the board.
+  const { byStage, orphans } = groupByStage(prospects, stages)
 
   const onDragEnd = (result: DropResult) => {
     if (!result.destination) return
@@ -45,6 +45,16 @@ export default function KanbanBoard({ prospects, stages, onAdd }: Props) {
             color={stage.color}
             prospects={byStage[stage.label] ?? []}
             onAdd={onAdd}
+          />
+        ))}
+        {orphans.map((orphan) => (
+          <KanbanColumn
+            key={`orphan:${orphan.label}`}
+            stage={orphan.label}
+            color="#d97706"
+            prospects={orphan.items}
+            onAdd={onAdd}
+            orphan
           />
         ))}
       </div>

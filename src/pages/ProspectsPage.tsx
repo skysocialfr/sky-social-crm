@@ -8,7 +8,7 @@ import {
   useBulkCreateProspects,
 } from '@/hooks/useProspects'
 import { useSubscription, FREE_PLAN } from '@/hooks/useSubscription'
-import { useActivePipeline, useDefaultPipeline } from '@/hooks/usePipelines'
+import { useActivePipeline, useDefaultPipeline, usePipelines } from '@/hooks/usePipelines'
 import ProspectForm from '@/components/forms/ProspectForm'
 import ProspectsTable from '@/components/prospects/ProspectsTable'
 import KanbanBoard from '@/components/prospects/KanbanBoard'
@@ -91,10 +91,25 @@ export default function ProspectsPage() {
   const isAtLimit =
     subscription.status !== 'active' && prospects.length >= subscription.prospect_limit
 
+  // Pipeline scoping. A prospect is hidden only when it belongs to ANOTHER
+  // pipeline the switcher can take the user to. One whose pipeline isn't
+  // in the team's list at all stays in the current view: hiding it would
+  // make it unreachable from this page while the dashboard still counts it.
+  const { data: pipelines = [] } = usePipelines()
+  const inActivePipeline = useMemo(() => {
+    const reachable = new Set(pipelines.map((pl) => pl.id))
+    return (p: Prospect) =>
+      !activePipeline || p.pipeline_id === activePipeline.id || !reachable.has(p.pipeline_id)
+  }, [pipelines, activePipeline])
+
+  const inOtherLeads = useMemo(
+    () => prospects.filter((p) => !inActivePipeline(p)).length,
+    [prospects, inActivePipeline],
+  )
+
   const filtered = useMemo(() => {
     return prospects.filter((p) => {
-      // Pipeline scoping: only show prospects of the active pipeline.
-      if (activePipeline && p.pipeline_id !== activePipeline.id) return false
+      if (!inActivePipeline(p)) return false
       if (filters.search) {
         const q = filters.search.toLowerCase()
         if (
@@ -116,20 +131,20 @@ export default function ProspectsPage() {
       if (advConditions.length > 0 && !evaluateConditions(p, advConditions)) return false
       return true
     })
-  }, [prospects, filters, advConditions, activePipeline, typeFilter])
+  }, [prospects, filters, advConditions, inActivePipeline, typeFilter])
 
   // Counts per type, scoped to the active pipeline, for the filter bar.
   const typeCounts = useMemo(() => {
     const counts: Record<string, number> = {}
     let untyped = 0
     for (const p of prospects) {
-      if (activePipeline && p.pipeline_id !== activePipeline.id) continue
+      if (!inActivePipeline(p)) continue
       const tid = getProspectTypeId(p.custom_data)
       if (tid) counts[tid] = (counts[tid] ?? 0) + 1
       else untyped += 1
     }
     return { counts, untyped }
-  }, [prospects, activePipeline])
+  }, [prospects, inActivePipeline])
 
   const handleOpenCreate = (stage?: string) => {
     if (isAtLimit) { setUpgradeOpen(true); return }
@@ -175,6 +190,9 @@ export default function ProspectsPage() {
             {filtered.length !== prospects.length
               ? `${filtered.length} sur ${prospects.length} prospects`
               : `${prospects.length} prospect${prospects.length !== 1 ? 's' : ''} au total`}
+            {inOtherLeads > 0 && (
+              <span className="text-subtle"> · {inOtherLeads} dans {inOtherLeads > 1 ? "d'autres leads" : 'un autre lead'} (onglets ci-dessous)</span>
+            )}
           </p>
         </div>
         <div className="flex items-center gap-2 flex-wrap">

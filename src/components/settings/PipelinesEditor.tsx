@@ -10,6 +10,12 @@ import {
 import { useTheme } from '@/context/ThemeContext'
 import { useToast } from '@/components/common/Toast'
 import { STAGE_COLOR_PRESETS, DEFAULT_STAGES } from '@/lib/constants'
+import {
+  toEditableStages,
+  stripEditableStages,
+  computeStageRenames,
+  type EditableStage,
+} from '@/lib/stageUtils'
 import { cn } from '@/lib/cn'
 import type { Pipeline, PipelineStageDef } from '@/types'
 
@@ -210,11 +216,13 @@ function PipelineCard({
 
   const [editingName, setEditingName] = useState(false)
   const [nameDraft, setNameDraft] = useState(pipeline.name)
-  const [stages, setStages] = useState<PipelineStageDef[]>(pipeline.stages)
+  // Each stage remembers the label it was loaded with, so a rename can be
+  // told apart from "removed one stage, added another" at save time.
+  const [stages, setStages] = useState<EditableStage[]>(() => toEditableStages(pipeline.stages))
 
   useEffect(() => {
     setNameDraft(pipeline.name)
-    setStages(pipeline.stages)
+    setStages(toEditableStages(pipeline.stages))
   }, [pipeline.id, pipeline.name, pipeline.stages])
 
   const saveName = async () => {
@@ -243,8 +251,13 @@ function PipelineCard({
       toast('Les noms d\'étapes doivent être uniques.', 'error')
       return
     }
-    await update.mutateAsync({ id: pipeline.id, stages: cleaned })
-    toast('Étapes mises à jour.')
+    const renames = computeStageRenames(cleaned)
+    await update.mutateAsync({ id: pipeline.id, stages: stripEditableStages(cleaned), renames })
+    toast(
+      renames.length > 0
+        ? 'Étapes mises à jour. Les prospects des étapes renommées ont suivi.'
+        : 'Étapes mises à jour.',
+    )
   }
 
   return (
@@ -326,7 +339,7 @@ function PipelineCard({
           <StagesEditor stages={stages} onChange={setStages} />
           <div className="flex items-center justify-end gap-2">
             <button
-              onClick={() => setStages(pipeline.stages)}
+              onClick={() => setStages(toEditableStages(pipeline.stages))}
               className="rounded-btn border border-border px-3 py-1.5 text-xs font-semibold text-muted hover:bg-card transition-colors"
             >
               Annuler
