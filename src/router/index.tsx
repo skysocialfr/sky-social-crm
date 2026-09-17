@@ -28,6 +28,8 @@ import MentionsLegales from '@/pages/legal/MentionsLegales'
 import CGU from '@/pages/legal/CGU'
 import Confidentialite from '@/pages/legal/Confidentialite'
 import AcceptInvitePage from '@/pages/AcceptInvitePage'
+import ForgotPasswordPage from '@/pages/ForgotPasswordPage'
+import ResetPasswordPage from '@/pages/ResetPasswordPage'
 
 function ProtectedRoute({ children }: { children: React.ReactNode }) {
   const { session, loading } = useAuth()
@@ -73,6 +75,8 @@ export const router = createBrowserRouter([
   { path: '/', element: <LandingPage /> },
   { path: '/login', element: <LoginPage /> },
   { path: '/register', element: <RegisterPage /> },
+  { path: '/forgot-password', element: <ForgotPasswordPage /> },
+  { path: '/reset-password', element: <ResetPasswordPage /> },
   { path: '/legal/mentions', element: <MentionsLegales /> },
   { path: '/legal/cgu', element: <CGU /> },
   { path: '/legal/confidentialite', element: <Confidentialite /> },

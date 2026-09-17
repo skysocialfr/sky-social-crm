@@ -118,16 +118,21 @@ export default function LoginPage() {
               </div>
             </div>
 
-            {/* Remember me */}
-            <label className="flex items-center gap-2.5 cursor-pointer select-none">
-              <input
-                type="checkbox"
-                checked={remember}
-                onChange={(e) => setRemember(e.target.checked)}
-                className="h-4 w-4 rounded border-gray-300 text-indigo-600 focus:ring-indigo-500"
-              />
-              <span className="text-xs text-gray-600">Se souvenir de moi</span>
-            </label>
+            {/* Remember me + forgot password */}
+            <div className="flex items-center justify-between gap-3">
+              <label className="flex items-center gap-2.5 cursor-pointer select-none">
+                <input
+                  type="checkbox"
+                  checked={remember}
+                  onChange={(e) => setRemember(e.target.checked)}
+                  className="h-4 w-4 rounded border-gray-300 text-indigo-600 focus:ring-indigo-500"
+                />
+                <span className="text-xs text-gray-600">Se souvenir de moi</span>
+              </label>
+              <Link to="/forgot-password" className="text-xs font-medium text-indigo-600 hover:underline">
+                Mot de passe oublié ?
+              </Link>
+            </div>
 
             {error && (
               <p role="alert" className="rounded-xl border border-red-100 bg-red-50 px-4 py-2.5 text-xs text-red-600">

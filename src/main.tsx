@@ -1,3 +1,4 @@
+import './lib/recoveryRedirect' // must run before the router reads the URL
 import React from 'react'
 import ReactDOM from 'react-dom/client'
 import { RouterProvider } from 'react-router-dom'

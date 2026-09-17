@@ -86,6 +86,11 @@ export default function SettingsPage() {
   const [pwSaving, setPwSaving] = useState(false)
   const [pwError, setPwError] = useState('')
   const [pwSuccess, setPwSuccess] = useState(false)
+  const [emailEditing, setEmailEditing] = useState(false)
+  const [newEmail, setNewEmail] = useState('')
+  const [emailSaving, setEmailSaving] = useState(false)
+  const [emailError, setEmailError] = useState('')
+  const [emailSentTo, setEmailSentTo] = useState('')
 
   // Notifications
   const [notifSaving, setNotifSaving] = useState(false)
@@ -204,6 +209,38 @@ export default function SettingsPage() {
       setPwError(err instanceof Error ? err.message : 'Une erreur est survenue.')
     } finally {
       setPwSaving(false)
+    }
+  }
+
+  // Supabase doesn't switch the address right away: it emails a
+  // confirmation link to the new address (and to the current one when
+  // "Secure email change" is on), and applies the change once confirmed.
+  const handleChangeEmail = async (e: React.FormEvent) => {
+    e.preventDefault()
+    setEmailError('')
+    setEmailSentTo('')
+    const next = newEmail.trim().toLowerCase()
+    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(next)) { setEmailError('Adresse email invalide.'); return }
+    if (next === (user?.email ?? '').toLowerCase()) { setEmailError("C'est déjà votre adresse actuelle."); return }
+    setEmailSaving(true)
+    try {
+      const { error } = await supabase.auth.updateUser(
+        { email: next },
+        { emailRedirectTo: `${window.location.origin}/app/settings` },
+      )
+      if (error) throw error
+      setEmailSentTo(next)
+      setEmailEditing(false)
+      setNewEmail('')
+    } catch (err) {
+      const msg = err instanceof Error ? err.message : ''
+      setEmailError(
+        /rate|seconds|too many/i.test(msg)
+          ? 'Trop de demandes. Patientez une minute avant de réessayer.'
+          : "Impossible d'utiliser cette adresse. Vérifiez-la ou essayez-en une autre.",
+      )
+    } finally {
+      setEmailSaving(false)
     }
   }
 
@@ -501,15 +538,72 @@ export default function SettingsPage() {
     ),
 
     securite: (
-      <form onSubmit={handleChangePassword} className="flex flex-col gap-5">
+      <div className="flex flex-col gap-5">
         <div>
           <h2 className="text-base font-bold text-text">Sécurité</h2>
-          <p className="text-[13px] text-muted mt-0.5">Gérez votre mot de passe et la sécurité du compte.</p>
+          <p className="text-[13px] text-muted mt-0.5">Gérez votre adresse email, votre mot de passe et la sécurité du compte.</p>
         </div>
-        <div className="rounded-card border border-border bg-card p-5 flex flex-col gap-4">
+        <form onSubmit={handleChangeEmail} className="rounded-card border border-border bg-card p-5 flex flex-col gap-4">
           <p className="text-[11px] font-semibold uppercase tracking-wider text-muted">Email</p>
-          <p className="text-sm text-text">{user?.email}</p>
-        </div>
+          <div className="flex flex-wrap items-center justify-between gap-3">
+            <p className="text-sm text-text break-all">{user?.email}</p>
+            {!emailEditing && (
+              <button
+                type="button"
+                onClick={() => { setEmailEditing(true); setEmailError(''); setEmailSentTo('') }}
+                className="rounded-btn border border-border px-3 py-1.5 text-xs font-semibold text-muted hover:text-text hover:bg-bg transition-colors"
+              >
+                Modifier
+              </button>
+            )}
+          </div>
+          {emailEditing && (
+            <>
+              <div>
+                <label htmlFor="settings-new-email" className="mb-1.5 block text-sm font-semibold text-text">Nouvelle adresse email</label>
+                <input
+                  id="settings-new-email"
+                  type="email"
+                  autoComplete="email"
+                  autoFocus
+                  value={newEmail}
+                  onChange={(e) => setNewEmail(e.target.value)}
+                  placeholder="vous@votresociete.com"
+                  className="w-full rounded-btn border border-border bg-card px-3 py-2.5 text-sm text-text focus:border-primary focus:outline-none"
+                />
+                <p className="text-[11px] text-muted mt-1.5">
+                  Un lien de confirmation sera envoyé à cette adresse. Votre email ne change qu'une fois le lien validé.
+                </p>
+              </div>
+              <div className="flex items-center gap-2">
+                <button
+                  type="submit"
+                  disabled={emailSaving || !newEmail}
+                  className="rounded-btn bg-primary px-4 py-2 text-xs font-bold text-white hover:bg-primary-hover disabled:opacity-50 transition-colors"
+                >
+                  {emailSaving ? 'Envoi…' : 'Envoyer le lien de confirmation'}
+                </button>
+                <button
+                  type="button"
+                  onClick={() => { setEmailEditing(false); setNewEmail(''); setEmailError('') }}
+                  className="rounded-btn border border-border px-4 py-2 text-xs font-semibold text-muted hover:bg-bg transition-colors"
+                >
+                  Annuler
+                </button>
+              </div>
+            </>
+          )}
+          {emailError && (
+            <p role="alert" className="rounded-btn border border-crm-red bg-crm-red-light px-3 py-2 text-xs text-crm-red">{emailError}</p>
+          )}
+          {emailSentTo && (
+            <p role="status" className="rounded-btn border border-crm-green bg-crm-green-light px-3 py-2 text-xs text-crm-green">
+              Lien de confirmation envoyé à {emailSentTo}. Par sécurité, une validation peut aussi vous être demandée
+              sur votre adresse actuelle. Le changement prend effet une fois validé.
+            </p>
+          )}
+        </form>
+        <form onSubmit={handleChangePassword} className="flex flex-col gap-5">
         <div className="rounded-card border border-border bg-card p-5 flex flex-col gap-4">
           <p className="text-[11px] font-semibold uppercase tracking-wider text-muted">Changer le mot de passe</p>
           <div>
@@ -554,7 +648,8 @@ export default function SettingsPage() {
             {pwSaving ? 'Mise à jour…' : 'Mettre à jour le mot de passe'}
           </button>
         </div>
-      </form>
+        </form>
+      </div>
     ),
 
     notifications: (
